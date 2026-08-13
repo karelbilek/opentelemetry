@@ -8,6 +8,8 @@ Goals:
 * strictly no ENV variable reading, everything explicit
   * I hate env var magic, sorry
   * this makes initialization a bit annoying, might think later how to solve that
+* related to that - removing most Options/WithXXX patterns
+  * except for new spans I guess
 * as few dependencies as possible
   * specifically no grpc
 * no global state
