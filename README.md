@@ -1,15 +1,24 @@
 Somehow simplified (?) otel library.
 
-The principles:
+Goals:
 * just one package for everything
+  * that includes both "API" and "SDK" - it's all in the same package
 * only HTTP OTLP exporters - no grpc, no other exporters
+* only slog bridge
 * strictly no ENV variable reading, everything explicit
   * I hate env var magic, sorry
+  * this makes initialization a bit annoying, might think later how to solve that
 * as few dependencies as possible
   * specifically no grpc
+* no global state
+  * (for now, there is still a global debug logger; later)
 
+Maybe goals?
+* don't use interfaces when you can use structs
 
 Non-goals:
+* adherence to specifications
+  * most of things I don't like about otel-go (env vars, global vars, multiple layers) is mandated by the specs!
 * simplicity of code - it's mostly copied from OTLP (with copyrights intact)
 * mergeability of code back from upstread
   * I do changes to remove the env variable reading
