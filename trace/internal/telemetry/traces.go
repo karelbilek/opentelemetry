@@ -78,9 +78,6 @@ type ResourceSpans struct {
 	Resource Resource `json:"resource"`
 	// A list of ScopeSpans that originate from a resource.
 	ScopeSpans []*ScopeSpans `json:"scopeSpans,omitempty"`
-	// This schema_url applies to the data in the "resource" field. It does not apply
-	// to the data in the "scope_spans" field which have their own schema_url field.
-	SchemaURL string `json:"schemaUrl,omitempty"`
 }
 
 // UnmarshalJSON decodes the OTLP formatted JSON contained in data into rs.
@@ -115,8 +112,6 @@ func (rs *ResourceSpans) UnmarshalJSON(data []byte) error {
 			err = decoder.Decode(&rs.Resource)
 		case "scopeSpans", "scope_spans":
 			err = decoder.Decode(&rs.ScopeSpans)
-		case "schemaUrl", "schema_url":
-			err = decoder.Decode(&rs.SchemaURL)
 		default:
 			// Skip unknown.
 		}
@@ -136,11 +131,6 @@ type ScopeSpans struct {
 	Scope *Scope `json:"scope"`
 	// A list of Spans that originate from an instrumentation scope.
 	Spans []*Span `json:"spans,omitempty"`
-	// The Schema URL, if known. This is the identifier of the Schema that the span data
-	// is recorded in. To learn more about Schema URL see
-	// https://opentelemetry.io/docs/specs/otel/schemas/#schema-url
-	// This schema_url applies to all spans and span events in the "spans" field.
-	SchemaURL string `json:"schemaUrl,omitempty"`
 }
 
 // UnmarshalJSON decodes the OTLP formatted JSON contained in data into ss.
@@ -175,8 +165,6 @@ func (ss *ScopeSpans) UnmarshalJSON(data []byte) error {
 			err = decoder.Decode(&ss.Scope)
 		case "spans":
 			err = decoder.Decode(&ss.Spans)
-		case "schemaUrl", "schema_url":
-			err = decoder.Decode(&ss.SchemaURL)
 		default:
 			// Skip unknown.
 		}

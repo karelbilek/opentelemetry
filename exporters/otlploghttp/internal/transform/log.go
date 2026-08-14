@@ -68,7 +68,6 @@ func ResourceLogs(records []log.Record) []*lpb.ResourceLogs {
 					Attributes: AttrIter(res.Iter()),
 				}
 			}
-			rl.SchemaUrl = res.SchemaURL()
 			resMap[rKey] = rl
 		}
 		if !iOk {

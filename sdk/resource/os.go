@@ -38,7 +38,6 @@ func (osTypeDetector) Detect(context.Context) (*Resource, error) {
 	osTypeAttribute := mapRuntimeOSToSemconvOSType(osType)
 
 	return NewWithAttributes(
-		semconv.SchemaURL,
 		osTypeAttribute,
 	), nil
 }
@@ -52,7 +51,6 @@ func (osDescriptionDetector) Detect(context.Context) (*Resource, error) {
 	}
 
 	return NewWithAttributes(
-		semconv.SchemaURL,
 		semconv.OSDescription(description),
 	), nil
 }

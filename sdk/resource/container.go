@@ -36,7 +36,7 @@ func (cgroupContainerIDDetector) Detect(context.Context) (*Resource, error) {
 	if containerID == "" {
 		return Empty(), nil
 	}
-	return NewWithAttributes(semconv.SchemaURL, semconv.ContainerID(containerID)), nil
+	return NewWithAttributes(semconv.ContainerID(containerID)), nil
 }
 
 var (

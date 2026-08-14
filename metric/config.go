@@ -30,7 +30,6 @@ func (cfg MeterConfig) InstrumentationAttributes() attribute.Set {
 	return cfg.attrs
 }
 
-
 // MeterOption is an interface for applying Meter options.
 type MeterOption interface {
 	// applyMeter is used to set a MeterOption value of a MeterConfig.

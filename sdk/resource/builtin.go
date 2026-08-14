@@ -30,9 +30,8 @@ type (
 	host struct{}
 
 	stringDetector struct {
-		schemaURL string
-		K         attribute.Key
-		F         func() (string, error)
+		K attribute.Key
+		F func() (string, error)
 	}
 
 	defaultServiceNameDetector struct{}
@@ -54,7 +53,6 @@ var (
 // Detect returns a *Resource that describes the OpenTelemetry SDK used.
 func (telemetrySDK) Detect(context.Context) (*Resource, error) {
 	return NewWithAttributes(
-		semconv.SchemaURL,
 		semconv.TelemetrySDKName("opentelemetry"),
 		semconv.TelemetrySDKLanguageGo,
 		semconv.TelemetrySDKVersion(sdk.Version()),
@@ -63,18 +61,17 @@ func (telemetrySDK) Detect(context.Context) (*Resource, error) {
 
 // Detect returns a *Resource that describes the host being run on.
 func (host) Detect(ctx context.Context) (*Resource, error) {
-	return StringDetector(semconv.SchemaURL, semconv.HostNameKey, os.Hostname).Detect(ctx)
+	return StringDetector(semconv.HostNameKey, os.Hostname).Detect(ctx)
 }
 
 // StringDetector returns a Detector that will produce a *Resource
-// containing the string as a value corresponding to k. The resulting Resource
-// will have the specified schemaURL.
-func StringDetector(schemaURL string, k attribute.Key, f func() (string, error)) Detector {
-	return stringDetector{schemaURL: schemaURL, K: k, F: f}
+// containing the string as a value corresponding to k.
+func StringDetector(k attribute.Key, f func() (string, error)) Detector {
+	return stringDetector{K: k, F: f}
 }
 
 // Detect returns a *Resource that describes the string as a value
-// corresponding to attribute.Key as well as the specific schemaURL.
+// corresponding to attribute.Key
 func (sd stringDetector) Detect(context.Context) (*Resource, error) {
 	value, err := sd.F()
 	if err != nil {
@@ -84,13 +81,12 @@ func (sd stringDetector) Detect(context.Context) (*Resource, error) {
 	if !a.Valid() {
 		return nil, fmt.Errorf("invalid attribute: %q -> %q", a.Key, a.Value.String())
 	}
-	return NewWithAttributes(sd.schemaURL, sd.K.String(value)), nil
+	return NewWithAttributes(sd.K.String(value)), nil
 }
 
 // Detect implements Detector.
 func (defaultServiceNameDetector) Detect(ctx context.Context) (*Resource, error) {
 	return StringDetector(
-		semconv.SchemaURL,
 		semconv.ServiceNameKey,
 		func() (string, error) {
 			executable, err := os.Executable()
@@ -104,7 +100,6 @@ func (defaultServiceNameDetector) Detect(ctx context.Context) (*Resource, error)
 
 func (f fixedServiceNameDetector) Detect(ctx context.Context) (*Resource, error) {
 	return StringDetector(
-		semconv.SchemaURL,
 		semconv.ServiceNameKey,
 		func() (string, error) {
 			return f.s, nil
@@ -115,7 +110,6 @@ func (f fixedServiceNameDetector) Detect(ctx context.Context) (*Resource, error)
 // Detect implements Detector.
 func (defaultServiceInstanceIDDetector) Detect(ctx context.Context) (*Resource, error) {
 	return StringDetector(
-		semconv.SchemaURL,
 		semconv.ServiceInstanceIDKey,
 		func() (string, error) {
 			version4Uuid, err := uuid.NewRandom()

@@ -13,7 +13,7 @@ import (
 // TracerConfig is a group of options for a Tracer.
 type TracerConfig struct {
 	instrumentationVersion string
-	attrs     attribute.Set
+	attrs                  attribute.Set
 }
 
 // InstrumentationVersion returns the version of the library providing instrumentation.
@@ -26,7 +26,6 @@ func (t *TracerConfig) InstrumentationVersion() string {
 func (t *TracerConfig) InstrumentationAttributes() attribute.Set {
 	return t.attrs
 }
-
 
 type experimentalOption interface {
 	Experimental()

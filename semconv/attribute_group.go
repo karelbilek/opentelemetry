@@ -11838,17 +11838,6 @@ const (
 	// Examples: "io.opentelemetry.contrib.mongodb"
 	OTelScopeNameKey = attribute.Key("otel.scope.name")
 
-	// OTelScopeSchemaURLKey is the attribute Key conforming to the
-	// "otel.scope.schema_url" semantic conventions. It represents the schema URL of
-	// the instrumentation scope.
-	//
-	// Type: string
-	// RequirementLevel: Recommended
-	// Stability: Development
-	//
-	// Examples: "https://opentelemetry.io/schemas/1.31.0"
-	OTelScopeSchemaURLKey = attribute.Key("otel.scope.schema_url")
-
 	// OTelScopeVersionKey is the attribute Key conforming to the
 	// "otel.scope.version" semantic conventions. It represents the version of the
 	// instrumentation scope - (`InstrumentationScope.Version` in OTLP).
@@ -11928,13 +11917,6 @@ func OTelEventName(val string) attribute.KeyValue {
 // instrumentation scope - (`InstrumentationScope.Name` in OTLP).
 func OTelScopeName(val string) attribute.KeyValue {
 	return OTelScopeNameKey.String(val)
-}
-
-// OTelScopeSchemaURL returns an attribute KeyValue conforming to the
-// "otel.scope.schema_url" semantic conventions. It represents the schema URL of
-// the instrumentation scope.
-func OTelScopeSchemaURL(val string) attribute.KeyValue {
-	return OTelScopeSchemaURLKey.String(val)
 }
 
 // OTelScopeVersion returns an attribute KeyValue conforming to the

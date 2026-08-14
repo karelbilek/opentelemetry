@@ -12,15 +12,15 @@ type LoggerConfig struct {
 	// Ensure forward compatibility by explicitly making this not comparable.
 	noCmp [0]func() //nolint: unused  // This is indeed used.
 
-	version   string
-	attrs     attribute.Set
+	version string
+	attrs   attribute.Set
 }
 
 // NewLoggerConfig returns a new [LoggerConfig] with all the options applied.
 func NewLoggerConfig(version string, attrs attribute.Set) LoggerConfig {
 	return LoggerConfig{
-		version:   version,
-		attrs:     attrs,
+		version: version,
+		attrs:   attrs,
 	}
 }
 
@@ -35,7 +35,6 @@ func (cfg LoggerConfig) InstrumentationVersion() string {
 func (cfg LoggerConfig) InstrumentationAttributes() attribute.Set {
 	return cfg.attrs
 }
-
 
 // EnabledParameters represents payload for [Logger]'s Enabled method.
 type EnabledParameters struct {

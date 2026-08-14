@@ -46,8 +46,8 @@ func Spans(sdl []*tracesdk.Snapshot) []*tracepb.ResourceSpans {
 		if !iOk {
 			// Either the resource or instrumentation scope were unknown.
 			scopeSpan = &tracepb.ScopeSpans{
-				Scope:     InstrumentationScope(scope),
-				Spans:     []*tracepb.Span{},
+				Scope: InstrumentationScope(scope),
+				Spans: []*tracepb.Span{},
 			}
 			ssm[k] = scopeSpan
 		}
@@ -60,7 +60,6 @@ func Spans(sdl []*tracesdk.Snapshot) []*tracepb.ResourceSpans {
 			rs = &tracepb.ResourceSpans{
 				Resource:   Resource(sd.Resource()),
 				ScopeSpans: []*tracepb.ScopeSpans{scopeSpan},
-				SchemaUrl:  sd.Resource().SchemaURL(),
 			}
 			rsm[rKey] = rs
 			continue

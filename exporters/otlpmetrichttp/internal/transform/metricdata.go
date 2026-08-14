@@ -29,7 +29,6 @@ func ResourceMetrics(rm *metricdata.ResourceMetrics) (*mpb.ResourceMetrics, erro
 			Attributes: AttrIter(rm.Resource.Iter()),
 		},
 		ScopeMetrics: sms,
-		SchemaUrl:    rm.Resource.SchemaURL(),
 	}, err
 }
 
@@ -51,7 +50,7 @@ func ScopeMetrics(sms []metricdata.ScopeMetrics) ([]*mpb.ScopeMetrics, error) {
 				Version:    sm.Scope.Version,
 				Attributes: AttrIter(sm.Scope.Attributes.Iter()),
 			},
-			Metrics:   ms,
+			Metrics: ms,
 		})
 	}
 	return out, errs.errOrNil()

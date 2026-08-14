@@ -13,8 +13,6 @@ import (
 type config struct {
 	// detectors that will be evaluated.
 	detectors []Detector
-	// SchemaURL to associate with the Resource.
-	schemaURL string
 }
 
 // Option is the interface that applies a configuration option.
@@ -65,18 +63,6 @@ func WithHostID() Option {
 // WithTelemetrySDK adds TelemetrySDK version info to the configured resource.
 func WithTelemetrySDK() Option {
 	return WithDetectors(telemetrySDK{})
-}
-
-// WithSchemaURL sets the schema URL for the configured resource.
-func WithSchemaURL(schemaURL string) Option {
-	return schemaURLOption(schemaURL)
-}
-
-type schemaURLOption string
-
-func (o schemaURLOption) apply(cfg config) config {
-	cfg.schemaURL = string(o)
-	return cfg
 }
 
 // WithOS adds all the OS attributes to the configured Resource.

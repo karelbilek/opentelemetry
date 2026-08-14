@@ -102,7 +102,6 @@ func (hostIDDetector) Detect(context.Context) (*Resource, error) {
 	}
 
 	return NewWithAttributes(
-		semconv.SchemaURL,
 		semconv.HostID(hostID),
 	), nil
 }
