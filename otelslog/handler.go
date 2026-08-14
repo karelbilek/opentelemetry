@@ -59,8 +59,8 @@ import (
 
 // NewLogger returns a new [slog.Logger] backed by a new [Handler]. See
 // [NewHandler] for details on how the backing Handler is created.
-func NewLogger(name string, provider *sdklog.LoggerProvider, source bool) *slog.Logger {
-	return slog.New(NewHandler(name, provider, source))
+func NewLogger(name string, provider *sdklog.LoggerProvider, addSource bool) *slog.Logger {
+	return slog.New(NewHandler(name, provider, addSource))
 }
 
 // Handler is an [slog.Handler] that sends all logging records it receives to
@@ -73,7 +73,7 @@ type Handler struct {
 	group  *group
 	logger *sdklog.Logger
 
-	source bool
+	addSource bool
 }
 
 // Compile-time check *Handler implements slog.Handler.
@@ -87,10 +87,10 @@ var _ slog.Handler = (*Handler)(nil)
 // The provided name needs to uniquely identify the code being logged. This is
 // most commonly the package name of the code. If name is empty, the
 // [log.Logger] implementation may override this value with a default.
-func NewHandler(name string, provider *sdklog.LoggerProvider, source bool) *Handler {
+func NewHandler(name string, provider *sdklog.LoggerProvider, addSource bool) *Handler {
 	return &Handler{
-		logger: provider.Logger(name),
-		source: source,
+		logger:    provider.Logger(name),
+		addSource: addSource,
 	}
 }
 
@@ -109,7 +109,7 @@ func (h *Handler) convertRecord(r slog.Record) log.Record {
 	record.SetSeverity(log.Severity(r.Level + sevOffset))
 	record.SetSeverityText(r.Level.String())
 
-	if h.source {
+	if h.addSource {
 		fs := runtime.CallersFrames([]uintptr{r.PC})
 		f, _ := fs.Next()
 		record.AddAttributes(
