@@ -63,22 +63,6 @@ func NewLogger(name string, provider *sdklog.LoggerProvider, source bool) *slog.
 	return slog.New(NewHandler(name, provider, source))
 }
 
-type config struct {
-	provider *sdklog.LoggerProvider
-	source   bool
-}
-
-func newConfig(provider *sdklog.LoggerProvider, source bool) config {
-	return config{
-		provider: provider,
-		source:   source,
-	}
-}
-
-func (c config) logger(name string) *sdklog.Logger {
-	return c.provider.Logger(name)
-}
-
 // Handler is an [slog.Handler] that sends all logging records it receives to
 // OpenTelemetry. See package documentation for how conversions are made.
 type Handler struct {
@@ -104,10 +88,9 @@ var _ slog.Handler = (*Handler)(nil)
 // most commonly the package name of the code. If name is empty, the
 // [log.Logger] implementation may override this value with a default.
 func NewHandler(name string, provider *sdklog.LoggerProvider, source bool) *Handler {
-	cfg := newConfig(provider, source)
 	return &Handler{
-		logger: cfg.logger(name),
-		source: cfg.source,
+		logger: provider.Logger(name),
+		source: source,
 	}
 }
 
