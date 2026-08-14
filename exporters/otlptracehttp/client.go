@@ -21,7 +21,6 @@ import (
 	tracepb "github.com/karelbilek/opentelemetry/proto/trace/v1"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/karelbilek/opentelemetry/exporters/otlptrace"
 	"github.com/karelbilek/opentelemetry/exporters/otlptracehttp/internal"
 	"github.com/karelbilek/opentelemetry/exporters/otlptracehttp/internal/counter"
 	"github.com/karelbilek/opentelemetry/exporters/otlptracehttp/internal/otlpconfig"
@@ -54,9 +53,7 @@ var ourTransport = &http.Transport{
 	ExpectContinueTimeout: 1 * time.Second,
 }
 
-var errInsecureEndpointWithTLS = errors.New("insecure HTTP endpoint cannot use TLS client configuration")
-
-type client struct {
+type Client struct {
 	name        string
 	cfg         otlpconfig.SignalConfig
 	generalCfg  otlpconfig.Config
@@ -68,10 +65,8 @@ type client struct {
 	instID int64
 }
 
-var _ otlptrace.Client = (*client)(nil)
-
 // NewClient creates a new HTTP trace client.
-func NewClient(endpoint string, urlPath string, insecure bool, headers map[string]string, maxRequestSize int, timeout time.Duration, retry retry.Config) otlptrace.Client {
+func NewClient(endpoint string, urlPath string, insecure bool, headers map[string]string, maxRequestSize int, timeout time.Duration, retry retry.Config) *Client {
 	cfg := otlpconfig.NewHTTPConfig(endpoint, urlPath, insecure, headers, maxRequestSize, timeout, retry)
 
 	httpClient := &http.Client{
@@ -80,7 +75,7 @@ func NewClient(endpoint string, urlPath string, insecure bool, headers map[strin
 	}
 
 	stopCh := make(chan struct{})
-	return &client{
+	return &Client{
 		name:        "traces",
 		cfg:         cfg.Traces,
 		generalCfg:  cfg,
@@ -92,7 +87,7 @@ func NewClient(endpoint string, urlPath string, insecure bool, headers map[strin
 }
 
 // Start does nothing in a HTTP client.
-func (c *client) Start(ctx context.Context) error {
+func (c *Client) Start(ctx context.Context) error {
 	var err error
 	// nothing to do
 	select {
@@ -104,7 +99,7 @@ func (c *client) Start(ctx context.Context) error {
 }
 
 // Stop shuts down the client and interrupt any in-flight request.
-func (c *client) Stop(ctx context.Context) error {
+func (c *Client) Stop(ctx context.Context) error {
 	c.stopOnce.Do(func() {
 		close(c.stopCh)
 	})
@@ -117,7 +112,7 @@ func (c *client) Stop(ctx context.Context) error {
 }
 
 // UploadTraces sends a batch of spans to the collector.
-func (c *client) UploadTraces(ctx context.Context, protoSpans []*tracepb.ResourceSpans) (uploadErr error) {
+func (c *Client) UploadTraces(ctx context.Context, protoSpans []*tracepb.ResourceSpans) (uploadErr error) {
 	pbRequest := &coltracepb.ExportTraceServiceRequest{
 		ResourceSpans: protoSpans,
 	}
@@ -235,7 +230,7 @@ func (c *client) UploadTraces(ctx context.Context, protoSpans []*tracepb.Resourc
 	}))
 }
 
-func (c *client) newRequest(body []byte) (request, error) {
+func (c *Client) newRequest(body []byte) (request, error) {
 	u := url.URL{Scheme: c.getScheme(), Host: c.cfg.Endpoint, Path: c.cfg.URLPath}
 	r, err := http.NewRequestWithContext(context.Background(), http.MethodPost, u.String(), http.NoBody)
 	if err != nil {
@@ -260,7 +255,7 @@ func (c *client) newRequest(body []byte) (request, error) {
 }
 
 // MarshalLog is the marshaling function used by the logging system to represent this Client.
-func (*client) MarshalLog() any {
+func (*Client) MarshalLog() any {
 	return struct {
 		Type string
 	}{
@@ -375,14 +370,14 @@ func evaluate(err error) (bool, time.Duration) {
 	return true, rErr.throttle
 }
 
-func (c *client) getScheme() string {
+func (c *Client) getScheme() string {
 	if c.cfg.Insecure {
 		return "http"
 	}
 	return "https"
 }
 
-func (c *client) contextWithStop(ctx context.Context) (context.Context, context.CancelFunc) {
+func (c *Client) contextWithStop(ctx context.Context) (context.Context, context.CancelFunc) {
 	// Unify the parent context Done signal with the client's stop
 	// channel.
 	ctx, cancel := context.WithCancel(ctx)
