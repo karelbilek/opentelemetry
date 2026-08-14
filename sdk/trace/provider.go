@@ -179,8 +179,7 @@ func (p *TracerProvider) Tracer(name string, opts ...trace.TracerOption) trace.T
 		// Must check the flag after acquiring the mutex to avoid returning a valid tracer if Shutdown() ran
 		// after the first check above but before we acquired the mutex.
 		if p.isShutdown.Load() {
-			tp := &TracerProvider{noop: true}
-			return tp.Tracer(name, opts...), true
+			return &tracer{noop: true}, true
 		}
 		t, ok := p.namedTracer[is]
 		if !ok {
@@ -216,6 +215,9 @@ func (p *TracerProvider) Tracer(name string, opts ...trace.TracerOption) trace.T
 
 // RegisterSpanProcessor adds the given SpanProcessor to the list of SpanProcessors.
 func (p *TracerProvider) RegisterSpanProcessor(sp SpanProcessor) {
+	if p.noop {
+		return
+	}
 	// This check prevents calls during a shutdown.
 	if p.isShutdown.Load() {
 		return
@@ -236,6 +238,9 @@ func (p *TracerProvider) RegisterSpanProcessor(sp SpanProcessor) {
 
 // UnregisterSpanProcessor removes the given SpanProcessor from the list of SpanProcessors.
 func (p *TracerProvider) UnregisterSpanProcessor(sp SpanProcessor) {
+	if p.noop {
+		return
+	}
 	// This check prevents calls during a shutdown.
 	if p.isShutdown.Load() {
 		return
@@ -281,6 +286,9 @@ func (p *TracerProvider) UnregisterSpanProcessor(sp SpanProcessor) {
 // ForceFlush immediately exports all spans that have not yet been exported for
 // all the registered span processors.
 func (p *TracerProvider) ForceFlush(ctx context.Context) error {
+	if p.noop {
+		return nil
+	}
 	spss := p.getSpanProcessors()
 	if len(spss) == 0 {
 		return nil
@@ -303,6 +311,9 @@ func (p *TracerProvider) ForceFlush(ctx context.Context) error {
 // in the order they were registered and any held computational resources are released.
 // After Shutdown is called, all methods are no-ops.
 func (p *TracerProvider) Shutdown(ctx context.Context) error {
+	if p.noop {
+		return nil
+	}
 	// This check prevents deadlocks in case of recursive shutdown.
 	if p.isShutdown.Load() {
 		return nil

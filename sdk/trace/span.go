@@ -768,7 +768,7 @@ func (s *recordingSpan) snapshot() ReadOnlySpan {
 }
 
 func (s *recordingSpan) addChild() {
-	if s == nil {
+	if s == nil || s.noop {
 		return
 	}
 

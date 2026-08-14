@@ -45,6 +45,9 @@ const currentSpanKey traceContextKeyType = iota
 
 // ContextWithSpan returns a copy of parent with span set as the current Span.
 func ContextWithSpan(parent context.Context, span trace.Span) context.Context {
+	if parent == nil {
+		parent = context.Background()
+	}
 	return context.WithValue(parent, currentSpanKey, span)
 }
 
