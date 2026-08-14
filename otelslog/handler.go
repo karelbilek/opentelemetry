@@ -59,23 +59,21 @@ import (
 
 // NewLogger returns a new [slog.Logger] backed by a new [Handler]. See
 // [NewHandler] for details on how the backing Handler is created.
-func NewLogger(name string, provider *sdklog.LoggerProvider, version string, schemaURL string, attributes []attribute.KeyValue, source bool) *slog.Logger {
-	return slog.New(NewHandler(name, provider, version, schemaURL, attributes, source))
+func NewLogger(name string, provider *sdklog.LoggerProvider, version string, attributes []attribute.KeyValue, source bool) *slog.Logger {
+	return slog.New(NewHandler(name, provider, version, attributes, source))
 }
 
 type config struct {
 	provider   *sdklog.LoggerProvider
 	version    string
-	schemaURL  string
 	attributes []attribute.KeyValue
 	source     bool
 }
 
-func newConfig(provider *sdklog.LoggerProvider, version string, schemaURL string, attributes []attribute.KeyValue, source bool) config {
+func newConfig(provider *sdklog.LoggerProvider, version string, attributes []attribute.KeyValue, source bool) config {
 	return config{
 		provider:   provider,
 		version:    version,
-		schemaURL:  schemaURL,
 		attributes: attributes,
 		source:     source,
 	}
@@ -83,7 +81,7 @@ func newConfig(provider *sdklog.LoggerProvider, version string, schemaURL string
 
 func (c config) logger(name string) *sdklog.Logger {
 	set := attribute.NewSet(slices.Clone(c.attributes)...)
-	return c.provider.Logger(name, c.version, c.schemaURL, set)
+	return c.provider.Logger(name, c.version, set)
 }
 
 // Handler is an [slog.Handler] that sends all logging records it receives to
@@ -110,8 +108,8 @@ var _ slog.Handler = (*Handler)(nil)
 // The provided name needs to uniquely identify the code being logged. This is
 // most commonly the package name of the code. If name is empty, the
 // [log.Logger] implementation may override this value with a default.
-func NewHandler(name string, provider *sdklog.LoggerProvider, version string, schemaURL string, attributes []attribute.KeyValue, source bool) *Handler {
-	cfg := newConfig(provider, version, schemaURL, attributes, source)
+func NewHandler(name string, provider *sdklog.LoggerProvider, version string, attributes []attribute.KeyValue, source bool) *Handler {
+	cfg := newConfig(provider, version, attributes, source)
 	return &Handler{
 		logger: cfg.logger(name),
 		source: cfg.source,

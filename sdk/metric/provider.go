@@ -83,7 +83,6 @@ func (mp *MeterProvider) Meter(name string, options ...metric.MeterOption) metri
 	s := instrumentation.Scope{
 		Name:       name,
 		Version:    c.InstrumentationVersion(),
-		SchemaURL:  c.SchemaURL(),
 		Attributes: attrs,
 	}
 
@@ -91,7 +90,6 @@ func (mp *MeterProvider) Meter(name string, options ...metric.MeterOption) metri
 		"Meter created",
 		"Name", s.Name,
 		"Version", s.Version,
-		"SchemaURL", s.SchemaURL,
 		"Attributes", s.Attributes,
 	)
 

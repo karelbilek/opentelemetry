@@ -54,7 +54,6 @@ func ResourceLogs(records []log.Record) []*lpb.ResourceLogs {
 					Version:    scope.Version,
 					Attributes: AttrIter(scope.Attributes.Iter()),
 				}
-				sl.SchemaUrl = scope.SchemaURL
 			}
 			scopeMap[k] = sl
 		}

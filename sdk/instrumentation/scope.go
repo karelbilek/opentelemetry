@@ -12,8 +12,6 @@ type Scope struct {
 	Name string
 	// Version is the version of the instrumentation scope.
 	Version string
-	// SchemaURL of the telemetry emitted by the scope.
-	SchemaURL string
 	// Attributes of the telemetry emitted by the scope.
 	Attributes attribute.Set
 }

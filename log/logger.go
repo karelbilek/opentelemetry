@@ -13,15 +13,13 @@ type LoggerConfig struct {
 	noCmp [0]func() //nolint: unused  // This is indeed used.
 
 	version   string
-	schemaURL string
 	attrs     attribute.Set
 }
 
 // NewLoggerConfig returns a new [LoggerConfig] with all the options applied.
-func NewLoggerConfig(version string, schemaURL string, attrs attribute.Set) LoggerConfig {
+func NewLoggerConfig(version string, attrs attribute.Set) LoggerConfig {
 	return LoggerConfig{
 		version:   version,
-		schemaURL: schemaURL,
 		attrs:     attrs,
 	}
 }
@@ -38,12 +36,6 @@ func (cfg LoggerConfig) InstrumentationAttributes() attribute.Set {
 	return cfg.attrs
 }
 
-// SchemaURL returns the schema URL of the library providing instrumentation.
-func (cfg LoggerConfig) SchemaURL() string {
-	return cfg.schemaURL
-}
-
-type loggerOptionFunc func(LoggerConfig) LoggerConfig
 
 // EnabledParameters represents payload for [Logger]'s Enabled method.
 type EnabledParameters struct {

@@ -81,7 +81,7 @@ func NewLoggerProvider(resource *resource.Resource, processors []Processor, attr
 // Calls made after [LoggerProvider.Shutdown] starts return a [noop.Logger].
 //
 // This method can be called concurrently.
-func (p *LoggerProvider) Logger(name string, version string, schemaURL string, attrs attribute.Set) *Logger {
+func (p *LoggerProvider) Logger(name string, version string, attrs attribute.Set) *Logger {
 	if p == nil {
 		return nil
 	}
@@ -93,14 +93,13 @@ func (p *LoggerProvider) Logger(name string, version string, schemaURL string, a
 		return nil
 	}
 
-	cfg := log.NewLoggerConfig(version, schemaURL, attrs)
+	cfg := log.NewLoggerConfig(version, attrs)
 	if !p.allowDupKeys {
 		attrs, _ = attrnorm.Set(attrs)
 	}
 	scope := instrumentation.Scope{
 		Name:       name,
 		Version:    cfg.InstrumentationVersion(),
-		SchemaURL:  cfg.SchemaURL(),
 		Attributes: attrs,
 	}
 

@@ -52,7 +52,6 @@ func ScopeMetrics(sms []metricdata.ScopeMetrics) ([]*mpb.ScopeMetrics, error) {
 				Attributes: AttrIter(sm.Scope.Attributes.Iter()),
 			},
 			Metrics:   ms,
-			SchemaUrl: sm.Scope.SchemaURL,
 		})
 	}
 	return out, errs.errOrNil()

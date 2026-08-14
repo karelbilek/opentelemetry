@@ -13,8 +13,6 @@ import (
 // TracerConfig is a group of options for a Tracer.
 type TracerConfig struct {
 	instrumentationVersion string
-	// Schema URL of the telemetry emitted by the Tracer.
-	schemaURL string
 	attrs     attribute.Set
 }
 
@@ -29,10 +27,6 @@ func (t *TracerConfig) InstrumentationAttributes() attribute.Set {
 	return t.attrs
 }
 
-// SchemaURL returns the Schema URL of the telemetry emitted by the Tracer.
-func (t *TracerConfig) SchemaURL() string {
-	return t.schemaURL
-}
 
 type experimentalOption interface {
 	Experimental()
@@ -366,13 +360,5 @@ func WithInstrumentationAttributeSet(set attribute.Set) TracerOption {
 			config.attrs = mergeSets(config.attrs, set)
 		}
 		return config
-	})
-}
-
-// WithSchemaURL sets the schema URL for the Tracer.
-func WithSchemaURL(schemaURL string) TracerOption {
-	return tracerOptionFunc(func(cfg TracerConfig) TracerConfig {
-		cfg.schemaURL = schemaURL
-		return cfg
 	})
 }

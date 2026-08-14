@@ -161,7 +161,6 @@ func (p *TracerProvider) Tracer(name string, opts ...trace.TracerOption) *Tracer
 	is := instrumentation.Scope{
 		Name:       name,
 		Version:    c.InstrumentationVersion(),
-		SchemaURL:  c.SchemaURL(),
 		Attributes: attrs,
 	}
 
@@ -196,8 +195,6 @@ func (p *TracerProvider) Tracer(name string, opts ...trace.TracerOption) *Tracer
 			name,
 			"version",
 			is.Version,
-			"schemaURL",
-			is.SchemaURL,
 			"attributes",
 			is.Attributes,
 		)

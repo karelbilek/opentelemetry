@@ -12,7 +12,6 @@ import (
 // MeterConfig contains options for Meters.
 type MeterConfig struct {
 	instrumentationVersion string
-	schemaURL              string
 	attrs                  attribute.Set
 
 	// Ensure forward compatibility by explicitly making this not comparable.
@@ -31,10 +30,6 @@ func (cfg MeterConfig) InstrumentationAttributes() attribute.Set {
 	return cfg.attrs
 }
 
-// SchemaURL is the schema_url of the library providing instrumentation.
-func (cfg MeterConfig) SchemaURL() string {
-	return cfg.schemaURL
-}
 
 // MeterOption is an interface for applying Meter options.
 type MeterOption interface {
@@ -105,14 +100,6 @@ func WithInstrumentationAttributeSet(set attribute.Set) MeterOption {
 		} else {
 			config.attrs = mergeSets(config.attrs, set)
 		}
-		return config
-	})
-}
-
-// WithSchemaURL sets the schema URL.
-func WithSchemaURL(schemaURL string) MeterOption {
-	return meterOptionFunc(func(config MeterConfig) MeterConfig {
-		config.schemaURL = schemaURL
 		return config
 	})
 }

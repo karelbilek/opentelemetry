@@ -48,7 +48,6 @@ func Spans(sdl []*tracesdk.Snapshot) []*tracepb.ResourceSpans {
 			scopeSpan = &tracepb.ScopeSpans{
 				Scope:     InstrumentationScope(scope),
 				Spans:     []*tracepb.Span{},
-				SchemaUrl: scope.SchemaURL,
 			}
 			ssm[k] = scopeSpan
 		}
