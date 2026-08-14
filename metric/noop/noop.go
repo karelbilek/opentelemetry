@@ -53,7 +53,7 @@ func NewMeterProvider() MeterProvider {
 }
 
 // Meter returns an OpenTelemetry Meter that does not record any telemetry.
-func (MeterProvider) Meter(string, ...metric.MeterOption) metric.Meter {
+func (MeterProvider) Meter(string) metric.Meter {
 	return Meter{}
 }
 

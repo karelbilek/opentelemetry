@@ -41,7 +41,7 @@ func main() {
 		-1,
 		false,
 	)
-	slogger := otelslog.NewLogger("mylogger", provider, "nevim", nil, true)
+	slogger := otelslog.NewLogger("mylogger", provider, true)
 	defer func() {
 		time.Sleep(30 * time.Second)
 		if err := provider.Shutdown(context.Background()); err != nil {

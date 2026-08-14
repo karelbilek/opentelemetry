@@ -28,7 +28,7 @@ type MeterProvider interface {
 	//
 	// Implementations of this method need to be safe for a user to call
 	// concurrently.
-	Meter(name string, opts ...MeterOption) Meter
+	Meter(name string) Meter
 }
 
 // Meter provides access to instrument instances for recording metrics.

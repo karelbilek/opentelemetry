@@ -4,55 +4,10 @@
 package trace
 
 import (
-	"slices"
 	"time"
 
 	"github.com/karelbilek/opentelemetry/attribute"
 )
-
-// TracerConfig is a group of options for a Tracer.
-type TracerConfig struct {
-	instrumentationVersion string
-	attrs                  attribute.Set
-}
-
-// InstrumentationVersion returns the version of the library providing instrumentation.
-func (t *TracerConfig) InstrumentationVersion() string {
-	return t.instrumentationVersion
-}
-
-// InstrumentationAttributes returns the attributes associated with the library
-// providing instrumentation.
-func (t *TracerConfig) InstrumentationAttributes() attribute.Set {
-	return t.attrs
-}
-
-type experimentalOption interface {
-	Experimental()
-}
-
-// NewTracerConfig applies all the options to a returned TracerConfig.
-func NewTracerConfig(options ...TracerOption) TracerConfig {
-	var config TracerConfig
-	for _, option := range options {
-		if _, ok := option.(experimentalOption); ok {
-			continue
-		}
-		config = option.apply(config)
-	}
-	return config
-}
-
-// TracerOption applies an option to a TracerConfig.
-type TracerOption interface {
-	apply(TracerConfig) TracerConfig
-}
-
-type tracerOptionFunc func(TracerConfig) TracerConfig
-
-func (fn tracerOptionFunc) apply(cfg TracerConfig) TracerConfig {
-	return fn(cfg)
-}
 
 // SpanConfig is a group of options for a Span.
 type SpanConfig struct {
@@ -103,9 +58,6 @@ func (cfg *SpanConfig) SpanKind() SpanKind {
 func NewSpanStartConfig(options ...SpanStartOption) SpanConfig {
 	var c SpanConfig
 	for _, option := range options {
-		if _, ok := option.(experimentalOption); ok {
-			continue
-		}
 		c = option.applySpanStart(c)
 	}
 	return c
@@ -118,9 +70,6 @@ func NewSpanStartConfig(options ...SpanStartOption) SpanConfig {
 func NewSpanEndConfig(options ...SpanEndOption) SpanConfig {
 	var c SpanConfig
 	for _, option := range options {
-		if _, ok := option.(experimentalOption); ok {
-			continue
-		}
 		c = option.applySpanEnd(c)
 	}
 	return c
@@ -173,9 +122,6 @@ func (cfg *EventConfig) StackTrace() bool {
 func NewEventConfig(options ...EventOption) EventConfig {
 	var c EventConfig
 	for _, option := range options {
-		if _, ok := option.(experimentalOption); ok {
-			continue
-		}
 		c = option.applyEvent(c)
 	}
 	if c.timestamp.IsZero() {
@@ -303,61 +249,5 @@ func WithSpanKind(kind SpanKind) SpanStartOption {
 	return spanOptionFunc(func(cfg SpanConfig) SpanConfig {
 		cfg.spanKind = kind
 		return cfg
-	})
-}
-
-// WithInstrumentationVersion sets the instrumentation version.
-func WithInstrumentationVersion(version string) TracerOption {
-	return tracerOptionFunc(func(cfg TracerConfig) TracerConfig {
-		cfg.instrumentationVersion = version
-		return cfg
-	})
-}
-
-// mergeSets returns the union of keys between a and b. Any duplicate keys will
-// use the value associated with b.
-func mergeSets(a, b attribute.Set) attribute.Set {
-	// NewMergeIterator uses the first value for any duplicates.
-	iter := attribute.NewMergeIterator(&b, &a)
-	merged := make([]attribute.KeyValue, 0, a.Len()+b.Len())
-	for iter.Next() {
-		merged = append(merged, iter.Attribute())
-	}
-	return attribute.NewSet(merged...)
-}
-
-// WithInstrumentationAttributes adds the instrumentation attributes.
-//
-// This is equivalent to calling [WithInstrumentationAttributeSet] with an
-// [attribute.Set] created from a clone of the passed attributes.
-// [WithInstrumentationAttributeSet] is recommended for more control.
-//
-// If multiple [WithInstrumentationAttributes] or [WithInstrumentationAttributeSet]
-// options are passed, the attributes will be merged together in the order
-// they are passed. Attributes with duplicate keys will use the last value passed.
-func WithInstrumentationAttributes(attr ...attribute.KeyValue) TracerOption {
-	set := attribute.NewSet(slices.Clone(attr)...)
-	return WithInstrumentationAttributeSet(set)
-}
-
-// WithInstrumentationAttributeSet adds the instrumentation attributes.
-//
-// If multiple [WithInstrumentationAttributes] or [WithInstrumentationAttributeSet]
-// options are passed, the attributes will be merged together in the order
-// they are passed. Attributes with duplicate keys will use the last value passed.
-func WithInstrumentationAttributeSet(set attribute.Set) TracerOption {
-	if set.Len() == 0 {
-		return tracerOptionFunc(func(config TracerConfig) TracerConfig {
-			return config
-		})
-	}
-
-	return tracerOptionFunc(func(config TracerConfig) TracerConfig {
-		if config.attrs.Len() == 0 {
-			config.attrs = set
-		} else {
-			config.attrs = mergeSets(config.attrs, set)
-		}
-		return config
 	})
 }

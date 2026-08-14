@@ -9,10 +9,8 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/karelbilek/opentelemetry/attribute"
 	"github.com/karelbilek/opentelemetry/internal/global"
 	"github.com/karelbilek/opentelemetry/sdk/instrumentation"
-	"github.com/karelbilek/opentelemetry/sdk/log/internal/attrnorm"
 	"github.com/karelbilek/opentelemetry/sdk/resource"
 )
 
@@ -80,7 +78,7 @@ func NewLoggerProvider(resource *resource.Resource, processors []Processor, attr
 // Calls made after [LoggerProvider.Shutdown] starts return a [noop.Logger].
 //
 // This method can be called concurrently.
-func (p *LoggerProvider) Logger(name string, version string, attrs attribute.Set) *Logger {
+func (p *LoggerProvider) Logger(name string) *Logger {
 	if p == nil {
 		return nil
 	}
@@ -92,13 +90,8 @@ func (p *LoggerProvider) Logger(name string, version string, attrs attribute.Set
 		return nil
 	}
 
-	if !p.allowDupKeys {
-		attrs, _ = attrnorm.Set(attrs)
-	}
 	scope := instrumentation.Scope{
-		Name:       name,
-		Version:    version,
-		Attributes: attrs,
+		Name: name,
 	}
 
 	p.loggersMu.Lock()

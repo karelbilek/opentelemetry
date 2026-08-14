@@ -12,9 +12,7 @@ import (
 	otel "github.com/karelbilek/opentelemetry"
 	"github.com/karelbilek/opentelemetry/internal/global"
 	"github.com/karelbilek/opentelemetry/sdk/instrumentation"
-	"github.com/karelbilek/opentelemetry/sdk/internal/attrnorm"
 	"github.com/karelbilek/opentelemetry/sdk/resource"
-	"github.com/karelbilek/opentelemetry/trace"
 )
 
 const defaultTracerName = "github.com/karelbilek/opentelemetry/sdk/tracer"
@@ -145,7 +143,7 @@ func NewTracerProvider(
 // If name is empty, DefaultTracerName is used instead.
 //
 // This method is safe to be called concurrently.
-func (p *TracerProvider) Tracer(name string, opts ...trace.TracerOption) *Tracer {
+func (p *TracerProvider) Tracer(name string) *Tracer {
 	if p.noop {
 		return &Tracer{noop: true}
 	}
@@ -153,15 +151,11 @@ func (p *TracerProvider) Tracer(name string, opts ...trace.TracerOption) *Tracer
 	if p.isShutdown.Load() {
 		return &Tracer{noop: true}
 	}
-	c := trace.NewTracerConfig(opts...)
-	attrs, _ := attrnorm.Set(c.InstrumentationAttributes())
 	if name == "" {
 		name = defaultTracerName
 	}
 	is := instrumentation.Scope{
-		Name:       name,
-		Version:    c.InstrumentationVersion(),
-		Attributes: attrs,
+		Name: name,
 	}
 
 	t, ok := func() (*Tracer, bool) {
@@ -193,10 +187,6 @@ func (p *TracerProvider) Tracer(name string, opts ...trace.TracerOption) *Tracer
 			"Tracer created",
 			"name",
 			name,
-			"version",
-			is.Version,
-			"attributes",
-			is.Attributes,
 		)
 	}
 	return t

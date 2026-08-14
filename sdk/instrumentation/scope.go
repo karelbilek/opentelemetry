@@ -3,15 +3,9 @@
 
 package instrumentation
 
-import "github.com/karelbilek/opentelemetry/attribute"
-
 // Scope represents the instrumentation scope.
 type Scope struct {
 	// Name is the name of the instrumentation scope. This should be the
 	// Go package name of that scope.
 	Name string
-	// Version is the version of the instrumentation scope.
-	Version string
-	// Attributes of the telemetry emitted by the scope.
-	Attributes attribute.Set
 }

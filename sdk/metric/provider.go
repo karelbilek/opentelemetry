@@ -11,7 +11,6 @@ import (
 	"github.com/karelbilek/opentelemetry/metric"
 	"github.com/karelbilek/opentelemetry/metric/noop"
 	"github.com/karelbilek/opentelemetry/sdk/instrumentation"
-	"github.com/karelbilek/opentelemetry/sdk/metric/internal/attrnorm"
 	"github.com/karelbilek/opentelemetry/sdk/resource"
 )
 
@@ -69,7 +68,7 @@ func NewMeterProvider(res *resource.Resource,
 // that perform no operations.
 //
 // This method is safe to call concurrently.
-func (mp *MeterProvider) Meter(name string, options ...metric.MeterOption) metric.Meter {
+func (mp *MeterProvider) Meter(name string) metric.Meter {
 	if name == "" {
 		global.Warn("Invalid Meter name.", "name", name)
 	}
@@ -78,19 +77,13 @@ func (mp *MeterProvider) Meter(name string, options ...metric.MeterOption) metri
 		return noop.Meter{}
 	}
 
-	c := metric.NewMeterConfig(options...)
-	attrs, _ := attrnorm.Set(c.InstrumentationAttributes())
 	s := instrumentation.Scope{
-		Name:       name,
-		Version:    c.InstrumentationVersion(),
-		Attributes: attrs,
+		Name: name,
 	}
 
 	global.Info(
 		"Meter created",
 		"Name", s.Name,
-		"Version", s.Version,
-		"Attributes", s.Attributes,
 	)
 
 	return mp.meters.Lookup(s, func() *meter {

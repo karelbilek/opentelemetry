@@ -121,8 +121,7 @@ func (i Instrument) matchesUnit(other Instrument) bool {
 // matchesScope returns true if the Scope of i is its zero-value or it equals
 // the Scope of other, otherwise false.
 func (i Instrument) matchesScope(other Instrument) bool {
-	return (i.Scope.Name == "" || i.Scope.Name == other.Scope.Name) &&
-		(i.Scope.Version == "" || i.Scope.Version == other.Scope.Version)
+	return (i.Scope.Name == "" || i.Scope.Name == other.Scope.Name)
 }
 
 // Stream describes the stream of data an instrument produces.

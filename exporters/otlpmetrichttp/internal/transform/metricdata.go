@@ -46,9 +46,7 @@ func ScopeMetrics(sms []metricdata.ScopeMetrics) ([]*mpb.ScopeMetrics, error) {
 
 		out = append(out, &mpb.ScopeMetrics{
 			Scope: &cpb.InstrumentationScope{
-				Name:       sm.Scope.Name,
-				Version:    sm.Scope.Version,
-				Attributes: AttrIter(sm.Scope.Attributes.Iter()),
+				Name: sm.Scope.Name,
 			},
 			Metrics: ms,
 		})
