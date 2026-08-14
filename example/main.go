@@ -49,8 +49,7 @@ func main() {
 		}
 	}()
 
-	traceExporter, err := otlptracehttp.New(
-		context.Background(),
+	traceExporter := otlptracehttp.New(
 		"127.0.0.1:4318",
 		"/v1/traces",
 		true,
@@ -59,9 +58,6 @@ func main() {
 		10*time.Second,
 		retry.DefaultConfig,
 	)
-	if err != nil {
-		panic(err)
-	}
 	tracerProvider := trace.NewTracerProvider(
 		oh,
 		-1,

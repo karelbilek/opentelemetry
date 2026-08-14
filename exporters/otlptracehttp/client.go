@@ -86,18 +86,6 @@ func NewClient(endpoint string, urlPath string, insecure bool, headers map[strin
 	}
 }
 
-// Start does nothing in a HTTP client.
-func (c *Client) Start(ctx context.Context) error {
-	var err error
-	// nothing to do
-	select {
-	case <-ctx.Done():
-		err = errors.Join(err, ctx.Err())
-	default:
-	}
-	return err
-}
-
 // Stop shuts down the client and interrupt any in-flight request.
 func (c *Client) Stop(ctx context.Context) error {
 	c.stopOnce.Do(func() {
