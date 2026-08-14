@@ -11,7 +11,6 @@ import (
 
 	"github.com/karelbilek/opentelemetry/attribute"
 	"github.com/karelbilek/opentelemetry/internal/global"
-	"github.com/karelbilek/opentelemetry/log"
 	"github.com/karelbilek/opentelemetry/sdk/instrumentation"
 	"github.com/karelbilek/opentelemetry/sdk/log/internal/attrnorm"
 	"github.com/karelbilek/opentelemetry/sdk/resource"
@@ -93,13 +92,12 @@ func (p *LoggerProvider) Logger(name string, version string, attrs attribute.Set
 		return nil
 	}
 
-	cfg := log.NewLoggerConfig(version, attrs)
 	if !p.allowDupKeys {
 		attrs, _ = attrnorm.Set(attrs)
 	}
 	scope := instrumentation.Scope{
 		Name:       name,
-		Version:    cfg.InstrumentationVersion(),
+		Version:    version,
 		Attributes: attrs,
 	}
 

@@ -56,21 +56,11 @@ func New(ctx context.Context, opts ...Option) (*Resource, error) {
 	return r, detect(ctx, r, cfg.detectors)
 }
 
-// NewWithAttributes creates a resource from attrs and associates the resource
-// with a schema URL. If attrs contains duplicate top-level attribute keys or
-// duplicate keys inside map values, the last value will be used. If attrs
-// contains any invalid items those items will be dropped.
-func NewWithAttributes(attrs ...attribute.KeyValue) *Resource {
-	resource := NewSchemaless(attrs...)
-	return resource
-}
-
-// NewSchemaless creates a resource from attrs. If attrs contains duplicate
+// NewWithAttributes creates a resource from attrs. If attrs contains duplicate
 // top-level attribute keys or duplicate keys inside map values, the last
 // value will be used. If attrs contains any invalid items those items will be
-// dropped. The resource will not be associated with a schema URL. If the schema
-// of the attrs is known use NewWithAttributes instead.
-func NewSchemaless(attrs ...attribute.KeyValue) *Resource {
+// dropped.
+func NewWithAttributes(attrs ...attribute.KeyValue) *Resource {
 	if len(attrs) == 0 {
 		return &Resource{}
 	}
@@ -149,15 +139,15 @@ func (r *Resource) Equal(o *Resource) bool {
 //
 // If there are common keys between a and b, then the value from b will
 // overwrite the value from a, even if b's value is empty.
-func Merge(a, b *Resource) (*Resource, error) {
+func Merge(a, b *Resource) *Resource {
 	if a == nil && b == nil {
-		return Empty(), nil
+		return Empty()
 	}
 	if a == nil {
-		return b, nil
+		return b
 	}
 	if b == nil {
-		return a, nil
+		return a
 	}
 
 	// Note: 'b' attributes will overwrite 'a' with last-value-wins in attribute.Key()
@@ -168,7 +158,7 @@ func Merge(a, b *Resource) (*Resource, error) {
 		combine = append(combine, mi.Attribute())
 	}
 
-	return NewWithAttributes(combine...), nil
+	return NewWithAttributes(combine...)
 }
 
 // Empty returns an instance of Resource with no attributes. It is

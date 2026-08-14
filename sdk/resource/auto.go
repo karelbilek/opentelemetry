@@ -70,11 +70,7 @@ func detect(ctx context.Context, res *Resource, detectors []Detector) error {
 				continue
 			}
 		}
-		r, e = Merge(res, r)
-		if e != nil {
-			err = errors.Join(err, e)
-		}
-		*res = *r
+		*res = *Merge(res, r)
 	}
 
 	if err != nil {
