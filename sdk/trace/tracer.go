@@ -32,7 +32,7 @@ func (tr *tracer) noopStart(ctx context.Context) (context.Context, trace.Span) {
 			return ctx, span
 		}
 		// Otherwise, return the span context needs in a non-recording span.
-		span = &recordingSpan{noop: true, spanContext: sc}
+		span = &Span{noop: true, spanContext: sc}
 	} else {
 		// No parent, return a No-Op span with an empty span context.
 		span = noopSpanInstance
@@ -62,7 +62,7 @@ func (tr *tracer) Start(
 
 	// For local spans created by this SDK, track child span count.
 	if p := SpanFromContext(ctx); p != nil {
-		if sdkSpan, ok := p.(*recordingSpan); ok {
+		if sdkSpan, ok := p.(*Span); ok {
 			sdkSpan.addChild()
 		}
 	}
@@ -147,13 +147,13 @@ func (tr *tracer) newRecordingSpan(
 	name string,
 	sr SamplingResult,
 	config *trace.SpanConfig,
-) *recordingSpan {
+) *Span {
 	startTime := config.Timestamp()
 	if startTime.IsZero() {
 		startTime = time.Now()
 	}
 
-	s := &recordingSpan{
+	s := &Span{
 		// Do not pre-allocate the attributes slice here! Doing so will
 		// allocate memory that is likely never going to be used, or if used,
 		// will be over-sized. The default Go compiler has been tested to
@@ -183,6 +183,6 @@ func (tr *tracer) newRecordingSpan(
 }
 
 // newNonRecordingSpan returns a new configured nonRecordingSpan.
-func (tr *tracer) newNonRecordingSpan(sc trace.SpanContext) *recordingSpan {
-	return &recordingSpan{tracer: tr, spanContext: sc, noop: true}
+func (tr *tracer) newNonRecordingSpan(sc trace.SpanContext) *Span {
+	return &Span{tracer: tr, spanContext: sc, noop: true}
 }

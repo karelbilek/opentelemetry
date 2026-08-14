@@ -95,9 +95,9 @@ type ReadWriteSpan interface {
 	ReadOnlySpan
 }
 
-// recordingSpan is an implementation of the OpenTelemetry Span API
+// Span is an implementation of the OpenTelemetry Span API
 // representing the individual component of a trace that is sampled.
-type recordingSpan struct {
+type Span struct {
 	noop bool // noop and nonrecording are same, except for tracer==nil in noop
 
 	// mu protects the contents of this span.
@@ -158,16 +158,16 @@ type recordingSpan struct {
 }
 
 var (
-	_ ReadWriteSpan = (*recordingSpan)(nil)
-	_ runtimeTracer = (*recordingSpan)(nil)
+	_ ReadWriteSpan = (*Span)(nil)
+	_ runtimeTracer = (*Span)(nil)
 )
 
-func (s *recordingSpan) setOrigCtx(ctx context.Context) {
+func (s *Span) setOrigCtx(ctx context.Context) {
 	s.origCtx = ctx
 }
 
 // SpanContext returns the SpanContext of this span.
-func (s *recordingSpan) SpanContext() trace.SpanContext {
+func (s *Span) SpanContext() trace.SpanContext {
 	if s == nil {
 		return trace.SpanContext{}
 	}
@@ -177,7 +177,7 @@ func (s *recordingSpan) SpanContext() trace.SpanContext {
 
 // IsRecording reports whether this span is being recorded. If this span has ended
 // this will return false.
-func (s *recordingSpan) IsRecording() bool {
+func (s *Span) IsRecording() bool {
 	if s == nil || s.noop {
 		return false
 	}
@@ -191,7 +191,7 @@ func (s *recordingSpan) IsRecording() bool {
 // this will return false.
 //
 // This method assumes s.mu.Lock is held by the caller.
-func (s *recordingSpan) isRecording() bool {
+func (s *Span) isRecording() bool {
 	if s == nil {
 		return false
 	}
@@ -202,7 +202,7 @@ func (s *recordingSpan) isRecording() bool {
 // description, overriding previous values set. The description is only
 // included in the set status when the code is for an error. If this span is
 // not being recorded than this method does nothing.
-func (s *recordingSpan) SetStatus(code codes.Code, description string) {
+func (s *Span) SetStatus(code codes.Code, description string) {
 	if s == nil || s.noop {
 		return
 	}
@@ -234,7 +234,7 @@ func (s *recordingSpan) SetStatus(code codes.Code, description string) {
 // If adding attributes to the span would exceed the maximum amount of
 // attributes the span is configured to have, the last added attributes will
 // be dropped.
-func (s *recordingSpan) SetAttributes(attributes ...attribute.KeyValue) {
+func (s *Span) SetAttributes(attributes ...attribute.KeyValue) {
 	if s == nil || len(attributes) == 0 || s.noop {
 		return
 	}
@@ -285,7 +285,7 @@ var logDropAttrs = func() {
 // logged.
 //
 // This method assumes s.mu.Lock is held by the caller.
-func (s *recordingSpan) addDroppedAttr(incr int) {
+func (s *Span) addDroppedAttr(incr int) {
 	s.droppedAttributes += incr
 	s.logDropAttrsOnce.Do(logDropAttrs)
 }
@@ -303,7 +303,7 @@ func (s *recordingSpan) addDroppedAttr(incr int) {
 //
 // This method assumes limit is a value > 0. The argument should be validated
 // by the caller.
-func (s *recordingSpan) addOverCapAttrs(limit int, attrs []attribute.KeyValue) {
+func (s *Span) addOverCapAttrs(limit int, attrs []attribute.KeyValue) {
 	// In order to not allocate more capacity to s.attributes than needed,
 	// prune and truncate this addition of attributes while adding.
 
@@ -365,7 +365,7 @@ func dedupAttr(attr attribute.KeyValue) attribute.KeyValue {
 // If this method is called while panicking and panic recording is not disabled
 // on the TracerProvider, an error event is added to the Span before ending it
 // and the panic is continued.
-func (s *recordingSpan) End(options ...trace.SpanEndOption) {
+func (s *Span) End(options ...trace.SpanEndOption) {
 	// Do not start by checking if the span is being recorded which requires
 	// acquiring a lock. Make a minimal check that the span is not nil.
 	if s == nil || s.noop {
@@ -443,7 +443,7 @@ func monotonicEndTime(start time.Time) time.Time {
 // SetStatus is required if the Status of the Span should be set to Error, this method
 // does not change the Span status. If this span is not being recorded or err is nil
 // than this method does nothing.
-func (s *recordingSpan) RecordError(err error, opts ...trace.EventOption) {
+func (s *Span) RecordError(err error, opts ...trace.EventOption) {
 	if s == nil || err == nil || s.noop {
 		return
 	}
@@ -487,7 +487,7 @@ func recordStackTrace() string {
 
 // AddEvent adds an event with the provided name and options. If this span is
 // not being recorded then this method does nothing.
-func (s *recordingSpan) AddEvent(name string, o ...trace.EventOption) {
+func (s *Span) AddEvent(name string, o ...trace.EventOption) {
 	if s == nil || s.noop {
 		return
 	}
@@ -503,7 +503,7 @@ func (s *recordingSpan) AddEvent(name string, o ...trace.EventOption) {
 // addEvent adds an event with the provided name and options.
 //
 // This method assumes s.mu.Lock is held by the caller.
-func (s *recordingSpan) addEvent(name string, o ...trace.EventOption) {
+func (s *Span) addEvent(name string, o ...trace.EventOption) {
 	c := trace.NewEventConfig(o...)
 	attrs, _ := attrnorm.KeyValues(c.Attributes())
 	e := Event{Name: name, Attributes: attrs, Time: c.Timestamp()}
@@ -525,7 +525,7 @@ func (s *recordingSpan) addEvent(name string, o ...trace.EventOption) {
 
 // SetName sets the name of this span. If this span is not being recorded than
 // this method does nothing.
-func (s *recordingSpan) SetName(name string) {
+func (s *Span) SetName(name string) {
 	if s == nil || s.noop {
 		return
 	}
@@ -539,28 +539,28 @@ func (s *recordingSpan) SetName(name string) {
 }
 
 // Name returns the name of this span.
-func (s *recordingSpan) Name() string {
+func (s *Span) Name() string {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.name
 }
 
 // Name returns the SpanContext of this span's parent span.
-func (s *recordingSpan) Parent() trace.SpanContext {
+func (s *Span) Parent() trace.SpanContext {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.parent
 }
 
 // SpanKind returns the SpanKind of this span.
-func (s *recordingSpan) SpanKind() trace.SpanKind {
+func (s *Span) SpanKind() trace.SpanKind {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.spanKind
 }
 
 // StartTime returns the time this span started.
-func (s *recordingSpan) StartTime() time.Time {
+func (s *Span) StartTime() time.Time {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.startTime
@@ -568,7 +568,7 @@ func (s *recordingSpan) StartTime() time.Time {
 
 // EndTime returns the time this span ended. For spans that have not yet
 // ended, the returned value will be the zero value of time.Time.
-func (s *recordingSpan) EndTime() time.Time {
+func (s *Span) EndTime() time.Time {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.endTime
@@ -577,7 +577,7 @@ func (s *recordingSpan) EndTime() time.Time {
 // Attributes returns the attributes of this span.
 //
 // The order of the returned attributes is not guaranteed to be stable.
-func (s *recordingSpan) Attributes() []attribute.KeyValue {
+func (s *Span) Attributes() []attribute.KeyValue {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.dedupeAttrs()
@@ -587,7 +587,7 @@ func (s *recordingSpan) Attributes() []attribute.KeyValue {
 // dedupeAttrs deduplicates the attributes of s to fit capacity.
 //
 // This method assumes s.mu.Lock is held by the caller.
-func (s *recordingSpan) dedupeAttrs() {
+func (s *Span) dedupeAttrs() {
 	// Do not set a capacity when creating this map. Benchmark testing has
 	// showed this to only add unused memory allocations in general use.
 	exists := make(map[attribute.Key]int, len(s.attributes))
@@ -598,7 +598,7 @@ func (s *recordingSpan) dedupeAttrs() {
 // using record as the record of unique attribute keys to their index.
 //
 // This method assumes s.mu.Lock is held by the caller.
-func (s *recordingSpan) dedupeAttrsFromRecord(record map[attribute.Key]int) {
+func (s *Span) dedupeAttrsFromRecord(record map[attribute.Key]int) {
 	// Use the fact that slices share the same backing array.
 	unique := s.attributes[:0]
 	for _, a := range s.attributes {
@@ -614,7 +614,7 @@ func (s *recordingSpan) dedupeAttrsFromRecord(record map[attribute.Key]int) {
 }
 
 // Links returns the links of this span.
-func (s *recordingSpan) Links() []Link {
+func (s *Span) Links() []Link {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if len(s.links.queue) == 0 {
@@ -624,7 +624,7 @@ func (s *recordingSpan) Links() []Link {
 }
 
 // Events returns the events of this span.
-func (s *recordingSpan) Events() []Event {
+func (s *Span) Events() []Event {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if len(s.events.queue) == 0 {
@@ -634,7 +634,7 @@ func (s *recordingSpan) Events() []Event {
 }
 
 // Status returns the status of this span.
-func (s *recordingSpan) Status() Status {
+func (s *Span) Status() Status {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.status
@@ -642,7 +642,7 @@ func (s *recordingSpan) Status() Status {
 
 // InstrumentationScope returns the instrumentation.Scope associated with
 // the Tracer that created this span.
-func (s *recordingSpan) InstrumentationScope() instrumentation.Scope {
+func (s *Span) InstrumentationScope() instrumentation.Scope {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.tracer.instrumentationScope
@@ -650,13 +650,13 @@ func (s *recordingSpan) InstrumentationScope() instrumentation.Scope {
 
 // Resource returns the Resource associated with the Tracer that created this
 // span.
-func (s *recordingSpan) Resource() *resource.Resource {
+func (s *Span) Resource() *resource.Resource {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.tracer.provider.resource
 }
 
-func (s *recordingSpan) AddLink(link trace.Link) {
+func (s *Span) AddLink(link trace.Link) {
 	if s == nil || s.noop {
 		return
 	}
@@ -690,7 +690,7 @@ func (s *recordingSpan) AddLink(link trace.Link) {
 
 // DroppedAttributes returns the number of attributes dropped by the span
 // due to limits being reached.
-func (s *recordingSpan) DroppedAttributes() int {
+func (s *Span) DroppedAttributes() int {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.droppedAttributes
@@ -698,7 +698,7 @@ func (s *recordingSpan) DroppedAttributes() int {
 
 // DroppedLinks returns the number of links dropped by the span due to limits
 // being reached.
-func (s *recordingSpan) DroppedLinks() int {
+func (s *Span) DroppedLinks() int {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.links.droppedCount
@@ -706,7 +706,7 @@ func (s *recordingSpan) DroppedLinks() int {
 
 // DroppedEvents returns the number of events dropped by the span due to
 // limits being reached.
-func (s *recordingSpan) DroppedEvents() int {
+func (s *Span) DroppedEvents() int {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.events.droppedCount
@@ -714,7 +714,7 @@ func (s *recordingSpan) DroppedEvents() int {
 
 // ChildSpanCount returns the count of spans that consider the span a
 // direct parent.
-func (s *recordingSpan) ChildSpanCount() int {
+func (s *Span) ChildSpanCount() int {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.childSpanCount
@@ -722,7 +722,7 @@ func (s *recordingSpan) ChildSpanCount() int {
 
 // TracerProvider returns a trace.TracerProvider that can be used to generate
 // additional Spans on the same telemetry pipeline as the current Span.
-func (s *recordingSpan) TracerProvider() trace.TracerProvider {
+func (s *Span) TracerProvider() trace.TracerProvider {
 	if s == nil {
 		return &TracerProvider{noop: true}
 	}
@@ -735,7 +735,7 @@ func (s *recordingSpan) TracerProvider() trace.TracerProvider {
 }
 
 // snapshot creates a read-only copy of the current state of the span.
-func (s *recordingSpan) snapshot() ReadOnlySpan {
+func (s *Span) snapshot() ReadOnlySpan {
 	var sd snapshot
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -767,7 +767,7 @@ func (s *recordingSpan) snapshot() ReadOnlySpan {
 	return &sd
 }
 
-func (s *recordingSpan) addChild() {
+func (s *Span) addChild() {
 	if s == nil || s.noop {
 		return
 	}
@@ -780,11 +780,11 @@ func (s *recordingSpan) addChild() {
 	s.childSpanCount++
 }
 
-func (*recordingSpan) private() {}
+func (*Span) private() {}
 
 // runtimeTrace starts a "runtime/trace".Task for the span and returns a
 // context containing the task.
-func (s *recordingSpan) runtimeTrace(ctx context.Context) context.Context {
+func (s *Span) runtimeTrace(ctx context.Context) context.Context {
 	if !rt.IsEnabled() {
 		// Avoid additional overhead if runtime/trace is not enabled.
 		return ctx

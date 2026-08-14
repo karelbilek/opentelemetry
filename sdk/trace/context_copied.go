@@ -12,7 +12,7 @@ import (
 // no operations other than to return sc as the SpanContext from the
 // SpanContext method.
 func ContextWithSpanContext(parent context.Context, sc trace.SpanContext) context.Context {
-	return ContextWithSpan(parent, &recordingSpan{noop: true, spanContext: sc})
+	return ContextWithSpan(parent, &Span{noop: true, spanContext: sc})
 }
 
 // ContextWithRemoteSpanContext returns a copy of parent with rsc set explicitly
@@ -23,7 +23,7 @@ func ContextWithRemoteSpanContext(parent context.Context, rsc trace.SpanContext)
 	return ContextWithSpanContext(parent, rsc.WithRemote(true))
 }
 
-var noopSpanInstance trace.Span = &recordingSpan{noop: true}
+var noopSpanInstance trace.Span = &Span{noop: true}
 
 // SpanFromContext returns the current Span from ctx.
 //
