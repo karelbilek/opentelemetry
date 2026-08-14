@@ -14,7 +14,6 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"sync/atomic"
 	"time"
 
 	"github.com/karelbilek/opentelemetry/exporters/otlploghttp/internal"
@@ -40,22 +39,12 @@ func newNoopClient() *client {
 	return &client{}
 }
 
-var exporterN atomic.Int64
-
-var errInsecureEndpointWithTLS = errors.New("insecure HTTP endpoint cannot use TLS client configuration")
-
 // maxResponseBodySize is the maximum number of bytes to read from a response
 // body. It is set to 4 MiB per the OTLP specification recommendation to
 // mitigate excessive memory usage caused by a misconfigured or malicious
 // server. If exceeded, the response is treated as a not-retryable error.
 // This is a variable to allow tests to override it.
 var maxResponseBodySize int64 = 4 * 1024 * 1024
-
-// nextExporterID returns the next unique ID for an exporter.
-func nextExporterID() int64 {
-	const inc = 1
-	return exporterN.Add(inc) - inc
-}
 
 // newHTTPClient creates a new HTTP log client.
 func newHTTPClient(ctx context.Context, cfg config) (*client, error) {

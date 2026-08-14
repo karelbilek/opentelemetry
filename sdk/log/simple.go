@@ -9,7 +9,6 @@ import (
 
 	otel "github.com/karelbilek/opentelemetry"
 	"github.com/karelbilek/opentelemetry/metric"
-	"github.com/karelbilek/opentelemetry/sdk/log/internal/observ"
 )
 
 // Compile-time check SimpleProcessor implements Processor.
@@ -21,7 +20,6 @@ var _ Processor = (*SimpleProcessor)(nil)
 type SimpleProcessor struct {
 	mu       sync.Mutex
 	exporter Exporter
-	inst     *observ.SLP
 	noCmp    [0]func() //nolint: unused  // This is indeed used.
 }
 
@@ -36,11 +34,6 @@ type SimpleProcessor struct {
 func NewSimpleProcessor(exporter Exporter, metrics metric.MeterProvider, errHandler otel.ErrorHandler, _ ...SimpleProcessorOption) *SimpleProcessor {
 	slp := &SimpleProcessor{
 		exporter: exporter,
-	}
-	var err error
-	slp.inst, err = observ.NewSLP(observ.NextSimpleProcessorID(), metrics)
-	if err != nil {
-		otel.Handle(errHandler, err)
 	}
 	return slp
 }
@@ -73,11 +66,6 @@ func (s *SimpleProcessor) OnEmit(ctx context.Context, r *Record) error {
 	}()
 	(*records)[0] = *r
 
-	if s.inst != nil {
-		// Record the log record as processed at the point it is submitted to
-		// the exporter, independent of the export outcome.
-		s.inst.LogProcessed(ctx)
-	}
 	return s.exporter.Export(ctx, *records)
 }
 

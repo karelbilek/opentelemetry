@@ -12,8 +12,6 @@ import (
 	otel "github.com/karelbilek/opentelemetry"
 	"github.com/karelbilek/opentelemetry/internal/global"
 	"github.com/karelbilek/opentelemetry/metric"
-	"github.com/karelbilek/opentelemetry/sdk/trace/internal/observ"
-	"github.com/karelbilek/opentelemetry/trace"
 )
 
 // simpleSpanProcessor is a SpanProcessor that synchronously sends all
@@ -22,8 +20,6 @@ type simpleSpanProcessor struct {
 	exporterMu sync.Mutex
 	exporter   SpanExporter
 	stopOnce   sync.Once
-
-	inst *observ.SSP
 
 	h otel.ErrorHandler
 }
@@ -41,12 +37,7 @@ var _ SpanProcessor = (*simpleSpanProcessor)(nil)
 func NewSimpleSpanProcessor(exporter SpanExporter, m metric.MeterProvider, h otel.ErrorHandler) SpanProcessor {
 	ssp := &simpleSpanProcessor{
 		exporter: exporter,
-	}
-
-	var err error
-	ssp.inst, err = observ.NewSSP(nextSimpleProcessorID(), m)
-	if err != nil {
-		otel.Handle(h, err)
+		h:        h,
 	}
 
 	global.Warn("SimpleSpanProcessor is not recommended for production use, consider using BatchSpanProcessor instead.")
@@ -69,15 +60,6 @@ func (*simpleSpanProcessor) OnStart(context.Context, ReadWriteSpan) {}
 func (ssp *simpleSpanProcessor) OnEnd(s ReadOnlySpan) {
 	ssp.exporterMu.Lock()
 	defer ssp.exporterMu.Unlock()
-
-	if ssp.inst != nil {
-		// Add the span to the context to ensure the metric is recorded
-		// with the correct span context. Record the span as processed before
-		// invoking the exporter so the count is unaffected by the export
-		// outcome.
-		ctx := trace.ContextWithSpanContext(context.Background(), s.SpanContext())
-		ssp.inst.SpanProcessed(ctx)
-	}
 
 	if ssp.exporter != nil && s.SpanContext().TraceFlags().IsSampled() {
 		if err := ssp.exporter.ExportSpans(context.Background(), []ReadOnlySpan{s}); err != nil {

@@ -6,6 +6,7 @@ package metric
 import (
 	"context"
 
+	otel "github.com/karelbilek/opentelemetry"
 	"github.com/karelbilek/opentelemetry/metric/embedded"
 )
 
@@ -57,7 +58,7 @@ type Meter interface {
 	//
 	// Implementations of this method need to be safe for a user to call
 	// concurrently.
-	Int64Counter(name string, options ...Int64CounterOption) (Int64Counter, error)
+	Int64Counter(name string, h otel.ErrorHandler, options ...Int64CounterOption) (Int64Counter, error)
 
 	// Int64UpDownCounter returns a new Int64UpDownCounter instrument
 	// identified by name and configured with options. The instrument is used
@@ -70,7 +71,7 @@ type Meter interface {
 	//
 	// Implementations of this method need to be safe for a user to call
 	// concurrently.
-	Int64UpDownCounter(name string, options ...Int64UpDownCounterOption) (Int64UpDownCounter, error)
+	Int64UpDownCounter(name string, h otel.ErrorHandler, options ...Int64UpDownCounterOption) (Int64UpDownCounter, error)
 
 	// Int64Histogram returns a new Int64Histogram instrument identified by
 	// name and configured with options. The instrument is used to
@@ -83,7 +84,7 @@ type Meter interface {
 	//
 	// Implementations of this method need to be safe for a user to call
 	// concurrently.
-	Int64Histogram(name string, options ...Int64HistogramOption) (Int64Histogram, error)
+	Int64Histogram(name string, h otel.ErrorHandler, options ...Int64HistogramOption) (Int64Histogram, error)
 
 	// Int64Gauge returns a new Int64Gauge instrument identified by name and
 	// configured with options. The instrument is used to synchronously record
@@ -95,7 +96,7 @@ type Meter interface {
 	//
 	// Implementations of this method need to be safe for a user to call
 	// concurrently.
-	Int64Gauge(name string, options ...Int64GaugeOption) (Int64Gauge, error)
+	Int64Gauge(name string, h otel.ErrorHandler, options ...Int64GaugeOption) (Int64Gauge, error)
 
 	// Int64ObservableCounter returns a new Int64ObservableCounter identified
 	// by name and configured with options. The instrument is used to
@@ -113,7 +114,7 @@ type Meter interface {
 	//
 	// Implementations of this method need to be safe for a user to call
 	// concurrently.
-	Int64ObservableCounter(name string, options ...Int64ObservableCounterOption) (Int64ObservableCounter, error)
+	Int64ObservableCounter(name string, h otel.ErrorHandler, options ...Int64ObservableCounterOption) (Int64ObservableCounter, error)
 
 	// Int64ObservableUpDownCounter returns a new Int64ObservableUpDownCounter
 	// instrument identified by name and configured with options. The
@@ -133,6 +134,7 @@ type Meter interface {
 	// concurrently.
 	Int64ObservableUpDownCounter(
 		name string,
+		h otel.ErrorHandler,
 		options ...Int64ObservableUpDownCounterOption,
 	) (Int64ObservableUpDownCounter, error)
 
@@ -152,7 +154,7 @@ type Meter interface {
 	//
 	// Implementations of this method need to be safe for a user to call
 	// concurrently.
-	Int64ObservableGauge(name string, options ...Int64ObservableGaugeOption) (Int64ObservableGauge, error)
+	Int64ObservableGauge(name string, h otel.ErrorHandler, options ...Int64ObservableGaugeOption) (Int64ObservableGauge, error)
 
 	// Float64Counter returns a new Float64Counter instrument identified by
 	// name and configured with options. The instrument is used to
@@ -162,7 +164,7 @@ type Meter interface {
 	// The name needs to conform to the OpenTelemetry instrument name syntax.
 	// See the Instrument Name section of the package documentation for more
 	// information.
-	Float64Counter(name string, options ...Float64CounterOption) (Float64Counter, error)
+	Float64Counter(name string, h otel.ErrorHandler, options ...Float64CounterOption) (Float64Counter, error)
 
 	// Float64UpDownCounter returns a new Float64UpDownCounter instrument
 	// identified by name and configured with options. The instrument is used
@@ -175,7 +177,7 @@ type Meter interface {
 	//
 	// Implementations of this method need to be safe for a user to call
 	// concurrently.
-	Float64UpDownCounter(name string, options ...Float64UpDownCounterOption) (Float64UpDownCounter, error)
+	Float64UpDownCounter(name string, h otel.ErrorHandler, options ...Float64UpDownCounterOption) (Float64UpDownCounter, error)
 
 	// Float64Histogram returns a new Float64Histogram instrument identified by
 	// name and configured with options. The instrument is used to
@@ -188,7 +190,7 @@ type Meter interface {
 	//
 	// Implementations of this method need to be safe for a user to call
 	// concurrently.
-	Float64Histogram(name string, options ...Float64HistogramOption) (Float64Histogram, error)
+	Float64Histogram(name string, h otel.ErrorHandler, options ...Float64HistogramOption) (Float64Histogram, error)
 
 	// Float64Gauge returns a new Float64Gauge instrument identified by name and
 	// configured with options. The instrument is used to synchronously record
@@ -200,7 +202,7 @@ type Meter interface {
 	//
 	// Implementations of this method need to be safe for a user to call
 	// concurrently.
-	Float64Gauge(name string, options ...Float64GaugeOption) (Float64Gauge, error)
+	Float64Gauge(name string, h otel.ErrorHandler, options ...Float64GaugeOption) (Float64Gauge, error)
 
 	// Float64ObservableCounter returns a new Float64ObservableCounter
 	// instrument identified by name and configured with options. The
@@ -218,7 +220,7 @@ type Meter interface {
 	//
 	// Implementations of this method need to be safe for a user to call
 	// concurrently.
-	Float64ObservableCounter(name string, options ...Float64ObservableCounterOption) (Float64ObservableCounter, error)
+	Float64ObservableCounter(name string, h otel.ErrorHandler, options ...Float64ObservableCounterOption) (Float64ObservableCounter, error)
 
 	// Float64ObservableUpDownCounter returns a new
 	// Float64ObservableUpDownCounter instrument identified by name and
@@ -238,6 +240,7 @@ type Meter interface {
 	// concurrently.
 	Float64ObservableUpDownCounter(
 		name string,
+		h otel.ErrorHandler,
 		options ...Float64ObservableUpDownCounterOption,
 	) (Float64ObservableUpDownCounter, error)
 
@@ -257,7 +260,7 @@ type Meter interface {
 	//
 	// Implementations of this method need to be safe for a user to call
 	// concurrently.
-	Float64ObservableGauge(name string, options ...Float64ObservableGaugeOption) (Float64ObservableGauge, error)
+	Float64ObservableGauge(name string, h otel.ErrorHandler, options ...Float64ObservableGaugeOption) (Float64ObservableGauge, error)
 
 	// RegisterCallback registers f to be called during the collection of a
 	// measurement cycle.

@@ -12,11 +12,9 @@ import (
 
 	otel "github.com/karelbilek/opentelemetry"
 	"github.com/karelbilek/opentelemetry/internal/global"
-	"github.com/karelbilek/opentelemetry/metric"
 	"github.com/karelbilek/opentelemetry/sdk/instrumentation"
 	"github.com/karelbilek/opentelemetry/sdk/internal/attrnorm"
 	"github.com/karelbilek/opentelemetry/sdk/resource"
-	"github.com/karelbilek/opentelemetry/sdk/trace/internal/observ"
 	"github.com/karelbilek/opentelemetry/trace"
 	"github.com/karelbilek/opentelemetry/trace/embedded"
 	"github.com/karelbilek/opentelemetry/trace/noop"
@@ -87,8 +85,7 @@ type TracerProvider struct {
 	resource               *resource.Resource
 	panicRecordingDisabled bool
 
-	mp metric.MeterProvider
-	h  otel.ErrorHandler
+	h otel.ErrorHandler
 }
 
 var _ trace.TracerProvider = &TracerProvider{}
@@ -108,7 +105,7 @@ type experimentalOption interface {
 // The passed opts are used to override these default values and configure the
 // returned TracerProvider appropriately.
 func NewTracerProvider(
-	mp metric.MeterProvider, h otel.ErrorHandler,
+	h otel.ErrorHandler,
 	attributeValueLengthLimit int,
 	attributeCountLimit int,
 	eventCountLimit int,
@@ -138,7 +135,6 @@ func NewTracerProvider(
 		spanLimits:             o.spanLimits,
 		resource:               o.resource,
 		panicRecordingDisabled: o.panicRecordingDisabled,
-		mp:                     mp,
 		h:                      h,
 	}
 	global.Info("TracerProvider created", "config", o)
@@ -189,12 +185,6 @@ func (p *TracerProvider) Tracer(name string, opts ...trace.TracerOption) trace.T
 			t = &tracer{
 				provider:             p,
 				instrumentationScope: is,
-			}
-
-			var err error
-			t.inst, err = observ.NewTracer(p.mp)
-			if err != nil {
-				otel.Handle(p.h, err)
 			}
 
 			p.namedTracer[is] = t

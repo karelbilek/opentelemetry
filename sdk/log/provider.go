@@ -9,18 +9,15 @@ import (
 	"sync"
 	"sync/atomic"
 
-	otel "github.com/karelbilek/opentelemetry"
 	"github.com/karelbilek/opentelemetry/attribute"
 	"github.com/karelbilek/opentelemetry/internal/global"
 	"github.com/karelbilek/opentelemetry/log"
 	"github.com/karelbilek/opentelemetry/log/embedded"
 	"github.com/karelbilek/opentelemetry/log/noop"
-	"github.com/karelbilek/opentelemetry/metric"
 	"github.com/karelbilek/opentelemetry/sdk/instrumentation"
 	"github.com/karelbilek/opentelemetry/sdk/log/internal/attrnorm"
 	"github.com/karelbilek/opentelemetry/sdk/resource"
 )
-
 
 type providerConfig struct {
 	resource      *resource.Resource
@@ -95,13 +92,13 @@ func NewLoggerProvider(resource *resource.Resource, processors []Processor, attr
 // Calls made after [LoggerProvider.Shutdown] starts return a [noop.Logger].
 //
 // This method can be called concurrently.
-func (p *LoggerProvider) Logger(name string, meterProvider metric.MeterProvider, errHandler otel.ErrorHandler, version string, schemaURL string, attrs attribute.Set) log.Logger {
+func (p *LoggerProvider) Logger(name string, version string, schemaURL string, attrs attribute.Set) log.Logger {
 	if name == "" {
 		global.Warn("Invalid Logger name.", "name", name)
 	}
 
 	if p.stopped.Load() {
-		return noop.NewLoggerProvider().Logger(name, meterProvider, errHandler, version, schemaURL, attrs)
+		return noop.NewLoggerProvider().Logger(name, version, schemaURL, attrs)
 	}
 
 	cfg := log.NewLoggerConfig(version, schemaURL, attrs)
@@ -119,14 +116,14 @@ func (p *LoggerProvider) Logger(name string, meterProvider metric.MeterProvider,
 	defer p.loggersMu.Unlock()
 
 	if p.loggers == nil {
-		l := newLogger(p, meterProvider, errHandler, scope)
+		l := newLogger(p, scope)
 		p.loggers = map[instrumentation.Scope]*logger{scope: l}
 		return l
 	}
 
 	l, ok := p.loggers[scope]
 	if !ok {
-		l = newLogger(p, meterProvider, errHandler, scope)
+		l = newLogger(p, scope)
 		p.loggers[scope] = l
 	}
 

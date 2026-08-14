@@ -13,8 +13,6 @@ import (
 
 	otel "github.com/karelbilek/opentelemetry"
 	"github.com/karelbilek/opentelemetry/internal/global"
-	"github.com/karelbilek/opentelemetry/metric"
-	"github.com/karelbilek/opentelemetry/sdk/trace/internal/observ"
 	"github.com/karelbilek/opentelemetry/trace"
 )
 
@@ -71,8 +69,6 @@ type batchSpanProcessor struct {
 	queue   chan ReadOnlySpan
 	dropped atomic.Uint32
 
-	inst *observ.BSP
-
 	batch      []ReadOnlySpan
 	batchMutex sync.Mutex
 	timer      *time.Timer
@@ -90,7 +86,7 @@ var _ SpanProcessor = (*batchSpanProcessor)(nil)
 // span batches to the exporter with the supplied options.
 //
 // If the exporter is nil, the span processor will perform no action.
-func NewBatchSpanProcessor(exporter SpanExporter, mp metric.MeterProvider, h otel.ErrorHandler, maxQueueSize int, batchTimeout time.Duration, exportTimeout time.Duration, maxExportBatchSize int, blockOnQueueFull bool) SpanProcessor {
+func NewBatchSpanProcessor(exporter SpanExporter, h otel.ErrorHandler, maxQueueSize int, batchTimeout time.Duration, exportTimeout time.Duration, maxExportBatchSize int, blockOnQueueFull bool) SpanProcessor {
 	o := BatchSpanProcessorOptions{
 		BatchTimeout:       batchTimeout,
 		ExportTimeout:      exportTimeout,
@@ -108,16 +104,6 @@ func NewBatchSpanProcessor(exporter SpanExporter, mp metric.MeterProvider, h ote
 		eh: h,
 	}
 
-	var err error
-	bsp.inst, err = observ.NewBSP(
-		nextProcessorID(),
-		func() int64 { return int64(len(bsp.queue)) },
-		int64(bsp.o.MaxQueueSize),
-		mp,
-	)
-	if err != nil {
-		otel.Handle(h, err)
-	}
 
 	bsp.stopWait.Go(func() {
 		bsp.processQueue()
@@ -176,9 +162,6 @@ func (bsp *batchSpanProcessor) Shutdown(ctx context.Context) error {
 			err = exportErr
 		case <-ctx.Done():
 			err = ctx.Err()
-		}
-		if bsp.inst != nil {
-			err = errors.Join(err, bsp.inst.Shutdown())
 		}
 	})
 	return err
@@ -249,9 +232,6 @@ func (bsp *batchSpanProcessor) exportSpans(ctx context.Context) error {
 
 	if l := len(bsp.batch); l > 0 {
 		global.Debug("exporting spans", "count", len(bsp.batch), "total_dropped", bsp.dropped.Load())
-		if bsp.inst != nil {
-			bsp.inst.Processed(ctx, int64(l))
-		}
 		err := bsp.e.ExportSpans(ctx, bsp.batch)
 
 		// A new batch is always created after exporting, even if the batch failed to be exported.
@@ -360,9 +340,6 @@ func (bsp *batchSpanProcessor) enqueueBlockOnQueueFull(ctx context.Context, sd R
 	case bsp.queue <- sd:
 		return true
 	case <-ctx.Done():
-		if bsp.inst != nil {
-			bsp.inst.ProcessedQueueFull(ctx, 1)
-		}
 		return false
 	}
 }
@@ -377,9 +354,6 @@ func (bsp *batchSpanProcessor) enqueueDrop(ctx context.Context, sd ReadOnlySpan)
 		return true
 	default:
 		bsp.dropped.Add(1)
-		if bsp.inst != nil {
-			bsp.inst.ProcessedQueueFull(ctx, 1)
-		}
 	}
 	return false
 }

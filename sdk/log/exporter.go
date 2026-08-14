@@ -7,8 +7,6 @@ import (
 	"context"
 	"errors"
 	"time"
-
-	"github.com/karelbilek/opentelemetry/sdk/log/internal/observ"
 )
 
 // Exporter handles the delivery of log records to external receivers.
@@ -139,14 +137,12 @@ func (e *timeoutExporter) Export(ctx context.Context, records []Record) error {
 // just before calling the wrapped exporter.
 type metricsExporter struct {
 	Exporter
-	inst *observ.BLP
 }
 
 // newMetricsExporter creates a metricsExporter that wraps the given exporter.
-func newMetricsExporter(exporter Exporter, inst *observ.BLP) Exporter {
+func newMetricsExporter(exporter Exporter) Exporter {
 	return &metricsExporter{
 		Exporter: exporter,
-		inst:     inst,
 	}
 }
 
@@ -154,8 +150,5 @@ func newMetricsExporter(exporter Exporter, inst *observ.BLP) Exporter {
 // them to the wrapped Exporter. Error returned from wrapped exporter
 // is not considered as per specification (to be measured by exporter).
 func (e *metricsExporter) Export(ctx context.Context, records []Record) error {
-	if e.inst != nil {
-		e.inst.Processed(ctx, int64(len(records)))
-	}
 	return e.Exporter.Export(ctx, records)
 }

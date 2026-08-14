@@ -17,11 +17,9 @@ package noop
 import (
 	"context"
 
-	otel "github.com/karelbilek/opentelemetry"
 	"github.com/karelbilek/opentelemetry/attribute"
 	"github.com/karelbilek/opentelemetry/log"
 	"github.com/karelbilek/opentelemetry/log/embedded"
-	"github.com/karelbilek/opentelemetry/metric"
 )
 
 var (
@@ -39,7 +37,7 @@ func NewLoggerProvider() LoggerProvider {
 }
 
 // Logger returns an OpenTelemetry Logger that does not record any telemetry.
-func (LoggerProvider) Logger(string, metric.MeterProvider, otel.ErrorHandler, string, string, attribute.Set) log.Logger {
+func (LoggerProvider) Logger(string, string, string, attribute.Set) log.Logger {
 	return Logger{}
 }
 

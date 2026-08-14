@@ -14,7 +14,6 @@ import (
 	"github.com/karelbilek/opentelemetry/attribute"
 	"github.com/karelbilek/opentelemetry/log"
 	"github.com/karelbilek/opentelemetry/log/embedded"
-	"github.com/karelbilek/opentelemetry/metric"
 	"github.com/karelbilek/opentelemetry/sdk/instrumentation"
 	semconv "github.com/karelbilek/opentelemetry/semconv"
 	"github.com/karelbilek/opentelemetry/trace"
@@ -43,17 +42,12 @@ type logger struct {
 	errorHandler otel.ErrorHandler
 }
 
-func newLogger(p *LoggerProvider, metricProvider metric.MeterProvider, errorHandler otel.ErrorHandler, scope instrumentation.Scope) *logger {
+func newLogger(p *LoggerProvider, scope instrumentation.Scope) *logger {
 	l := &logger{
 		provider:             p,
 		instrumentationScope: scope,
 	}
 
-	var err error
-	l.recCntIncr, err = newRecordCounterIncr(metricProvider)
-	if err != nil {
-		otel.Handle(errorHandler, err)
-	}
 	return l
 }
 

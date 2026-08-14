@@ -5,7 +5,6 @@ package otlptracehttp
 
 import (
 	"bytes"
-	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
@@ -18,7 +17,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/karelbilek/opentelemetry/metric"
 	coltracepb "github.com/karelbilek/opentelemetry/proto/collector/trace/v1"
 	tracepb "github.com/karelbilek/opentelemetry/proto/trace/v1"
 	"google.golang.org/protobuf/proto"
@@ -26,7 +24,6 @@ import (
 	"github.com/karelbilek/opentelemetry/exporters/otlptrace"
 	"github.com/karelbilek/opentelemetry/exporters/otlptracehttp/internal"
 	"github.com/karelbilek/opentelemetry/exporters/otlptracehttp/internal/counter"
-	"github.com/karelbilek/opentelemetry/exporters/otlptracehttp/internal/observ"
 	"github.com/karelbilek/opentelemetry/exporters/otlptracehttp/internal/otlpconfig"
 	"github.com/karelbilek/opentelemetry/retry"
 )
@@ -39,13 +36,6 @@ const contentTypeProto = "application/x-protobuf"
 // server. If exceeded, the response is treated as a not-retryable error.
 // This is a variable to allow tests to override it.
 var maxResponseBodySize int64 = 4 * 1024 * 1024
-
-var gzPool = sync.Pool{
-	New: func() any {
-		w := gzip.NewWriter(io.Discard)
-		return w
-	},
-}
 
 // Keep it in sync with golang's DefaultTransport from net/http! We
 // have our own copy to avoid handling a situation where the
@@ -76,16 +66,14 @@ type client struct {
 	stopOnce    sync.Once
 
 	instID int64
-	inst   *observ.Instrumentation
 
-	mp metric.MeterProvider
 }
 
 var _ otlptrace.Client = (*client)(nil)
 
 // NewClient creates a new HTTP trace client.
-func NewClient(mp metric.MeterProvider, endpoint string, insecure bool, headers map[string]string, maxRequestSize int, timeout time.Duration, urlPath string, retry retry.Config) otlptrace.Client {
-	cfg := otlpconfig.NewHTTPConfig(endpoint, insecure, headers, maxRequestSize, timeout, urlPath, retry)
+func NewClient( endpoint string, urlPath string, insecure bool, headers map[string]string, maxRequestSize int, timeout time.Duration, retry retry.Config) otlptrace.Client {
+	cfg := otlpconfig.NewHTTPConfig(endpoint, urlPath, insecure, headers, maxRequestSize, timeout, retry)
 
 	httpClient := &http.Client{
 		Transport: ourTransport,
@@ -101,7 +89,6 @@ func NewClient(mp metric.MeterProvider, endpoint string, insecure bool, headers 
 		stopCh:      stopCh,
 		client:      httpClient,
 		instID:      counter.NextExporterID(),
-		mp:          mp,
 	}
 }
 
@@ -111,16 +98,7 @@ func (c *client) Start(ctx context.Context) error {
 	// 	return errInsecureEndpointWithTLS
 	// }
 
-	// Initialize the instrumentation if not already done.
-	//
-	// Initialize here instead of NewClient to allow any errors to be passed
-	// back to the caller and so that any setup of the environment variables to
-	// enable instrumentation can be set via code.
 	var err error
-	if c.inst == nil {
-		c.inst, err = observ.NewInstrumentation(c.instID, c.cfg.Endpoint, c.mp)
-	}
-
 	// nothing to do
 	select {
 	case <-ctx.Done():
@@ -167,16 +145,6 @@ func (c *client) UploadTraces(ctx context.Context, protoSpans []*tracepb.Resourc
 	}
 
 	var statusCode int
-	if c.inst != nil {
-		var spanCount int
-		for _, rs := range protoSpans {
-			for _, ss := range rs.ScopeSpans {
-				spanCount += len(ss.Spans)
-			}
-		}
-		op := c.inst.ExportSpans(ctx, spanCount)
-		defer func() { op.End(uploadErr, statusCode) }()
-	}
 
 	return errors.Join(uploadErr, c.requestFunc(ctx, func(ctx context.Context) error {
 		select {

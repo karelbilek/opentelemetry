@@ -6,6 +6,7 @@ import (
 	"os"
 )
 
+// FIXME: this is not good :)
 var globalLog = log.New(os.Stderr, "", log.LstdFlags|log.Lshortfile)
 
 func Warn(msg string, args ...any) {
@@ -21,5 +22,11 @@ func Info(msg string, args ...any) {
 }
 
 func Debug(msg string, args ...any) {
+	Warn(msg, args...)
+}
+
+func Error(err error, msg string, args ...any) {
+	// FIXME none of this is nice
+	Warn(err.Error())
 	Warn(msg, args...)
 }

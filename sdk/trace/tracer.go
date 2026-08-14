@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/karelbilek/opentelemetry/sdk/instrumentation"
-	"github.com/karelbilek/opentelemetry/sdk/trace/internal/observ"
 	"github.com/karelbilek/opentelemetry/trace"
 	"github.com/karelbilek/opentelemetry/trace/embedded"
 )
@@ -18,8 +17,6 @@ type tracer struct {
 
 	provider             *TracerProvider
 	instrumentationScope instrumentation.Scope
-
-	inst observ.Tracer
 }
 
 var _ trace.Tracer = &tracer{}
@@ -50,18 +47,6 @@ func (tr *tracer) Start(
 
 	s := tr.newSpan(ctx, name, &config)
 	newCtx := trace.ContextWithSpan(ctx, s)
-	if tr.inst.Enabled() {
-		if o, ok := s.(interface{ setOrigCtx(context.Context) }); ok {
-			// If this is a recording span, store the original context.
-			// This allows later retrieval of baggage and other information
-			// that may have been stored in the context at span start time and
-			// to avoid the allocation of repeatedly calling
-			// trace.ContextWithSpan.
-			o.setOrigCtx(newCtx)
-		}
-		psc := trace.SpanContextFromContext(ctx)
-		tr.inst.SpanStarted(newCtx, psc, s)
-	}
 
 	if rw, ok := s.(ReadWriteSpan); ok && s.IsRecording() {
 		sps := tr.provider.getSpanProcessors()
@@ -171,13 +156,6 @@ func (tr *tracer) newRecordingSpan(
 
 	s.SetAttributes(sr.Attributes...)
 	s.SetAttributes(config.Attributes()...)
-
-	if tr.inst.Enabled() {
-		// Propagate any existing values from the context with the new span to
-		// the measurement context.
-		ctx = trace.ContextWithSpan(ctx, s)
-		tr.inst.SpanLive(ctx, s)
-	}
 
 	return s
 }

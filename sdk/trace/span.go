@@ -419,17 +419,6 @@ func (s *recordingSpan) End(options ...trace.SpanEndOption) {
 	}
 	s.mu.Unlock()
 
-	if s.tracer.inst.Enabled() {
-		ctx := s.origCtx
-		if ctx == nil {
-			// This should not happen as the origCtx should be set, but
-			// ensure trace information is propagated in the case of an
-			// error.
-			ctx = trace.ContextWithSpan(context.Background(), s)
-		}
-		defer s.tracer.inst.SpanEnded(ctx, s)
-	}
-
 	sps := s.tracer.provider.getSpanProcessors()
 	if len(sps) == 0 {
 		return

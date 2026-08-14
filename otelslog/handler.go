@@ -51,17 +51,15 @@ import (
 	"runtime"
 	"slices"
 
-	simpleproto2 "github.com/karelbilek/opentelemetry"
 	"github.com/karelbilek/opentelemetry/attribute"
 	"github.com/karelbilek/opentelemetry/log"
-	"github.com/karelbilek/opentelemetry/metric"
 	semconv "github.com/karelbilek/opentelemetry/semconv"
 )
 
 // NewLogger returns a new [slog.Logger] backed by a new [Handler]. See
 // [NewHandler] for details on how the backing Handler is created.
-func NewLogger(name string, provider log.LoggerProvider, meterProvider metric.MeterProvider, errHandler simpleproto2.ErrorHandler, version string, schemaURL string, attributes []attribute.KeyValue, source bool) *slog.Logger {
-	return slog.New(NewHandler(name, provider, meterProvider, errHandler, version, schemaURL, attributes, source))
+func NewLogger(name string, provider log.LoggerProvider, version string, schemaURL string, attributes []attribute.KeyValue, source bool) *slog.Logger {
+	return slog.New(NewHandler(name, provider, version, schemaURL, attributes, source))
 }
 
 type config struct {
@@ -82,9 +80,9 @@ func newConfig(provider log.LoggerProvider, version string, schemaURL string, at
 	}
 }
 
-func (c config) logger(name string, meterProvider metric.MeterProvider, errHandler simpleproto2.ErrorHandler) log.Logger {
+func (c config) logger(name string) log.Logger {
 	set := attribute.NewSet(slices.Clone(c.attributes)...)
-	return c.provider.Logger(name, meterProvider, errHandler, c.version, c.schemaURL, set)
+	return c.provider.Logger(name, c.version, c.schemaURL, set)
 }
 
 // // Option configures a [Handler].
@@ -170,10 +168,10 @@ var _ slog.Handler = (*Handler)(nil)
 // The provided name needs to uniquely identify the code being logged. This is
 // most commonly the package name of the code. If name is empty, the
 // [log.Logger] implementation may override this value with a default.
-func NewHandler(name string, provider log.LoggerProvider, meterProvider metric.MeterProvider, errHandler simpleproto2.ErrorHandler, version string, schemaURL string, attributes []attribute.KeyValue, source bool) *Handler {
+func NewHandler(name string, provider log.LoggerProvider, version string, schemaURL string, attributes []attribute.KeyValue, source bool) *Handler {
 	cfg := newConfig(provider, version, schemaURL, attributes, source)
 	return &Handler{
-		logger: cfg.logger(name, meterProvider, errHandler),
+		logger: cfg.logger(name),
 		source: cfg.source,
 	}
 }

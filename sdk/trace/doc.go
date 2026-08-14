@@ -7,7 +7,7 @@ Package trace contains support for OpenTelemetry distributed tracing.
 The following assumes a basic familiarity with OpenTelemetry concepts.
 See https://opentelemetry.io.
 
-See [go.opentelemetry.io/otel/sdk/internal/x] for information about
+See [github.com/karelbilek/opentelemetry/sdk/internal/x] for information about
 the experimental features.
 */
 package trace

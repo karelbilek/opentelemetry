@@ -4,10 +4,8 @@
 package log
 
 import (
-	otel "github.com/karelbilek/opentelemetry"
 	"github.com/karelbilek/opentelemetry/attribute"
 	"github.com/karelbilek/opentelemetry/log/embedded"
-	"github.com/karelbilek/opentelemetry/metric"
 )
 
 // LoggerProvider provides access to [Logger].
@@ -39,5 +37,5 @@ type LoggerProvider interface {
 	//
 	// Implementations of this method need to be safe for a user to call
 	// concurrently.
-	Logger(name string, meterProvider metric.MeterProvider, errHandler otel.ErrorHandler, version string, schemaURL string, attrs attribute.Set) Logger
+	Logger(name string, version string, schemaURL string, attrs attribute.Set) Logger
 }
