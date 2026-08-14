@@ -70,7 +70,7 @@ func main() {
 		128,
 		128,
 		128,
-		[]trace.SpanProcessor{trace.NewBatchSpanProcessor(
+		trace.NewBatchSpanProcessor(
 			traceExporter,
 			oh,
 			2048,
@@ -78,7 +78,7 @@ func main() {
 			30000*time.Millisecond,
 			512,
 			false,
-		)},
+		),
 		nil,
 		nil,
 		res,

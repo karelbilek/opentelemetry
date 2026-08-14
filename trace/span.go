@@ -5,69 +5,7 @@ package trace
 
 import (
 	"github.com/karelbilek/opentelemetry/attribute"
-	"github.com/karelbilek/opentelemetry/codes"
 )
-
-// Span is the individual component of a trace. It represents a single named
-// and timed operation of a workflow that is traced. A Tracer is used to
-// create a Span and it is then up to the operation the Span represents to
-// properly end the Span when the operation itself ends.
-//
-// Warning: Methods may be added to this interface in minor releases. See
-// package documentation on API implementation for information on how to set
-// default behavior for unimplemented methods.
-type Span interface {
-	// End completes the Span. The Span is considered complete and ready to be
-	// delivered through the rest of the telemetry pipeline after this method
-	// is called. Therefore, updates to the Span are not allowed after this
-	// method has been called.
-	End(options ...SpanEndOption)
-
-	// AddEvent adds an event with the provided name and options.
-	AddEvent(name string, options ...EventOption)
-
-	// AddLink adds a link.
-	// Adding links at span creation using WithLinks is preferred to calling AddLink
-	// later, for contexts that are available during span creation, because head
-	// sampling decisions can only consider information present during span creation.
-	AddLink(link Link)
-
-	// IsRecording returns the recording state of the Span. It will return
-	// true if the Span is active and events can be recorded.
-	IsRecording() bool
-
-	// RecordError will record err as an exception span event for this span. An
-	// additional call to SetStatus is required if the Status of the Span should
-	// be set to Error, as this method does not change the Span status. If this
-	// span is not being recorded or err is nil then this method does nothing.
-	RecordError(err error, options ...EventOption)
-
-	// SpanContext returns the SpanContext of the Span. The returned SpanContext
-	// is usable even after the End method has been called for the Span.
-	SpanContext() SpanContext
-
-	// SetStatus sets the status of the Span in the form of a code and a
-	// description, provided the status hasn't already been set to a higher
-	// value before (OK > Error > Unset). The description is only included in a
-	// status when the code is for an error.
-	SetStatus(code codes.Code, description string)
-
-	// SetName sets the Span name.
-	SetName(name string)
-
-	// SetAttributes sets kv as attributes of the Span. If a key from kv
-	// already exists for an attribute of the Span it will be overwritten with
-	// the value contained in kv.
-	//
-	// Note that adding attributes at span creation using [WithAttributes] is preferred
-	// to calling SetAttribute later, as samplers can only consider information
-	// already present during span creation.
-	SetAttributes(kv ...attribute.KeyValue)
-
-	// TracerProvider returns a TracerProvider that can be used to generate
-	// additional Spans on the same telemetry pipeline as the current Span.
-	TracerProvider() TracerProvider
-}
 
 // Link is the relationship between two Spans. The relationship can be within
 // the same Trace or across different Traces.

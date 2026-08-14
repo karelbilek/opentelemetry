@@ -23,17 +23,17 @@ func ContextWithRemoteSpanContext(parent context.Context, rsc trace.SpanContext)
 	return ContextWithSpanContext(parent, rsc.WithRemote(true))
 }
 
-var noopSpanInstance trace.Span = &Span{noop: true}
+var noopSpanInstance = &Span{noop: true}
 
 // SpanFromContext returns the current Span from ctx.
 //
 // If no Span is currently set in ctx an implementation of a Span that
 // performs no operations is returned.
-func SpanFromContext(ctx context.Context) trace.Span {
+func SpanFromContext(ctx context.Context) *Span {
 	if ctx == nil {
 		return noopSpanInstance
 	}
-	if span, ok := ctx.Value(currentSpanKey).(trace.Span); ok {
+	if span, ok := ctx.Value(currentSpanKey).(*Span); ok {
 		return span
 	}
 	return noopSpanInstance
@@ -44,7 +44,7 @@ type traceContextKeyType int
 const currentSpanKey traceContextKeyType = iota
 
 // ContextWithSpan returns a copy of parent with span set as the current Span.
-func ContextWithSpan(parent context.Context, span trace.Span) context.Context {
+func ContextWithSpan(parent context.Context, span *Span) context.Context {
 	if parent == nil {
 		parent = context.Background()
 	}

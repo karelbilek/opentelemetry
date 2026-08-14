@@ -27,7 +27,7 @@ type tracerProviderConfig struct {
 	// SpanProcessors registered with a TracerProvider and are called at the start
 	// and end of a Span's lifecycle, and are called in the order they are
 	// registered.
-	processors []SpanProcessor
+	processor *BatchSpanProcessor
 
 	// sampler is the default sampler used when creating new spans.
 	sampler Sampler
@@ -48,14 +48,14 @@ type tracerProviderConfig struct {
 // MarshalLog is the marshaling function used by the logging system to represent this Provider.
 func (cfg tracerProviderConfig) MarshalLog() any {
 	return struct {
-		SpanProcessors         []SpanProcessor
+		SpanProcessors         *BatchSpanProcessor
 		SamplerType            string
 		IDGeneratorType        string
 		SpanLimits             SpanLimits
 		Resource               *resource.Resource
 		PanicRecordingDisabled bool
 	}{
-		SpanProcessors:         cfg.processors,
+		SpanProcessors:         cfg.processor,
 		SamplerType:            fmt.Sprintf("%T", cfg.sampler),
 		IDGeneratorType:        fmt.Sprintf("%T", cfg.idGenerator),
 		SpanLimits:             cfg.spanLimits,
@@ -70,7 +70,7 @@ type TracerProvider struct {
 	noop bool
 
 	mu             sync.Mutex
-	namedTracer    map[instrumentation.Scope]*tracer
+	namedTracer    map[instrumentation.Scope]*Tracer
 	spanProcessors atomic.Pointer[spanProcessorStates]
 
 	isShutdown atomic.Bool
@@ -85,8 +85,6 @@ type TracerProvider struct {
 
 	h otel.ErrorHandler
 }
-
-var _ trace.TracerProvider = &TracerProvider{}
 
 type experimentalOption interface {
 	Experimental()
@@ -110,14 +108,14 @@ func NewTracerProvider(
 	linkCountLimit int,
 	attributePerEventCountLimit int,
 	attributePerLinkCountLimit int,
-	processors []SpanProcessor,
+	processor *BatchSpanProcessor,
 	sampler Sampler,
 	idGenerator IDGenerator,
 	resource *resource.Resource,
 	panicRecordingDisabled bool) *TracerProvider {
 	o := tracerProviderConfig{
 		spanLimits:             NewSpanLimits(attributeValueLengthLimit, attributeCountLimit, eventCountLimit, linkCountLimit, attributePerEventCountLimit, attributePerEventCountLimit),
-		processors:             processors,
+		processor:              processor,
 		sampler:                sampler,
 		idGenerator:            idGenerator,
 		resource:               resource,
@@ -127,7 +125,7 @@ func NewTracerProvider(
 	o = ensureValidTracerProviderConfig(o, h)
 
 	tp := &TracerProvider{
-		namedTracer:            make(map[instrumentation.Scope]*tracer),
+		namedTracer:            make(map[instrumentation.Scope]*Tracer),
 		sampler:                o.sampler,
 		idGenerator:            o.idGenerator,
 		spanLimits:             o.spanLimits,
@@ -137,10 +135,9 @@ func NewTracerProvider(
 	}
 	global.Info("TracerProvider created", "config", o)
 
-	spss := make(spanProcessorStates, 0, len(o.processors))
-	for _, sp := range o.processors {
-		spss = append(spss, newSpanProcessorState(sp))
-	}
+	sps := newSpanProcessorState(o.processor)
+	var spss spanProcessorStates = []*spanProcessorState{sps}
+
 	tp.spanProcessors.Store(&spss)
 
 	return tp
@@ -153,13 +150,13 @@ func NewTracerProvider(
 // If name is empty, DefaultTracerName is used instead.
 //
 // This method is safe to be called concurrently.
-func (p *TracerProvider) Tracer(name string, opts ...trace.TracerOption) trace.Tracer {
+func (p *TracerProvider) Tracer(name string, opts ...trace.TracerOption) *Tracer {
 	if p.noop {
-		return &tracer{noop: true}
+		return &Tracer{noop: true}
 	}
 	// This check happens before the mutex is acquired to avoid deadlocking if Tracer() is called from within Shutdown().
 	if p.isShutdown.Load() {
-		return &tracer{noop: true}
+		return &Tracer{noop: true}
 	}
 	c := trace.NewTracerConfig(opts...)
 	attrs, _ := attrnorm.Set(c.InstrumentationAttributes())
@@ -173,17 +170,17 @@ func (p *TracerProvider) Tracer(name string, opts ...trace.TracerOption) trace.T
 		Attributes: attrs,
 	}
 
-	t, ok := func() (trace.Tracer, bool) {
+	t, ok := func() (*Tracer, bool) {
 		p.mu.Lock()
 		defer p.mu.Unlock()
 		// Must check the flag after acquiring the mutex to avoid returning a valid tracer if Shutdown() ran
 		// after the first check above but before we acquired the mutex.
 		if p.isShutdown.Load() {
-			return &tracer{noop: true}, true
+			return &Tracer{noop: true}, true
 		}
 		t, ok := p.namedTracer[is]
 		if !ok {
-			t = &tracer{
+			t = &Tracer{
 				provider:             p,
 				instrumentationScope: is,
 			}
@@ -214,7 +211,7 @@ func (p *TracerProvider) Tracer(name string, opts ...trace.TracerOption) trace.T
 }
 
 // RegisterSpanProcessor adds the given SpanProcessor to the list of SpanProcessors.
-func (p *TracerProvider) RegisterSpanProcessor(sp SpanProcessor) {
+func (p *TracerProvider) RegisterSpanProcessor(sp *BatchSpanProcessor) {
 	if p.noop {
 		return
 	}
@@ -237,7 +234,7 @@ func (p *TracerProvider) RegisterSpanProcessor(sp SpanProcessor) {
 }
 
 // UnregisterSpanProcessor removes the given SpanProcessor from the list of SpanProcessors.
-func (p *TracerProvider) UnregisterSpanProcessor(sp SpanProcessor) {
+func (p *TracerProvider) UnregisterSpanProcessor(sp *BatchSpanProcessor) {
 	if p.noop {
 		return
 	}

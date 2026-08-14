@@ -11,15 +11,15 @@ import (
 	"github.com/karelbilek/opentelemetry/trace"
 )
 
-type tracer struct {
+type Tracer struct {
 	noop                 bool
 	provider             *TracerProvider
 	instrumentationScope instrumentation.Scope
 }
 
-var _ trace.Tracer = &tracer{}
+// var _ trace.Tracer = &Tracer{}
 
-func (tr *tracer) noopStart(ctx context.Context) (context.Context, trace.Span) {
+func (tr *Tracer) noopStart(ctx context.Context) (context.Context, *Span) {
 	span := SpanFromContext(ctx)
 
 	// If the parent context contains a non-zero span context, that span
@@ -45,11 +45,11 @@ func (tr *tracer) noopStart(ctx context.Context) (context.Context, trace.Span) {
 // The Span is created with the provided name and as a child of any existing
 // span context found in the passed context. The created Span will be
 // configured appropriately by any SpanOption passed.
-func (tr *tracer) Start(
+func (tr *Tracer) Start(
 	ctx context.Context,
 	name string,
 	options ...trace.SpanStartOption,
-) (context.Context, trace.Span) {
+) (context.Context, *Span) {
 	if tr.noop {
 		return tr.noopStart(ctx)
 	}
@@ -62,36 +62,36 @@ func (tr *tracer) Start(
 
 	// For local spans created by this SDK, track child span count.
 	if p := SpanFromContext(ctx); p != nil {
-		if sdkSpan, ok := p.(*Span); ok {
-			sdkSpan.addChild()
-		}
+		// if sdkSpan, ok := p.(*Span); ok {
+		p.addChild()
+		// }
 	}
 
 	s := tr.newSpan(ctx, name, &config)
 	newCtx := ContextWithSpan(ctx, s)
 
-	if rw, ok := s.(ReadWriteSpan); ok && s.IsRecording() {
-		sps := tr.provider.getSpanProcessors()
-		for _, sp := range sps {
-			// Use original context.
-			sp.sp.OnStart(ctx, rw)
-		}
-	}
-	if rtt, ok := s.(runtimeTracer); ok {
-		newCtx = rtt.runtimeTrace(newCtx)
+	// if rw, ok := s.(ReadWriteSpan); ok && s.IsRecording() {
+	// 	sps := tr.provider.getSpanProcessors()
+	// 	for _, sp := range sps {
+	// 		// Use original context.
+	// 		sp.sp.OnStart(ctx, rw)
+	// 	}
+	// }
+	if !s.noop {
+		newCtx = s.runtimeTrace(newCtx)
 	}
 
 	return newCtx, s
 }
 
-type runtimeTracer interface {
-	// runtimeTrace starts a "runtime/trace".Task for the span and
-	// returns a context containing the task.
-	runtimeTrace(ctx context.Context) context.Context
-}
+// type runtimeTracer interface {
+// 	// runtimeTrace starts a "runtime/trace".Task for the span and
+// 	// returns a context containing the task.
+// 	runtimeTrace(ctx context.Context) context.Context
+// }
 
 // newSpan returns a new configured span.
-func (tr *tracer) newSpan(ctx context.Context, name string, config *trace.SpanConfig) trace.Span {
+func (tr *Tracer) newSpan(ctx context.Context, name string, config *trace.SpanConfig) *Span {
 	// If told explicitly to make this a new root use a zero value SpanContext
 	// as a parent which contains an invalid trace ID and is not remote.
 	var psc trace.SpanContext
@@ -141,7 +141,7 @@ func (tr *tracer) newSpan(ctx context.Context, name string, config *trace.SpanCo
 }
 
 // newRecordingSpan returns a new configured recordingSpan.
-func (tr *tracer) newRecordingSpan(
+func (tr *Tracer) newRecordingSpan(
 	ctx context.Context,
 	psc, sc trace.SpanContext,
 	name string,
@@ -183,6 +183,6 @@ func (tr *tracer) newRecordingSpan(
 }
 
 // newNonRecordingSpan returns a new configured nonRecordingSpan.
-func (tr *tracer) newNonRecordingSpan(sc trace.SpanContext) *Span {
+func (tr *Tracer) newNonRecordingSpan(sc trace.SpanContext) *Span {
 	return &Span{tracer: tr, spanContext: sc, noop: true}
 }

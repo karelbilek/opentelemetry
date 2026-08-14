@@ -17,7 +17,7 @@ import (
 
 // Spans transforms a slice of OpenTelemetry spans into a slice of OTLP
 // ResourceSpans.
-func Spans(sdl []tracesdk.ReadOnlySpan) []*tracepb.ResourceSpans {
+func Spans(sdl []*tracesdk.Snapshot) []*tracepb.ResourceSpans {
 	if len(sdl) == 0 {
 		return nil
 	}
@@ -86,7 +86,7 @@ func Spans(sdl []tracesdk.ReadOnlySpan) []*tracepb.ResourceSpans {
 }
 
 // span transforms a Span into an OTLP span.
-func span(sd tracesdk.ReadOnlySpan) *tracepb.Span {
+func span(sd *tracesdk.Snapshot) *tracepb.Span {
 	if sd == nil {
 		return nil
 	}

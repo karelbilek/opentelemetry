@@ -22,7 +22,7 @@ type SpanExporter interface {
 	// calls this function will not implement any retry logic. All errors
 	// returned by this function are considered unrecoverable and will be
 	// reported to a configured error Handler.
-	ExportSpans(ctx context.Context, spans []ReadOnlySpan) error
+	ExportSpans(ctx context.Context, spans []*Snapshot) error
 	// DO NOT CHANGE: any modification will not be backwards compatible and
 	// must never be done outside of a new major release.
 
