@@ -17,7 +17,7 @@ import (
 
 // histogramPoint is a single histogram point, used in delta aggregations.
 type histogramPoint[N int64 | float64] struct {
-	attrs         attribute.Set
+	attrs attribute.Set
 	// res           FilteredExemplarReservoir[N]
 	// dropExemplars bool
 	histogramPointCounters[N]
@@ -29,9 +29,9 @@ type hotColdHistogramPoint[N int64 | float64] struct {
 	hcwg         hotColdWaitGroup
 	hotColdPoint [2]histogramPointCounters[N]
 
-	attrs         attribute.Set
+	attrs attribute.Set
 	// res           FilteredExemplarReservoir[N]
-	startTime     time.Time
+	startTime time.Time
 	// dropExemplars bool
 }
 
@@ -117,7 +117,7 @@ func (s *deltaHistogram[N]) measure(
 		// _, isDrop := r.(*dropRes[N])
 		hPt := &histogramPoint[N]{
 			// res:           r,
-			attrs:         attr,
+			attrs: attr,
 			// dropExemplars: isDrop,
 			// N+1 buckets. For example:
 			//
@@ -279,7 +279,7 @@ func newCumulativeHistogram[N int64 | float64](
 		noSum:    noSum,
 		bounds:   b,
 		// newRes:   r,
-		values:   limitedSyncMap[*hotColdHistogramPoint[N]]{aggLimit: limit},
+		values: limitedSyncMap[*hotColdHistogramPoint[N]]{aggLimit: limit},
 	}
 }
 
@@ -294,8 +294,8 @@ func (s *cumulativeHistogram[N]) measure(
 		// _, isDrop := r.(*dropRes[N])
 		hPt := &hotColdHistogramPoint[N]{
 			// res:           r,
-			attrs:         attr,
-			startTime:     now(),
+			attrs:     attr,
+			startTime: now(),
 			// dropExemplars: isDrop,
 			// N+1 buckets. For example:
 			//

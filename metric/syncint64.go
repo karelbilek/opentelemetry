@@ -5,7 +5,6 @@ package metric
 
 import (
 	"context"
-
 )
 
 // Int64Counter is an instrument that records increasing int64 values.

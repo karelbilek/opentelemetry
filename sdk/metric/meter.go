@@ -643,7 +643,7 @@ func (r observer) ObserveInt64(o metric.Int64Observable, v int64, opts ...metric
 	}
 }
 
-type noopRegister struct{  }
+type noopRegister struct{}
 
 func (noopRegister) Unregister() error {
 	return nil

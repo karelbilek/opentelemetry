@@ -45,7 +45,7 @@ type (
 
 // NewHTTPConfig returns a new Config with all settings applied from opts and
 // any unset setting using the default HTTP config values.
-func NewHTTPConfig(endpoint string, urlPath string, insecure bool, headers map[string]string, maxRequestSize int, timeout time.Duration,  retry retry.Config) Config {
+func NewHTTPConfig(endpoint string, urlPath string, insecure bool, headers map[string]string, maxRequestSize int, timeout time.Duration, retry retry.Config) Config {
 	cfg := Config{
 		Traces: SignalConfig{
 			Endpoint:       endpoint,

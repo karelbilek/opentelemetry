@@ -52,7 +52,6 @@ func (o detectorsOption) apply(cfg config) config {
 	return cfg
 }
 
-
 // WithHost adds attributes from the host to the configured resource.
 func WithHost() Option {
 	return WithDetectors(host{})

@@ -64,7 +64,6 @@ func unifyShutdown(funcs []func(context.Context) error) func(context.Context) er
 	}
 }
 
-
 // newConfig returns a config configured with options.
 func newConfig(
 	res *resource.Resource,

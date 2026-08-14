@@ -17,7 +17,6 @@ type LoggerConfig struct {
 	attrs     attribute.Set
 }
 
-
 // NewLoggerConfig returns a new [LoggerConfig] with all the options applied.
 func NewLoggerConfig(version string, schemaURL string, attrs attribute.Set) LoggerConfig {
 	return LoggerConfig{

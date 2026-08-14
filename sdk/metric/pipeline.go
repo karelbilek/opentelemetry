@@ -47,11 +47,11 @@ func newPipeline(
 		res = resource.Empty()
 	}
 	return &pipeline{
-		resource:         res,
-		reader:           reader,
-		views:            views,
-		int64Measures:    map[observableID[int64]][]aggregate.Measure[int64]{},
-		float64Measures:  map[observableID[float64]][]aggregate.Measure[float64]{},
+		resource:        res,
+		reader:          reader,
+		views:           views,
+		int64Measures:   map[observableID[int64]][]aggregate.Measure[int64]{},
+		float64Measures: map[observableID[float64]][]aggregate.Measure[float64]{},
 		// exemplarFilter:   exemplarFilter,
 		cardinalityLimit: cardinalityLimit,
 		// aggregations is lazy allocated when needed.
@@ -71,11 +71,11 @@ type pipeline struct {
 	views  []View
 
 	sync.Mutex
-	int64Measures    map[observableID[int64]][]aggregate.Measure[int64]
-	float64Measures  map[observableID[float64]][]aggregate.Measure[float64]
-	aggregations     map[instrumentation.Scope][]instrumentSync
-	callbacks        []func(context.Context) error
-	multiCallbacks   list.List
+	int64Measures   map[observableID[int64]][]aggregate.Measure[int64]
+	float64Measures map[observableID[float64]][]aggregate.Measure[float64]
+	aggregations    map[instrumentation.Scope][]instrumentSync
+	callbacks       []func(context.Context) error
+	multiCallbacks  list.List
 	// exemplarFilter   exemplar.Filter
 	cardinalityLimit int
 }

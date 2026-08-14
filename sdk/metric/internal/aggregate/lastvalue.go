@@ -14,10 +14,10 @@ import (
 
 // lastValuePoint is timestamped measurement data.
 type lastValuePoint[N int64 | float64] struct {
-	attrs         attribute.Set
-	value         atomicN[N]
+	attrs attribute.Set
+	value atomicN[N]
 	// res           FilteredExemplarReservoir[N]
-	startTime     time.Time
+	startTime time.Time
 	// dropExemplars bool
 }
 
@@ -38,8 +38,8 @@ func (s *lastValueMap[N]) measure(
 		// _, isDrop := r.(*dropRes[N])
 		p := &lastValuePoint[N]{
 			// res:           r,
-			attrs:         attr,
-			startTime:     now(),
+			attrs:     attr,
+			startTime: now(),
 			// dropExemplars: isDrop,
 		}
 		p.value.Store(value)
@@ -58,7 +58,7 @@ func newDeltaLastValue[N int64 | float64](
 ) *deltaLastValue[N] {
 	return &deltaLastValue[N]{
 		// newRes: r,
-		start:  now(),
+		start: now(),
 		hotColdValMap: [2]lastValueMap[N]{
 			{
 				// newRes: r,
@@ -75,7 +75,7 @@ func newDeltaLastValue[N int64 | float64](
 // deltaLastValue summarizes a set of measurements as the last one made.
 type deltaLastValue[N int64 | float64] struct {
 	// newRes func(attribute.Set) FilteredExemplarReservoir[N]
-	start  time.Time
+	start time.Time
 
 	hcwg          hotColdWaitGroup
 	hotColdValMap [2]lastValueMap[N]

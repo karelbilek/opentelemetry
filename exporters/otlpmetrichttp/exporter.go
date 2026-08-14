@@ -13,9 +13,9 @@ import (
 	metricpb "github.com/karelbilek/opentelemetry/proto/metrics/v1"
 
 	"github.com/karelbilek/opentelemetry/exporters/otlpmetrichttp/internal/oconf"
-	"github.com/karelbilek/opentelemetry/retry"
 	"github.com/karelbilek/opentelemetry/exporters/otlpmetrichttp/internal/transform"
 	"github.com/karelbilek/opentelemetry/internal/global"
+	"github.com/karelbilek/opentelemetry/retry"
 	"github.com/karelbilek/opentelemetry/sdk/metric"
 	"github.com/karelbilek/opentelemetry/sdk/metric/metricdata"
 )

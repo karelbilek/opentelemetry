@@ -84,14 +84,13 @@ func NewPeriodicReader(exporter Exporter,
 	return r
 }
 
-
 // PeriodicReader is a Reader that continuously collects and exports metric
 // data at a set interval.
 type PeriodicReader struct {
 	sdkProducer atomic.Value
 
-	mu                sync.Mutex
-	isShutdown        bool
+	mu         sync.Mutex
+	isShutdown bool
 
 	interval time.Duration
 	timeout  time.Duration

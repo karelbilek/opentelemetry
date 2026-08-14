@@ -66,13 +66,12 @@ type client struct {
 	stopOnce    sync.Once
 
 	instID int64
-
 }
 
 var _ otlptrace.Client = (*client)(nil)
 
 // NewClient creates a new HTTP trace client.
-func NewClient( endpoint string, urlPath string, insecure bool, headers map[string]string, maxRequestSize int, timeout time.Duration, retry retry.Config) otlptrace.Client {
+func NewClient(endpoint string, urlPath string, insecure bool, headers map[string]string, maxRequestSize int, timeout time.Duration, retry retry.Config) otlptrace.Client {
 	cfg := otlpconfig.NewHTTPConfig(endpoint, urlPath, insecure, headers, maxRequestSize, timeout, retry)
 
 	httpClient := &http.Client{

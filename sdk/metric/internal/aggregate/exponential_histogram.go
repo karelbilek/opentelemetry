@@ -25,7 +25,7 @@ const (
 
 // expoHistogramDataPoint is a single data point in an exponential histogram.
 type expoHistogramDataPoint[N int64 | float64] struct {
-	attrs         attribute.Set
+	attrs attribute.Set
 	// res           FilteredExemplarReservoir[N]
 	// dropExemplars bool
 

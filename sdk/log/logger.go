@@ -14,8 +14,8 @@ import (
 	"github.com/karelbilek/opentelemetry/attribute"
 	"github.com/karelbilek/opentelemetry/log"
 	"github.com/karelbilek/opentelemetry/sdk/instrumentation"
-	semconv "github.com/karelbilek/opentelemetry/semconv"
 	sdktrace "github.com/karelbilek/opentelemetry/sdk/trace"
+	semconv "github.com/karelbilek/opentelemetry/semconv"
 )
 
 var now = time.Now

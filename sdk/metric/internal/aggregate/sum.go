@@ -13,10 +13,10 @@ import (
 )
 
 type sumValue[N int64 | float64] struct {
-	n             atomicCounter[N]
+	n atomicCounter[N]
 	// res           FilteredExemplarReservoir[N]
-	attrs         attribute.Set
-	startTime     time.Time
+	attrs     attribute.Set
+	startTime time.Time
 	// dropExemplars bool
 }
 
@@ -36,8 +36,8 @@ func (s *sumValueMap[N]) measure(
 		// _, isDrop := r.(*dropRes[N])
 		return &sumValue[N]{
 			// res:           r,
-			attrs:         attr,
-			startTime:     now(),
+			attrs:     attr,
+			startTime: now(),
 			// dropExemplars: isDrop,
 		}
 	})
