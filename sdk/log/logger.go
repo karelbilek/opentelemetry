@@ -49,6 +49,9 @@ func newLogger(p *LoggerProvider, scope instrumentation.Scope) *logger {
 }
 
 func (l *logger) Emit(ctx context.Context, r log.Record) {
+	if l == nil {
+		return // noop
+	}
 	processors := l.provider.processors
 	if len(processors) == 0 {
 		if l.provider.stopped.Load() {
@@ -97,6 +100,9 @@ func (l *logger) recordCreated(ctx context.Context) {
 // processed, true will be returned by default. A value of false will only be
 // returned if it can be positively verified that no Processor will process.
 func (l *logger) Enabled(ctx context.Context, param log.EnabledParameters) bool {
+	if l == nil {
+		return false // noop
+	}
 	p := EnabledParameters{
 		InstrumentationScope: l.instrumentationScope,
 		Severity:             param.Severity,

@@ -12,7 +12,6 @@ import (
 	"github.com/karelbilek/opentelemetry/attribute"
 	"github.com/karelbilek/opentelemetry/internal/global"
 	"github.com/karelbilek/opentelemetry/log"
-	"github.com/karelbilek/opentelemetry/log/noop"
 	"github.com/karelbilek/opentelemetry/sdk/instrumentation"
 	"github.com/karelbilek/opentelemetry/sdk/log/internal/attrnorm"
 	"github.com/karelbilek/opentelemetry/sdk/resource"
@@ -24,10 +23,6 @@ type providerConfig struct {
 	attrCntLim    int
 	attrValLenLim int
 	allowDupKeys  bool
-}
-
-type experimentalOption interface {
-	Experimental()
 }
 
 func newProviderConfig(resource *resource.Resource, processors []Processor, attrCntLim int, attrValLenLim int, allowDupKeys bool) providerConfig {
@@ -95,7 +90,8 @@ func (p *LoggerProvider) Logger(name string, version string, schemaURL string, a
 	}
 
 	if p.stopped.Load() {
-		return noop.NewLoggerProvider().Logger(name, version, schemaURL, attrs)
+		var l *logger = nil
+		return l // nil acts as noop
 	}
 
 	cfg := log.NewLoggerConfig(version, schemaURL, attrs)
