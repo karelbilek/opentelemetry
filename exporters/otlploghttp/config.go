@@ -32,13 +32,12 @@ func newConfig(
 	timeout time.Duration,
 	retryCfg retry.Config,
 ) config {
-	var c config
-	c.endpoint = endpoint
-	c.path = path
-	c.insecure = insecure
-	// c.compression=compression
-	c.timeout = c.timeout
-	c.retryCfg = retryCfg
-
-	return c
+	return config{
+		endpoint:       endpoint,
+		path:           path,
+		insecure:       insecure,
+		maxRequestSize: maxRequestSize,
+		timeout:        timeout,
+		retryCfg:       retryCfg,
+	}
 }
