@@ -12,11 +12,33 @@ import (
 )
 
 type tracer struct {
+	noop                 bool
 	provider             *TracerProvider
 	instrumentationScope instrumentation.Scope
 }
 
 var _ trace.Tracer = &tracer{}
+
+func (tr *tracer) noopStart(ctx context.Context) (context.Context, trace.Span) {
+	span := SpanFromContext(ctx)
+
+	// If the parent context contains a non-zero span context, that span
+	// context needs to be returned as a non-recording span
+	// (https://github.com/open-telemetry/opentelemetry-specification/blob/3a1dde966a4ce87cce5adf464359fe369741bbea/specification/trace/api.md#behavior-of-the-api-in-the-absence-of-an-installed-sdk).
+	var zeroSC trace.SpanContext
+	if sc := span.SpanContext(); !sc.Equal(zeroSC) {
+		if !span.IsRecording() {
+			// If the span is not recording return it directly.
+			return ctx, span
+		}
+		// Otherwise, return the span context needs in a non-recording span.
+		span = &recordingSpan{noop: true, spanContext: sc}
+	} else {
+		// No parent, return a No-Op span with an empty span context.
+		span = noopSpanInstance
+	}
+	return ContextWithSpan(ctx, span), span
+}
 
 // Start starts a Span and returns it along with a context containing it.
 //
@@ -28,6 +50,9 @@ func (tr *tracer) Start(
 	name string,
 	options ...trace.SpanStartOption,
 ) (context.Context, trace.Span) {
+	if tr.noop {
+		return tr.noopStart(ctx)
+	}
 	config := trace.NewSpanStartConfig(options...)
 
 	if ctx == nil {
@@ -36,14 +61,14 @@ func (tr *tracer) Start(
 	}
 
 	// For local spans created by this SDK, track child span count.
-	if p := trace.SpanFromContext(ctx); p != nil {
+	if p := SpanFromContext(ctx); p != nil {
 		if sdkSpan, ok := p.(*recordingSpan); ok {
 			sdkSpan.addChild()
 		}
 	}
 
 	s := tr.newSpan(ctx, name, &config)
-	newCtx := trace.ContextWithSpan(ctx, s)
+	newCtx := ContextWithSpan(ctx, s)
 
 	if rw, ok := s.(ReadWriteSpan); ok && s.IsRecording() {
 		sps := tr.provider.getSpanProcessors()
@@ -71,9 +96,9 @@ func (tr *tracer) newSpan(ctx context.Context, name string, config *trace.SpanCo
 	// as a parent which contains an invalid trace ID and is not remote.
 	var psc trace.SpanContext
 	if config.NewRoot() {
-		ctx = trace.ContextWithSpanContext(ctx, psc)
+		ctx = ContextWithSpanContext(ctx, psc)
 	} else {
-		psc = trace.SpanContextFromContext(ctx)
+		psc = SpanContextFromContext(ctx)
 	}
 
 	// If there is a valid parent trace ID, use it to ensure the continuity of
@@ -158,6 +183,6 @@ func (tr *tracer) newRecordingSpan(
 }
 
 // newNonRecordingSpan returns a new configured nonRecordingSpan.
-func (tr *tracer) newNonRecordingSpan(sc trace.SpanContext) nonRecordingSpan {
-	return nonRecordingSpan{tracer: tr, sc: sc}
+func (tr *tracer) newNonRecordingSpan(sc trace.SpanContext) *recordingSpan {
+	return &recordingSpan{tracer: tr, spanContext: sc, noop: true}
 }

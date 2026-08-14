@@ -98,6 +98,8 @@ type ReadWriteSpan interface {
 // recordingSpan is an implementation of the OpenTelemetry Span API
 // representing the individual component of a trace that is sampled.
 type recordingSpan struct {
+	noop bool // noop and nonrecording are same, except for tracer==nil in noop
+
 	// mu protects the contents of this span.
 	mu sync.Mutex
 
@@ -169,13 +171,14 @@ func (s *recordingSpan) SpanContext() trace.SpanContext {
 	if s == nil {
 		return trace.SpanContext{}
 	}
+	// s.noop ends up here
 	return s.spanContext
 }
 
 // IsRecording reports whether this span is being recorded. If this span has ended
 // this will return false.
 func (s *recordingSpan) IsRecording() bool {
-	if s == nil {
+	if s == nil || s.noop {
 		return false
 	}
 	s.mu.Lock()
@@ -200,7 +203,7 @@ func (s *recordingSpan) isRecording() bool {
 // included in the set status when the code is for an error. If this span is
 // not being recorded than this method does nothing.
 func (s *recordingSpan) SetStatus(code codes.Code, description string) {
-	if s == nil {
+	if s == nil || s.noop {
 		return
 	}
 
@@ -232,7 +235,7 @@ func (s *recordingSpan) SetStatus(code codes.Code, description string) {
 // attributes the span is configured to have, the last added attributes will
 // be dropped.
 func (s *recordingSpan) SetAttributes(attributes ...attribute.KeyValue) {
-	if s == nil || len(attributes) == 0 {
+	if s == nil || len(attributes) == 0 || s.noop {
 		return
 	}
 
@@ -365,7 +368,7 @@ func dedupAttr(attr attribute.KeyValue) attribute.KeyValue {
 func (s *recordingSpan) End(options ...trace.SpanEndOption) {
 	// Do not start by checking if the span is being recorded which requires
 	// acquiring a lock. Make a minimal check that the span is not nil.
-	if s == nil {
+	if s == nil || s.noop {
 		return
 	}
 
@@ -441,7 +444,7 @@ func monotonicEndTime(start time.Time) time.Time {
 // does not change the Span status. If this span is not being recorded or err is nil
 // than this method does nothing.
 func (s *recordingSpan) RecordError(err error, opts ...trace.EventOption) {
-	if s == nil || err == nil {
+	if s == nil || err == nil || s.noop {
 		return
 	}
 
@@ -485,7 +488,7 @@ func recordStackTrace() string {
 // AddEvent adds an event with the provided name and options. If this span is
 // not being recorded then this method does nothing.
 func (s *recordingSpan) AddEvent(name string, o ...trace.EventOption) {
-	if s == nil {
+	if s == nil || s.noop {
 		return
 	}
 
@@ -523,7 +526,7 @@ func (s *recordingSpan) addEvent(name string, o ...trace.EventOption) {
 // SetName sets the name of this span. If this span is not being recorded than
 // this method does nothing.
 func (s *recordingSpan) SetName(name string) {
-	if s == nil {
+	if s == nil || s.noop {
 		return
 	}
 
@@ -654,7 +657,7 @@ func (s *recordingSpan) Resource() *resource.Resource {
 }
 
 func (s *recordingSpan) AddLink(link trace.Link) {
-	if s == nil {
+	if s == nil || s.noop {
 		return
 	}
 	if !link.SpanContext.IsValid() && len(link.Attributes) == 0 &&
@@ -720,6 +723,14 @@ func (s *recordingSpan) ChildSpanCount() int {
 // TracerProvider returns a trace.TracerProvider that can be used to generate
 // additional Spans on the same telemetry pipeline as the current Span.
 func (s *recordingSpan) TracerProvider() trace.TracerProvider {
+	if s == nil {
+		return &TracerProvider{noop: true}
+	}
+	if s.noop == true {
+		if s.tracer == nil {
+			return &TracerProvider{noop: true}
+		}
+	}
 	return s.tracer.provider
 }
 
@@ -786,51 +797,6 @@ func (s *recordingSpan) runtimeTrace(ctx context.Context) context.Context {
 
 	return nctx
 }
-
-// nonRecordingSpan is a minimal implementation of the OpenTelemetry Span API
-// that wraps a SpanContext. It performs no operations other than to return
-// the wrapped SpanContext or TracerProvider that created it.
-type nonRecordingSpan struct {
-	// tracer is the SDK tracer that created this span.
-	tracer *tracer
-	sc     trace.SpanContext
-}
-
-var _ trace.Span = nonRecordingSpan{}
-
-// SpanContext returns the wrapped SpanContext.
-func (s nonRecordingSpan) SpanContext() trace.SpanContext { return s.sc }
-
-// IsRecording always returns false.
-func (nonRecordingSpan) IsRecording() bool { return false }
-
-// SetStatus does nothing.
-func (nonRecordingSpan) SetStatus(codes.Code, string) {}
-
-// SetError does nothing.
-func (nonRecordingSpan) SetError(bool) {}
-
-// SetAttributes does nothing.
-func (nonRecordingSpan) SetAttributes(...attribute.KeyValue) {}
-
-// End does nothing.
-func (nonRecordingSpan) End(...trace.SpanEndOption) {}
-
-// RecordError does nothing.
-func (nonRecordingSpan) RecordError(error, ...trace.EventOption) {}
-
-// AddEvent does nothing.
-func (nonRecordingSpan) AddEvent(string, ...trace.EventOption) {}
-
-// AddLink does nothing.
-func (nonRecordingSpan) AddLink(trace.Link) {}
-
-// SetName does nothing.
-func (nonRecordingSpan) SetName(string) {}
-
-// TracerProvider returns the trace.TracerProvider that provided the Tracer
-// that created this span.
-func (s nonRecordingSpan) TracerProvider() trace.TracerProvider { return s.tracer.provider }
 
 func isRecording(s SamplingResult) bool {
 	return s.Decision == RecordOnly || s.Decision == RecordAndSample

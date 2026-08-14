@@ -16,7 +16,6 @@ import (
 	"github.com/karelbilek/opentelemetry/sdk/internal/attrnorm"
 	"github.com/karelbilek/opentelemetry/sdk/resource"
 	"github.com/karelbilek/opentelemetry/trace"
-	"github.com/karelbilek/opentelemetry/trace/noop"
 )
 
 const defaultTracerName = "github.com/karelbilek/opentelemetry/sdk/tracer"
@@ -68,6 +67,8 @@ func (cfg tracerProviderConfig) MarshalLog() any {
 // TracerProvider is an OpenTelemetry TracerProvider. It provides Tracers to
 // instrumentation so it can trace operational flow through a system.
 type TracerProvider struct {
+	noop bool
+
 	mu             sync.Mutex
 	namedTracer    map[instrumentation.Scope]*tracer
 	spanProcessors atomic.Pointer[spanProcessorStates]
@@ -153,9 +154,12 @@ func NewTracerProvider(
 //
 // This method is safe to be called concurrently.
 func (p *TracerProvider) Tracer(name string, opts ...trace.TracerOption) trace.Tracer {
+	if p.noop {
+		return &tracer{noop: true}
+	}
 	// This check happens before the mutex is acquired to avoid deadlocking if Tracer() is called from within Shutdown().
 	if p.isShutdown.Load() {
-		return noop.NewTracerProvider().Tracer(name, opts...)
+		return &tracer{noop: true}
 	}
 	c := trace.NewTracerConfig(opts...)
 	attrs, _ := attrnorm.Set(c.InstrumentationAttributes())
@@ -175,7 +179,8 @@ func (p *TracerProvider) Tracer(name string, opts ...trace.TracerOption) trace.T
 		// Must check the flag after acquiring the mutex to avoid returning a valid tracer if Shutdown() ran
 		// after the first check above but before we acquired the mutex.
 		if p.isShutdown.Load() {
-			return noop.NewTracerProvider().Tracer(name, opts...), true
+			tp := &TracerProvider{noop: true}
+			return tp.Tracer(name, opts...), true
 		}
 		t, ok := p.namedTracer[is]
 		if !ok {

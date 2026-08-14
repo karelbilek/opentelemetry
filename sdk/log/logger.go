@@ -15,7 +15,7 @@ import (
 	"github.com/karelbilek/opentelemetry/log"
 	"github.com/karelbilek/opentelemetry/sdk/instrumentation"
 	semconv "github.com/karelbilek/opentelemetry/semconv"
-	"github.com/karelbilek/opentelemetry/trace"
+	sdktrace "github.com/karelbilek/opentelemetry/sdk/trace"
 )
 
 var now = time.Now
@@ -126,7 +126,7 @@ func (l *Logger) Enabled(ctx context.Context, param log.EnabledParameters) bool 
 }
 
 func (l *Logger) newRecord(ctx context.Context, r log.Record) Record {
-	sc := trace.SpanContextFromContext(ctx)
+	sc := sdktrace.SpanContextFromContext(ctx)
 
 	newRecord := Record{
 		eventName:         r.EventName(),

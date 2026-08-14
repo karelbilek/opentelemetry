@@ -69,7 +69,7 @@ type traceIDRatioSampler struct {
 }
 
 func (ts traceIDRatioSampler) ShouldSample(p SamplingParameters) SamplingResult {
-	state := trace.SpanContextFromContext(p.ParentContext).TraceState()
+	state := SpanContextFromContext(p.ParentContext).TraceState()
 	x := binary.BigEndian.Uint64(p.TraceID[8:16]) >> 1
 	if x < ts.traceIDUpperBound {
 		return SamplingResult{
@@ -121,7 +121,7 @@ type alwaysOnSampler struct{}
 func (alwaysOnSampler) ShouldSample(p SamplingParameters) SamplingResult {
 	return SamplingResult{
 		Decision:   RecordAndSample,
-		Tracestate: trace.SpanContextFromContext(p.ParentContext).TraceState(),
+		Tracestate: SpanContextFromContext(p.ParentContext).TraceState(),
 	}
 }
 
@@ -143,7 +143,7 @@ type alwaysOffSampler struct{}
 func (alwaysOffSampler) ShouldSample(p SamplingParameters) SamplingResult {
 	return SamplingResult{
 		Decision:   Drop,
-		Tracestate: trace.SpanContextFromContext(p.ParentContext).TraceState(),
+		Tracestate: SpanContextFromContext(p.ParentContext).TraceState(),
 	}
 }
 
@@ -165,7 +165,7 @@ type predeterminedSampler struct {
 func (s predeterminedSampler) ShouldSample(p SamplingParameters) SamplingResult {
 	return SamplingResult{
 		Decision:   s.decision,
-		Tracestate: trace.SpanContextFromContext(p.ParentContext).TraceState(),
+		Tracestate: SpanContextFromContext(p.ParentContext).TraceState(),
 	}
 }
 
@@ -279,7 +279,7 @@ func (o localParentNotSampledOption) apply(config samplerConfig) samplerConfig {
 }
 
 func (pb parentBased) ShouldSample(p SamplingParameters) SamplingResult {
-	psc := trace.SpanContextFromContext(p.ParentContext)
+	psc := SpanContextFromContext(p.ParentContext)
 	if psc.IsValid() {
 		if psc.IsRemote() {
 			if psc.IsSampled() {
@@ -326,7 +326,7 @@ func (ar alwaysRecord) ShouldSample(p SamplingParameters) SamplingResult {
 	if rootSamplerSamplingResult.Decision == Drop {
 		return SamplingResult{
 			Decision:   RecordOnly,
-			Tracestate: trace.SpanContextFromContext(p.ParentContext).TraceState(),
+			Tracestate: SpanContextFromContext(p.ParentContext).TraceState(),
 		}
 	}
 	return rootSamplerSamplingResult
