@@ -24,10 +24,13 @@ Non-goals:
 * adherence to specifications
   * most of things I don't like about otel-go (env vars, global vars, multiple layers) is mandated by the specs!
 * simplicity of code - it's mostly copied from OTLP (with copyrights intact)
+  * however what I don't need is removed
 * mergeability of code back from upstread
   * I do changes to remove the env variable reading
 * tests
   * all tests are removed because I do far too many changes, and don't include test packages
+
+The docs are all wrong now, including the go doc - I am not rewriting them right now
 
 Should you use it? I don't know. I make it half to learn OTLP.
 
