@@ -25,9 +25,6 @@ const (
 	exceptionMessageKey = semconv.ExceptionMessageKey
 )
 
-// Compile-time check logger implements log.Logger.
-// var _ log.Logger = (*Logger)(nil)
-
 type Logger struct {
 	provider             *LoggerProvider
 	instrumentationScope instrumentation.Scope

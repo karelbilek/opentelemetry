@@ -45,9 +45,6 @@ func (s *sumValueMap[N]) measure(
 	// It is possible for collection to race with measurement and observe the
 	// exemplar in the batch of metrics after the add() for cumulative sums.
 	// This is an accepted tradeoff to avoid locking during measurement.
-	// if !sv.dropExemplars {
-	// 	sv.res.Offer(ctx, value, lazy)
-	// }
 }
 
 // newDeltaSum returns an aggregator that summarizes a set of measurements as

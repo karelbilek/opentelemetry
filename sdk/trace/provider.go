@@ -238,11 +238,6 @@ func (p *TracerProvider) Shutdown(ctx context.Context) error {
 	return p.processor.Shutdown(ctx)
 }
 
-// // TracerProviderOption configures a TracerProvider.
-// type TracerProviderOption interface {
-// 	apply(tracerProviderConfig) tracerProviderConfig
-// }
-
 type traceProviderOptionFunc func(tracerProviderConfig) tracerProviderConfig
 
 func (fn traceProviderOptionFunc) apply(cfg tracerProviderConfig) tracerProviderConfig {

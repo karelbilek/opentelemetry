@@ -183,8 +183,3 @@ func newManualReaderConfig(
 		cardinalityLimitSelector: cardinalityLimitSelector,
 	}
 }
-
-// // ManualReaderOption applies a configuration option value to a ManualReader.
-// type ManualReaderOption interface {
-// 	applyManual(manualReaderConfig) manualReaderConfig
-// }

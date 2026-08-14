@@ -35,8 +35,6 @@ type Snapshot struct {
 	flushed chan struct{} // flushed!= nil -> forceFlushSpan
 }
 
-// var _ ReadOnlySpan = Snapshot{}
-
 // Name returns the name of the span.
 func (s *Snapshot) Name() string {
 	return s.name

@@ -144,9 +144,6 @@ func (s *deltaHistogram[N]) measure(
 	if !s.noSum {
 		h.total.add(value)
 	}
-	// if !h.dropExemplars {
-	// 	h.res.Offer(ctx, value, lazy)
-	// }
 }
 
 // newDeltaHistogram returns a histogram that is reset each time it is
@@ -333,9 +330,6 @@ func (s *cumulativeHistogram[N]) measure(
 	if !s.noSum {
 		h.hotColdPoint[hotIdx].total.add(value)
 	}
-	// if !h.dropExemplars {
-	// 	h.res.Offer(ctx, value, lazy)
-	// }
 }
 
 func (s *cumulativeHistogram[N]) collect(

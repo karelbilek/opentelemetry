@@ -21,128 +21,6 @@ import (
 	"github.com/karelbilek/opentelemetry/trace"
 )
 
-// // ReadOnlySpan allows reading information from the data structure underlying a
-// // trace.Span. It is used in places where reading information from a span is
-// // necessary but changing the span isn't necessary or allowed.
-// //
-// // Warning: methods may be added to this interface in minor releases.
-// type ReadOnlySpan interface {
-// 	// Name returns the name of the span.
-// 	Name() string
-// 	// SpanContext returns the unique SpanContext that identifies the span.
-// 	SpanContext() trace.SpanContext
-// 	// Parent returns the unique SpanContext that identifies the parent of the
-// 	// span if one exists. If the span has no parent the returned SpanContext
-// 	// will be invalid.
-// 	Parent() trace.SpanContext
-// 	// SpanKind returns the role the span plays in a Trace.
-// 	SpanKind() trace.SpanKind
-// 	// StartTime returns the time the span started recording.
-// 	StartTime() time.Time
-// 	// EndTime returns the time the span stopped recording. It will be zero if
-// 	// the span has not ended.
-// 	EndTime() time.Time
-// 	// Attributes returns the defining attributes of the span.
-// 	// The order of the returned attributes is not guaranteed to be stable across invocations.
-// 	Attributes() []attribute.KeyValue
-// 	// Links returns all the links the span has to other spans.
-// 	Links() []Link
-// 	// Events returns all the events that occurred within in the spans
-// 	// lifetime.
-// 	Events() []Event
-// 	// Status returns the spans status.
-// 	Status() Status
-// 	// InstrumentationScope returns information about the instrumentation
-// 	// scope that created the span.
-// 	InstrumentationScope() instrumentation.Scope
-// 	// InstrumentationLibrary returns information about the instrumentation
-// 	// library that created the span.
-// 	//
-// 	// Deprecated: please use InstrumentationScope instead.
-// 	// InstrumentationLibrary() instrumentation.Library //nolint:staticcheck // This method needs to be define for backwards compatibility
-// 	// Resource returns information about the entity that produced the span.
-// 	Resource() *resource.Resource
-// 	// DroppedAttributes returns the number of attributes dropped by the span
-// 	// due to limits being reached.
-// 	DroppedAttributes() int
-// 	// DroppedLinks returns the number of links dropped by the span due to
-// 	// limits being reached.
-// 	DroppedLinks() int
-// 	// DroppedEvents returns the number of events dropped by the span due to
-// 	// limits being reached.
-// 	DroppedEvents() int
-// 	// ChildSpanCount returns the count of spans that consider the span a
-// 	// direct parent.
-// 	ChildSpanCount() int
-
-// 	// A private method to prevent users implementing the
-// 	// interface and so future additions to it will not
-// 	// violate compatibility.
-// 	// private()
-// }
-
-// // ReadWriteSpan exposes the same methods as trace.Span and in addition allows
-// // reading information from the underlying data structure.
-// // This interface exposes the union of the methods of trace.Span (which is a
-// // "write-only" span) and ReadOnlySpan. New methods for writing or reading span
-// // information should be added under trace.Span or ReadOnlySpan, respectively.
-// //
-// // Warning: methods may be added to this interface in minor releases.
-// type ReadWriteSpan interface {
-// 	trace.Span
-// 	ReadOnlySpan
-// }
-
-// type ReadOnlySpan interface {
-// 	// Name returns the name of the span.
-// 	Name() string
-// 	// SpanContext returns the unique SpanContext that identifies the span.
-// 	SpanContext() trace.SpanContext
-// 	// Parent returns the unique SpanContext that identifies the parent of the
-// 	// span if one exists. If the span has no parent the returned SpanContext
-// 	// will be invalid.
-// 	Parent() trace.SpanContext
-// 	// SpanKind returns the role the span plays in a Trace.
-// 	SpanKind() trace.SpanKind
-// 	// StartTime returns the time the span started recording.
-// 	StartTime() time.Time
-// 	// EndTime returns the time the span stopped recording. It will be zero if
-// 	// the span has not ended.
-// 	EndTime() time.Time
-// 	// Attributes returns the defining attributes of the span.
-// 	// The order of the returned attributes is not guaranteed to be stable across invocations.
-// 	Attributes() []attribute.KeyValue
-// 	// Links returns all the links the span has to other spans.
-// 	Links() []Link
-// 	// Events returns all the events that occurred within in the spans
-// 	// lifetime.
-// 	Events() []Event
-// 	// Status returns the spans status.
-// 	Status() Status
-// 	// InstrumentationScope returns information about the instrumentation
-// 	// scope that created the span.
-// 	InstrumentationScope() instrumentation.Scope
-// 	// InstrumentationLibrary returns information about the instrumentation
-// 	// library that created the span.
-// 	//
-// 	// Deprecated: please use InstrumentationScope instead.
-// 	// InstrumentationLibrary() instrumentation.Library //nolint:staticcheck // This method needs to be define for backwards compatibility
-// 	// Resource returns information about the entity that produced the span.
-// 	Resource() *resource.Resource
-// 	// DroppedAttributes returns the number of attributes dropped by the span
-// 	// due to limits being reached.
-// 	DroppedAttributes() int
-// 	// DroppedLinks returns the number of links dropped by the span due to
-// 	// limits being reached.
-// 	DroppedLinks() int
-// 	// DroppedEvents returns the number of events dropped by the span due to
-// 	// limits being reached.
-// 	DroppedEvents() int
-// 	// ChildSpanCount returns the count of spans that consider the span a
-// 	// direct parent.
-// 	ChildSpanCount() int
-// }
-
 // Span is an implementation of the OpenTelemetry Span API
 // representing the individual component of a trace that is sampled.
 type Span struct {
@@ -204,11 +82,6 @@ type Span struct {
 	// containing this span without requiring an additional allocation.
 	origCtx context.Context
 }
-
-var (
-// _ ReadWriteSpan = (*Span)(nil)
-// _ runtimeTracer = (*Span)(nil)
-)
 
 func (s *Span) setOrigCtx(ctx context.Context) {
 	s.origCtx = ctx
@@ -703,8 +576,6 @@ func (s *Span) addChild() {
 	}
 	s.childSpanCount++
 }
-
-// func (*Span) private() {}
 
 // runtimeTrace starts a "runtime/trace".Task for the span and returns a
 // context containing the task.

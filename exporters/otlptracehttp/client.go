@@ -93,10 +93,6 @@ func NewClient(endpoint string, urlPath string, insecure bool, headers map[strin
 
 // Start does nothing in a HTTP client.
 func (c *client) Start(ctx context.Context) error {
-	// if c.cfg.Insecure && c.cfg.TLSCfg != nil {
-	// 	return errInsecureEndpointWithTLS
-	// }
-
 	var err error
 	// nothing to do
 	select {

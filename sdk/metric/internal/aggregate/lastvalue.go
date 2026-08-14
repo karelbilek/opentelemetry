@@ -47,9 +47,6 @@ func (s *lastValueMap[N]) measure(
 	})
 
 	lv.value.Store(value)
-	// if !lv.dropExemplars {
-	// 	lv.res.Offer(ctx, value, lazy)
-	// }
 }
 
 func newDeltaLastValue[N int64 | float64](

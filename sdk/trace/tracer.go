@@ -17,8 +17,6 @@ type Tracer struct {
 	instrumentationScope instrumentation.Scope
 }
 
-// var _ trace.Tracer = &Tracer{}
-
 func (tr *Tracer) noopStart(ctx context.Context) (context.Context, *Span) {
 	span := SpanFromContext(ctx)
 
@@ -61,34 +59,17 @@ func (tr *Tracer) Start(
 	}
 
 	// For local spans created by this SDK, track child span count.
-	if p := SpanFromContext(ctx); p != nil {
-		// if sdkSpan, ok := p.(*Span); ok {
-		p.addChild()
-		// }
-	}
+	SpanFromContext(ctx).addChild()
 
 	s := tr.newSpan(ctx, name, &config)
 	newCtx := ContextWithSpan(ctx, s)
 
-	// if rw, ok := s.(ReadWriteSpan); ok && s.IsRecording() {
-	// 	sps := tr.provider.getSpanProcessors()
-	// 	for _, sp := range sps {
-	// 		// Use original context.
-	// 		sp.sp.OnStart(ctx, rw)
-	// 	}
-	// }
 	if !s.noop {
 		newCtx = s.runtimeTrace(newCtx)
 	}
 
 	return newCtx, s
 }
-
-// type runtimeTracer interface {
-// 	// runtimeTrace starts a "runtime/trace".Task for the span and
-// 	// returns a context containing the task.
-// 	runtimeTrace(ctx context.Context) context.Context
-// }
 
 // newSpan returns a new configured span.
 func (tr *Tracer) newSpan(ctx context.Context, name string, config *trace.SpanConfig) *Span {

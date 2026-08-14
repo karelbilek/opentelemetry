@@ -25,9 +25,6 @@ const (
 	DefaultMaxExportBatchSize = 512
 )
 
-// BatchSpanProcessorOption configures a BatchSpanProcessor.
-// type BatchSpanProcessorOption func(o *BatchSpanProcessorOptions)
-
 // BatchSpanProcessorOptions is configuration settings for a
 // BatchSpanProcessor.
 type BatchSpanProcessorOptions struct {
@@ -78,8 +75,6 @@ type BatchSpanProcessor struct {
 
 	eh otel.ErrorHandler
 }
-
-// var _ SpanProcessor = (*batchSpanProcessor)(nil)
 
 // NewBatchSpanProcessor creates a new SpanProcessor that will send completed
 // span batches to the exporter with the supplied options.
@@ -153,15 +148,6 @@ func (bsp *BatchSpanProcessor) Shutdown(ctx context.Context) error {
 	})
 	return err
 }
-
-// type forceFlushSpan struct {
-// 	ReadOnlySpan
-// 	flushed chan struct{}
-// // }
-
-// func (forceFlushSpan) SpanContext() trace.SpanContext {
-// 	return trace.NewSpanContext(trace.SpanContextConfig{TraceFlags: trace.FlagsSampled})
-// }
 
 // ForceFlush exports all ended spans that have not yet been exported.
 func (bsp *BatchSpanProcessor) ForceFlush(ctx context.Context) error {

@@ -362,9 +362,6 @@ func (e *expoHistogram[N]) measure(
 		}
 	}
 	v.record(value, h)
-	// if !v.dropExemplars {
-	// 	v.res.Offer(ctx, value, lazy)
-	// }
 }
 
 func (e *expoHistogram[N]) delta(
