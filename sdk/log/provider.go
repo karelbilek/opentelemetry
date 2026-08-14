@@ -49,7 +49,7 @@ type LoggerProvider struct {
 	allowDupKeys              bool
 
 	loggersMu sync.Mutex
-	loggers   map[instrumentation.Scope]*logger
+	loggers   map[instrumentation.Scope]*Logger
 
 	stopped                   atomic.Bool
 	processorOperationsMu     sync.Mutex
@@ -58,9 +58,6 @@ type LoggerProvider struct {
 
 	noCmp [0]func() //nolint: unused  // This is indeed used.
 }
-
-// Compile-time check LoggerProvider implements log.LoggerProvider.
-var _ log.LoggerProvider = (*LoggerProvider)(nil)
 
 // NewLoggerProvider returns a new and configured LoggerProvider.
 //
@@ -84,13 +81,13 @@ func NewLoggerProvider(resource *resource.Resource, processors []Processor, attr
 // Calls made after [LoggerProvider.Shutdown] starts return a [noop.Logger].
 //
 // This method can be called concurrently.
-func (p *LoggerProvider) Logger(name string, version string, schemaURL string, attrs attribute.Set) log.Logger {
+func (p *LoggerProvider) Logger(name string, version string, schemaURL string, attrs attribute.Set) *Logger {
 	if name == "" {
 		global.Warn("Invalid Logger name.", "name", name)
 	}
 
 	if p.stopped.Load() {
-		var l *logger = nil
+		var l *Logger = nil
 		return l // nil acts as noop
 	}
 
@@ -110,7 +107,7 @@ func (p *LoggerProvider) Logger(name string, version string, schemaURL string, a
 
 	if p.loggers == nil {
 		l := newLogger(p, scope)
-		p.loggers = map[instrumentation.Scope]*logger{scope: l}
+		p.loggers = map[instrumentation.Scope]*Logger{scope: l}
 		return l
 	}
 

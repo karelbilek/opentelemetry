@@ -26,9 +26,9 @@ const (
 )
 
 // Compile-time check logger implements log.Logger.
-var _ log.Logger = (*logger)(nil)
+// var _ log.Logger = (*Logger)(nil)
 
-type logger struct {
+type Logger struct {
 	provider             *LoggerProvider
 	instrumentationScope instrumentation.Scope
 
@@ -39,8 +39,8 @@ type logger struct {
 	errorHandler otel.ErrorHandler
 }
 
-func newLogger(p *LoggerProvider, scope instrumentation.Scope) *logger {
-	l := &logger{
+func newLogger(p *LoggerProvider, scope instrumentation.Scope) *Logger {
+	l := &Logger{
 		provider:             p,
 		instrumentationScope: scope,
 	}
@@ -48,7 +48,7 @@ func newLogger(p *LoggerProvider, scope instrumentation.Scope) *logger {
 	return l
 }
 
-func (l *logger) Emit(ctx context.Context, r log.Record) {
+func (l *Logger) Emit(ctx context.Context, r log.Record) {
 	if l == nil {
 		return // noop
 	}
@@ -68,7 +68,7 @@ func (l *logger) Emit(ctx context.Context, r log.Record) {
 	}
 }
 
-func (l *logger) emit(ctx context.Context, r log.Record, processors []Processor) []error {
+func (l *Logger) emit(ctx context.Context, r log.Record, processors []Processor) []error {
 	if !l.provider.beginProcessorOperation() {
 		return nil
 	}
@@ -85,7 +85,7 @@ func (l *logger) emit(ctx context.Context, r log.Record, processors []Processor)
 	return errs
 }
 
-func (l *logger) recordCreated(ctx context.Context) {
+func (l *Logger) recordCreated(ctx context.Context) {
 	if l.recCntIncr != nil {
 		l.recCntIncr(ctx)
 	}
@@ -99,7 +99,7 @@ func (l *logger) recordCreated(ctx context.Context) {
 // If it is not possible to definitively determine the record will be
 // processed, true will be returned by default. A value of false will only be
 // returned if it can be positively verified that no Processor will process.
-func (l *logger) Enabled(ctx context.Context, param log.EnabledParameters) bool {
+func (l *Logger) Enabled(ctx context.Context, param log.EnabledParameters) bool {
 	if l == nil {
 		return false // noop
 	}
@@ -125,7 +125,7 @@ func (l *logger) Enabled(ctx context.Context, param log.EnabledParameters) bool 
 	return false
 }
 
-func (l *logger) newRecord(ctx context.Context, r log.Record) Record {
+func (l *Logger) newRecord(ctx context.Context, r log.Record) Record {
 	sc := trace.SpanContextFromContext(ctx)
 
 	newRecord := Record{

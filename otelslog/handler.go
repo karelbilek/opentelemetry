@@ -53,24 +53,25 @@ import (
 
 	"github.com/karelbilek/opentelemetry/attribute"
 	"github.com/karelbilek/opentelemetry/log"
+	sdklog "github.com/karelbilek/opentelemetry/sdk/log"
 	semconv "github.com/karelbilek/opentelemetry/semconv"
 )
 
 // NewLogger returns a new [slog.Logger] backed by a new [Handler]. See
 // [NewHandler] for details on how the backing Handler is created.
-func NewLogger(name string, provider log.LoggerProvider, version string, schemaURL string, attributes []attribute.KeyValue, source bool) *slog.Logger {
+func NewLogger(name string, provider *sdklog.LoggerProvider, version string, schemaURL string, attributes []attribute.KeyValue, source bool) *slog.Logger {
 	return slog.New(NewHandler(name, provider, version, schemaURL, attributes, source))
 }
 
 type config struct {
-	provider   log.LoggerProvider
+	provider   *sdklog.LoggerProvider
 	version    string
 	schemaURL  string
 	attributes []attribute.KeyValue
 	source     bool
 }
 
-func newConfig(provider log.LoggerProvider, version string, schemaURL string, attributes []attribute.KeyValue, source bool) config {
+func newConfig(provider *sdklog.LoggerProvider, version string, schemaURL string, attributes []attribute.KeyValue, source bool) config {
 	return config{
 		provider:   provider,
 		version:    version,
@@ -80,69 +81,10 @@ func newConfig(provider log.LoggerProvider, version string, schemaURL string, at
 	}
 }
 
-func (c config) logger(name string) log.Logger {
+func (c config) logger(name string) *sdklog.Logger {
 	set := attribute.NewSet(slices.Clone(c.attributes)...)
 	return c.provider.Logger(name, c.version, c.schemaURL, set)
 }
-
-// // Option configures a [Handler].
-// type Option interface {
-// 	apply(config) config
-// }
-
-// type optFunc func(config) config
-
-// func (f optFunc) apply(c config) config { return f(c) }
-
-// // WithVersion returns an [Option] that configures the version of the
-// // [log.Logger] used by a [Handler]. The version should be the version of the
-// // package that is being logged.
-// func WithVersion(version string) Option {
-// 	return optFunc(func(c config) config {
-// 		c.version = version
-// 		return c
-// 	})
-// }
-
-// // WithSchemaURL returns an [Option] that configures the semantic convention
-// // schema URL of the [log.Logger] used by a [Handler]. The schemaURL should be
-// // the schema URL for the semantic conventions used in log records.
-// func WithSchemaURL(schemaURL string) Option {
-// 	return optFunc(func(c config) config {
-// 		c.schemaURL = schemaURL
-// 		return c
-// 	})
-// }
-
-// // WithAttributes returns an [Option] that configures the instrumentation scope
-// // attributes of the [log.Logger] used by a [Handler].
-// func WithAttributes(attributes ...attribute.KeyValue) Option {
-// 	return optFunc(func(c config) config {
-// 		c.attributes = attributes
-// 		return c
-// 	})
-// }
-
-// // WithLoggerProvider returns an [Option] that configures [log.LoggerProvider]
-// // used by a [Handler] to create its [log.Logger].
-// //
-// // By default if this Option is not provided, the Handler will use the global
-// // LoggerProvider.
-// func WithLoggerProvider(provider log.LoggerProvider) Option {
-// 	return optFunc(func(c config) config {
-// 		c.provider = provider
-// 		return c
-// 	})
-// }
-
-// // WithSource returns an [Option] that configures the [Handler] to include
-// // the source location of the log record in log attributes.
-// func WithSource(source bool) Option {
-// 	return optFunc(func(c config) config {
-// 		c.source = source
-// 		return c
-// 	})
-// }
 
 // Handler is an [slog.Handler] that sends all logging records it receives to
 // OpenTelemetry. See package documentation for how conversions are made.
@@ -152,7 +94,7 @@ type Handler struct {
 
 	attrs  *kvBuffer
 	group  *group
-	logger log.Logger
+	logger *sdklog.Logger
 
 	source bool
 }
@@ -168,7 +110,7 @@ var _ slog.Handler = (*Handler)(nil)
 // The provided name needs to uniquely identify the code being logged. This is
 // most commonly the package name of the code. If name is empty, the
 // [log.Logger] implementation may override this value with a default.
-func NewHandler(name string, provider log.LoggerProvider, version string, schemaURL string, attributes []attribute.KeyValue, source bool) *Handler {
+func NewHandler(name string, provider *sdklog.LoggerProvider, version string, schemaURL string, attributes []attribute.KeyValue, source bool) *Handler {
 	cfg := newConfig(provider, version, schemaURL, attributes, source)
 	return &Handler{
 		logger: cfg.logger(name),
@@ -178,7 +120,8 @@ func NewHandler(name string, provider log.LoggerProvider, version string, schema
 
 // Handle handles the passed record.
 func (h *Handler) Handle(ctx context.Context, record slog.Record) error {
-	h.logger.Emit(ctx, h.convertRecord(record))
+	var r log.Record = h.convertRecord(record)
+	h.logger.Emit(ctx, r)
 	return nil
 }
 
