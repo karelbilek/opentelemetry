@@ -32,6 +32,6 @@ Non-goals:
 
 The docs are all wrong now, including the go doc - I am not rewriting them right now
 
-Should you use it? I don't know. I make it half to learn OTLP.
+Should you use it? I don't know. I make it half to learn OTLP. There are no tests; I am not rewriting the eisting tests to match new style, and I don't want to use LLMs to "make tests" that I don't read
 
 So far: traces and logs done, metrics not done. Example in `./example-trace`
