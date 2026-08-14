@@ -3,10 +3,6 @@
 
 package trace
 
-import (
-	"sync"
-)
-
 // // SpanProcessor is a processing pipeline for spans in the trace signal.
 // // SpanProcessors registered with a TracerProvider and are called at the start
 // // and end of a Span's lifecycle, and are called in the order they are
@@ -47,14 +43,3 @@ import (
 // 	// DO NOT CHANGE: any modification will not be backwards compatible and
 // 	// must never be done outside of a new major release.
 // }
-
-type spanProcessorState struct {
-	sp    *BatchSpanProcessor
-	state sync.Once
-}
-
-func newSpanProcessorState(sp *BatchSpanProcessor) *spanProcessorState {
-	return &spanProcessorState{sp: sp}
-}
-
-type spanProcessorStates []*spanProcessorState

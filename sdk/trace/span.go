@@ -467,14 +467,11 @@ func (s *Span) End(options ...trace.SpanEndOption) {
 	}
 	s.mu.Unlock()
 
-	sps := s.tracer.provider.getSpanProcessors()
-	if len(sps) == 0 {
+	bsp := s.tracer.provider.processor
+	if bsp == nil {
 		return
 	}
-	snap := s.snapshot()
-	for _, sp := range sps {
-		sp.sp.OnEnd(snap)
-	}
+	bsp.OnEnd(s.snapshot())
 }
 
 // monotonicEndTime returns the end time at present but offset from start,
