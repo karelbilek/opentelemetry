@@ -82,13 +82,15 @@ func NewLoggerProvider(resource *resource.Resource, processors []Processor, attr
 //
 // This method can be called concurrently.
 func (p *LoggerProvider) Logger(name string, version string, schemaURL string, attrs attribute.Set) *Logger {
+	if p == nil {
+		return nil
+	}
 	if name == "" {
 		global.Warn("Invalid Logger name.", "name", name)
 	}
 
 	if p.stopped.Load() {
-		var l *Logger = nil
-		return l // nil acts as noop
+		return nil
 	}
 
 	cfg := log.NewLoggerConfig(version, schemaURL, attrs)

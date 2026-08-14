@@ -120,8 +120,7 @@ func NewHandler(name string, provider *sdklog.LoggerProvider, version string, sc
 
 // Handle handles the passed record.
 func (h *Handler) Handle(ctx context.Context, record slog.Record) error {
-	var r log.Record = h.convertRecord(record)
-	h.logger.Emit(ctx, r)
+	h.logger.Emit(ctx, h.convertRecord(record))
 	return nil
 }
 
