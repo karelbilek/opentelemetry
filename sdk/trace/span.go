@@ -75,16 +75,6 @@ type Span struct {
 
 	// tracer is the SDK tracer that created this span.
 	tracer *Tracer
-
-	// origCtx is the context used when starting this span that has the
-	// recordingSpan instance set as the active span. If not nil, it is used
-	// when ending the span to ensure any metrics are recorded with a context
-	// containing this span without requiring an additional allocation.
-	origCtx context.Context
-}
-
-func (s *Span) setOrigCtx(ctx context.Context) {
-	s.origCtx = ctx
 }
 
 // SpanContext returns the SpanContext of this span.
