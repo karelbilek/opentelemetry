@@ -8,7 +8,6 @@ import (
 
 	"github.com/karelbilek/opentelemetry/attribute"
 	"github.com/karelbilek/opentelemetry/codes"
-	"github.com/karelbilek/opentelemetry/trace/embedded"
 )
 
 // NewNoopTracerProvider returns an implementation of TracerProvider that
@@ -21,7 +20,7 @@ func NewNoopTracerProvider() TracerProvider {
 	return noopTracerProvider{}
 }
 
-type noopTracerProvider struct{ embedded.TracerProvider }
+type noopTracerProvider struct{ }
 
 var _ TracerProvider = noopTracerProvider{}
 
@@ -31,7 +30,7 @@ func (noopTracerProvider) Tracer(string, ...TracerOption) Tracer {
 }
 
 // noopTracer is an implementation of Tracer that performs no operations.
-type noopTracer struct{ embedded.Tracer }
+type noopTracer struct{ }
 
 var _ Tracer = noopTracer{}
 
@@ -47,7 +46,7 @@ func (noopTracer) Start(ctx context.Context, _ string, _ ...SpanStartOption) (co
 }
 
 // noopSpan is an implementation of Span that performs no operations.
-type noopSpan struct{ embedded.Span }
+type noopSpan struct{  }
 
 var noopSpanInstance Span = noopSpan{}
 

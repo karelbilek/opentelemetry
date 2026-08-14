@@ -5,8 +5,6 @@ package metric
 
 import (
 	"context"
-
-	"github.com/karelbilek/opentelemetry/metric/embedded"
 )
 
 // Float64Counter is an instrument that records increasing float64 values.
@@ -15,11 +13,6 @@ import (
 // package documentation on API implementation for information on how to set
 // default behavior for unimplemented methods.
 type Float64Counter interface {
-	// Users of the interface can ignore this. This embedded type is only used
-	// by implementations of this interface. See the "API Implementations"
-	// section of the package documentation for more information.
-	embedded.Float64Counter
-
 	// Add records a change to the counter.
 	//
 	// Use the WithAttributeSet (or, if performance is not a concern,
@@ -83,11 +76,6 @@ type Float64CounterOption interface {
 // package documentation on API implementation for information on how to set
 // default behavior for unimplemented methods.
 type Float64UpDownCounter interface {
-	// Users of the interface can ignore this. This embedded type is only used
-	// by implementations of this interface. See the "API Implementations"
-	// section of the package documentation for more information.
-	embedded.Float64UpDownCounter
-
 	// Add records a change to the counter.
 	//
 	// Use the WithAttributeSet (or, if performance is not a concern,
@@ -151,11 +139,6 @@ type Float64UpDownCounterOption interface {
 // package documentation on API implementation for information on how to set
 // default behavior for unimplemented methods.
 type Float64Histogram interface {
-	// Users of the interface can ignore this. This embedded type is only used
-	// by implementations of this interface. See the "API Implementations"
-	// section of the package documentation for more information.
-	embedded.Float64Histogram
-
 	// Record adds an additional value to the distribution.
 	//
 	// The incr value is expected to be non-negative.
@@ -226,11 +209,6 @@ type Float64HistogramOption interface {
 // package documentation on API implementation for information on how to set
 // default behavior for unimplemented methods.
 type Float64Gauge interface {
-	// Users of the interface can ignore this. This embedded type is only used
-	// by implementations of this interface. See the "API Implementations"
-	// section of the package documentation for more information.
-	embedded.Float64Gauge
-
 	// Record records the instantaneous value.
 	//
 	// Use the WithAttributeSet (or, if performance is not a concern,

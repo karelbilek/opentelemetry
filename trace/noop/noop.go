@@ -18,7 +18,6 @@ import (
 	"github.com/karelbilek/opentelemetry/attribute"
 	"github.com/karelbilek/opentelemetry/codes"
 	"github.com/karelbilek/opentelemetry/trace"
-	"github.com/karelbilek/opentelemetry/trace/embedded"
 )
 
 var (
@@ -30,7 +29,7 @@ var (
 )
 
 // TracerProvider is an OpenTelemetry No-Op TracerProvider.
-type TracerProvider struct{ embedded.TracerProvider }
+type TracerProvider struct{ }
 
 // NewTracerProvider returns a TracerProvider that does not record any telemetry.
 func NewTracerProvider() TracerProvider {
@@ -43,7 +42,7 @@ func (TracerProvider) Tracer(string, ...trace.TracerOption) trace.Tracer {
 }
 
 // Tracer is an OpenTelemetry No-Op Tracer.
-type Tracer struct{ embedded.Tracer }
+type Tracer struct{  }
 
 // Start creates a span. The created span will be set in a child context of ctx
 // and returned with the span.
@@ -76,8 +75,6 @@ var noopSpanInstance trace.Span = Span{}
 
 // Span is an OpenTelemetry No-Op Span.
 type Span struct {
-	embedded.Span
-
 	sc trace.SpanContext
 }
 

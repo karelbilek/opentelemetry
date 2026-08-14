@@ -8,7 +8,6 @@ import (
 
 	"github.com/karelbilek/opentelemetry/attribute"
 	"github.com/karelbilek/opentelemetry/codes"
-	"github.com/karelbilek/opentelemetry/trace/embedded"
 )
 
 // Span is the individual component of a trace. It represents a single named
@@ -20,11 +19,6 @@ import (
 // package documentation on API implementation for information on how to set
 // default behavior for unimplemented methods.
 type Span interface {
-	// Users of the interface can ignore this. This embedded type is only used
-	// by implementations of this interface. See the "API Implementations"
-	// section of the package documentation for more information.
-	embedded.Span
-
 	// End completes the Span. The Span is considered complete and ready to be
 	// delivered through the rest of the telemetry pipeline after this method
 	// is called. Therefore, updates to the Span are not allowed after this

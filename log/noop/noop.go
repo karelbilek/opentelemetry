@@ -19,7 +19,6 @@ import (
 
 	"github.com/karelbilek/opentelemetry/attribute"
 	"github.com/karelbilek/opentelemetry/log"
-	"github.com/karelbilek/opentelemetry/log/embedded"
 )
 
 var (
@@ -29,7 +28,7 @@ var (
 )
 
 // LoggerProvider is an OpenTelemetry No-Op LoggerProvider.
-type LoggerProvider struct{ embedded.LoggerProvider }
+type LoggerProvider struct{  }
 
 // NewLoggerProvider returns a LoggerProvider that does not record any telemetry.
 func NewLoggerProvider() LoggerProvider {
@@ -42,7 +41,7 @@ func (LoggerProvider) Logger(string, string, string, attribute.Set) log.Logger {
 }
 
 // Logger is an OpenTelemetry No-Op Logger.
-type Logger struct{ embedded.Logger }
+type Logger struct{  }
 
 // Emit does nothing.
 func (Logger) Emit(context.Context, log.Record) {}

@@ -3,7 +3,6 @@
 
 package trace
 
-import "github.com/karelbilek/opentelemetry/trace/embedded"
 
 // TracerProvider provides Tracers that are used by instrumentation code to
 // trace computational workflows.
@@ -23,11 +22,6 @@ import "github.com/karelbilek/opentelemetry/trace/embedded"
 // package documentation on API implementation for information on how to set
 // default behavior for unimplemented methods.
 type TracerProvider interface {
-	// Users of the interface can ignore this. This embedded type is only used
-	// by implementations of this interface. See the "API Implementations"
-	// section of the package documentation for more information.
-	embedded.TracerProvider
-
 	// Tracer returns a unique Tracer scoped to be used by instrumentation code
 	// to trace computational workflows. The scope and identity of that
 	// instrumentation code is uniquely defined by the name and options passed.

@@ -21,7 +21,6 @@ import (
 	"github.com/karelbilek/opentelemetry/sdk/resource"
 	semconv "github.com/karelbilek/opentelemetry/semconv"
 	"github.com/karelbilek/opentelemetry/trace"
-	"github.com/karelbilek/opentelemetry/trace/embedded"
 )
 
 // ReadOnlySpan allows reading information from the data structure underlying a
@@ -99,8 +98,6 @@ type ReadWriteSpan interface {
 // recordingSpan is an implementation of the OpenTelemetry Span API
 // representing the individual component of a trace that is sampled.
 type recordingSpan struct {
-	embedded.Span
-
 	// mu protects the contents of this span.
 	mu sync.Mutex
 
@@ -794,8 +791,6 @@ func (s *recordingSpan) runtimeTrace(ctx context.Context) context.Context {
 // that wraps a SpanContext. It performs no operations other than to return
 // the wrapped SpanContext or TracerProvider that created it.
 type nonRecordingSpan struct {
-	embedded.Span
-
 	// tracer is the SDK tracer that created this span.
 	tracer *tracer
 	sc     trace.SpanContext

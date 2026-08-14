@@ -5,7 +5,6 @@ package log
 
 import (
 	"github.com/karelbilek/opentelemetry/attribute"
-	"github.com/karelbilek/opentelemetry/log/embedded"
 )
 
 // LoggerProvider provides access to [Logger].
@@ -14,10 +13,6 @@ import (
 // package documentation on API implementation for information on how to set
 // default behavior for unimplemented methods.
 type LoggerProvider interface {
-	// Users of the interface can ignore this. This embedded type is only used
-	// by implementations of this interface. See the "API Implementations"
-	// section of the package documentation for more information.
-	embedded.LoggerProvider
 
 	// Logger returns a new [Logger] with the provided name and configuration.
 	//

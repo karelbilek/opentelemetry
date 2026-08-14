@@ -9,7 +9,6 @@ import (
 
 	"github.com/karelbilek/opentelemetry/internal/global"
 	"github.com/karelbilek/opentelemetry/metric"
-	"github.com/karelbilek/opentelemetry/metric/embedded"
 	"github.com/karelbilek/opentelemetry/metric/noop"
 	"github.com/karelbilek/opentelemetry/sdk/instrumentation"
 	"github.com/karelbilek/opentelemetry/sdk/metric/internal/attrnorm"
@@ -21,8 +20,6 @@ import (
 // the same Views applied to them, and have their produced metric telemetry
 // passed to the configured Readers.
 type MeterProvider struct {
-	embedded.MeterProvider
-
 	pipes  pipelines
 	meters cache[instrumentation.Scope, *meter]
 

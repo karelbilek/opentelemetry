@@ -13,7 +13,6 @@ import (
 	otel "github.com/karelbilek/opentelemetry"
 	"github.com/karelbilek/opentelemetry/attribute"
 	"github.com/karelbilek/opentelemetry/log"
-	"github.com/karelbilek/opentelemetry/log/embedded"
 	"github.com/karelbilek/opentelemetry/sdk/instrumentation"
 	semconv "github.com/karelbilek/opentelemetry/semconv"
 	"github.com/karelbilek/opentelemetry/trace"
@@ -30,8 +29,6 @@ const (
 var _ log.Logger = (*logger)(nil)
 
 type logger struct {
-	embedded.Logger
-
 	provider             *LoggerProvider
 	instrumentationScope instrumentation.Scope
 

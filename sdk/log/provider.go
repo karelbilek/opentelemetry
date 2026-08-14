@@ -12,7 +12,6 @@ import (
 	"github.com/karelbilek/opentelemetry/attribute"
 	"github.com/karelbilek/opentelemetry/internal/global"
 	"github.com/karelbilek/opentelemetry/log"
-	"github.com/karelbilek/opentelemetry/log/embedded"
 	"github.com/karelbilek/opentelemetry/log/noop"
 	"github.com/karelbilek/opentelemetry/sdk/instrumentation"
 	"github.com/karelbilek/opentelemetry/sdk/log/internal/attrnorm"
@@ -48,8 +47,6 @@ func newProviderConfig(resource *resource.Resource, processors []Processor, attr
 // Loggers created by the LoggerProvider return false, and calls to
 // [log.Logger.Emit] perform no operation.
 type LoggerProvider struct {
-	embedded.LoggerProvider
-
 	resource                  *resource.Resource
 	processors                []Processor
 	attributeCountLimit       int

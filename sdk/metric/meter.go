@@ -12,7 +12,6 @@ import (
 	"github.com/karelbilek/opentelemetry/attribute"
 	"github.com/karelbilek/opentelemetry/internal/global"
 	"github.com/karelbilek/opentelemetry/metric"
-	"github.com/karelbilek/opentelemetry/metric/embedded"
 	"github.com/karelbilek/opentelemetry/sdk/instrumentation"
 	"github.com/karelbilek/opentelemetry/sdk/metric/internal/aggregate"
 )
@@ -26,8 +25,6 @@ var ErrInstrumentName = errors.New("invalid instrument name")
 // produced by an instrumentation scope will use metric instruments from a
 // single meter.
 type meter struct {
-	embedded.Meter
-
 	scope instrumentation.Scope
 	pipes pipelines
 
@@ -554,8 +551,6 @@ func (m *meter) RegisterCallback(f metric.Callback, insts ...metric.Observable) 
 }
 
 type observer struct {
-	embedded.Observer
-
 	pipe    *pipeline
 	float64 map[observableID[float64]]struct{}
 	int64   map[observableID[int64]]struct{}
@@ -648,7 +643,7 @@ func (r observer) ObserveInt64(o metric.Int64Observable, v int64, opts ...metric
 	}
 }
 
-type noopRegister struct{ embedded.Registration }
+type noopRegister struct{  }
 
 func (noopRegister) Unregister() error {
 	return nil
@@ -811,7 +806,6 @@ func (p float64InstProvider) lookupHistogram(
 }
 
 type int64Observer struct {
-	embedded.Int64Observer
 	measures[int64]
 }
 
@@ -822,7 +816,6 @@ func (o int64Observer) Observe(val int64, opts ...metric.ObserveOption) {
 }
 
 type float64Observer struct {
-	embedded.Float64Observer
 	measures[float64]
 }
 

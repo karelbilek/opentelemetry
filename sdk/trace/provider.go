@@ -16,7 +16,6 @@ import (
 	"github.com/karelbilek/opentelemetry/sdk/internal/attrnorm"
 	"github.com/karelbilek/opentelemetry/sdk/resource"
 	"github.com/karelbilek/opentelemetry/trace"
-	"github.com/karelbilek/opentelemetry/trace/embedded"
 	"github.com/karelbilek/opentelemetry/trace/noop"
 )
 
@@ -69,8 +68,6 @@ func (cfg tracerProviderConfig) MarshalLog() any {
 // TracerProvider is an OpenTelemetry TracerProvider. It provides Tracers to
 // instrumentation so it can trace operational flow through a system.
 type TracerProvider struct {
-	embedded.TracerProvider
-
 	mu             sync.Mutex
 	namedTracer    map[instrumentation.Scope]*tracer
 	spanProcessors atomic.Pointer[spanProcessorStates]

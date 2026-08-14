@@ -13,7 +13,6 @@ import (
 
 	"github.com/karelbilek/opentelemetry/attribute"
 	"github.com/karelbilek/opentelemetry/metric"
-	"github.com/karelbilek/opentelemetry/metric/embedded"
 	"github.com/karelbilek/opentelemetry/sdk/instrumentation"
 	"github.com/karelbilek/opentelemetry/sdk/metric/internal/aggregate"
 	"github.com/karelbilek/opentelemetry/sdk/metric/internal/attrnorm"
@@ -223,11 +222,6 @@ func resolveAttributes(configAttrs attribute.Set, rawKVs []attribute.KeyValue) a
 
 type int64Inst struct {
 	measures []aggregate.Measure[int64]
-
-	embedded.Int64Counter
-	embedded.Int64UpDownCounter
-	embedded.Int64Histogram
-	embedded.Int64Gauge
 }
 
 var (
@@ -265,11 +259,6 @@ func (i *int64Inst) aggregate(
 
 type float64Inst struct {
 	measures []aggregate.Measure[float64]
-
-	embedded.Float64Counter
-	embedded.Float64UpDownCounter
-	embedded.Float64Histogram
-	embedded.Float64Gauge
 }
 
 var (
@@ -313,10 +302,6 @@ type observableID[N int64 | float64] struct {
 type float64Observable struct {
 	metric.Float64Observable
 	*observable[float64]
-
-	embedded.Float64ObservableCounter
-	embedded.Float64ObservableUpDownCounter
-	embedded.Float64ObservableGauge
 }
 
 var (
@@ -334,10 +319,6 @@ func newFloat64Observable(m *meter, kind InstrumentKind, name, desc, u string) f
 type int64Observable struct {
 	metric.Int64Observable
 	*observable[int64]
-
-	embedded.Int64ObservableCounter
-	embedded.Int64ObservableUpDownCounter
-	embedded.Int64ObservableGauge
 }
 
 var (

@@ -9,12 +9,9 @@ import (
 
 	"github.com/karelbilek/opentelemetry/sdk/instrumentation"
 	"github.com/karelbilek/opentelemetry/trace"
-	"github.com/karelbilek/opentelemetry/trace/embedded"
 )
 
 type tracer struct {
-	embedded.Tracer
-
 	provider             *TracerProvider
 	instrumentationScope instrumentation.Scope
 }

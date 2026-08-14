@@ -5,8 +5,6 @@ package trace
 
 import (
 	"context"
-
-	"github.com/karelbilek/opentelemetry/trace/embedded"
 )
 
 // Tracer is the creator of Spans.
@@ -15,11 +13,6 @@ import (
 // package documentation on API implementation for information on how to set
 // default behavior for unimplemented methods.
 type Tracer interface {
-	// Users of the interface can ignore this. This embedded type is only used
-	// by implementations of this interface. See the "API Implementations"
-	// section of the package documentation for more information.
-	embedded.Tracer
-
 	// Start creates a span and a context.Context containing the newly-created span.
 	//
 	// If the context.Context provided in `ctx` contains a Span then the newly-created

@@ -14,7 +14,6 @@ import (
 	otel "github.com/karelbilek/opentelemetry"
 	"github.com/karelbilek/opentelemetry/attribute"
 	"github.com/karelbilek/opentelemetry/internal/global"
-	"github.com/karelbilek/opentelemetry/metric/embedded"
 	"github.com/karelbilek/opentelemetry/sdk/instrumentation"
 	"github.com/karelbilek/opentelemetry/sdk/metric/internal"
 	"github.com/karelbilek/opentelemetry/sdk/metric/internal/aggregate"
@@ -648,7 +647,6 @@ func newPipelines(
 }
 
 type unregisterFuncs struct {
-	embedded.Registration
 	f []func()
 }
 

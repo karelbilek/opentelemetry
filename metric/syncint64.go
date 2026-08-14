@@ -6,7 +6,6 @@ package metric
 import (
 	"context"
 
-	"github.com/karelbilek/opentelemetry/metric/embedded"
 )
 
 // Int64Counter is an instrument that records increasing int64 values.
@@ -15,11 +14,6 @@ import (
 // package documentation on API implementation for information on how to set
 // default behavior for unimplemented methods.
 type Int64Counter interface {
-	// Users of the interface can ignore this. This embedded type is only used
-	// by implementations of this interface. See the "API Implementations"
-	// section of the package documentation for more information.
-	embedded.Int64Counter
-
 	// Add records a change to the counter.
 	//
 	// Use the WithAttributeSet (or, if performance is not a concern,
@@ -83,11 +77,6 @@ type Int64CounterOption interface {
 // package documentation on API implementation for information on how to set
 // default behavior for unimplemented methods.
 type Int64UpDownCounter interface {
-	// Users of the interface can ignore this. This embedded type is only used
-	// by implementations of this interface. See the "API Implementations"
-	// section of the package documentation for more information.
-	embedded.Int64UpDownCounter
-
 	// Add records a change to the counter.
 	//
 	// Use the WithAttributeSet (or, if performance is not a concern,
@@ -151,11 +140,6 @@ type Int64UpDownCounterOption interface {
 // package documentation on API implementation for information on how to set
 // default behavior for unimplemented methods.
 type Int64Histogram interface {
-	// Users of the interface can ignore this. This embedded type is only used
-	// by implementations of this interface. See the "API Implementations"
-	// section of the package documentation for more information.
-	embedded.Int64Histogram
-
 	// Record adds an additional value to the distribution.
 	//
 	// The incr value is expected to be non-negative.
@@ -226,11 +210,6 @@ type Int64HistogramOption interface {
 // package documentation on API implementation for information on how to set
 // default behavior for unimplemented methods.
 type Int64Gauge interface {
-	// Users of the interface can ignore this. This embedded type is only used
-	// by implementations of this interface. See the "API Implementations"
-	// section of the package documentation for more information.
-	embedded.Int64Gauge
-
 	// Record records the instantaneous value.
 	//
 	// Use the WithAttributeSet (or, if performance is not a concern,
