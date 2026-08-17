@@ -81,6 +81,8 @@ func NewHTTPConfig(
 		Metrics: SignalConfig{
 			Endpoint:       endpoint,
 			URLPath:        urlPath,
+			Insecure:       insecure,
+			Headers:        headers,
 			MaxRequestSize: maxRequestSize,
 			Timeout:        timeout,
 
