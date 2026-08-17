@@ -12,7 +12,9 @@ import (
 	"time"
 
 	otel "github.com/karelbilek/opentelemetry"
+	"github.com/karelbilek/opentelemetry/exporters/otlptracehttp"
 	"github.com/karelbilek/opentelemetry/internal/global"
+	"github.com/karelbilek/opentelemetry/sdk/trace/tracedata"
 )
 
 // Defaults for BatchSpanProcessorOptions.
@@ -56,16 +58,21 @@ type BatchSpanProcessorOptions struct {
 	BlockOnQueueFull bool
 }
 
+type SnapshotOrFlush struct {
+	snapshot *tracedata.Snapshot
+	flush    chan struct{}
+}
+
 // BatchSpanProcessor is a SpanProcessor that batches asynchronously-received
 // spans and sends them to a trace.Exporter when complete.
 type BatchSpanProcessor struct {
-	e SpanExporter
+	e *otlptracehttp.Exporter
 	o BatchSpanProcessorOptions
 
-	queue   chan *Snapshot
+	queue   chan *SnapshotOrFlush
 	dropped atomic.Uint32
 
-	batch      []*Snapshot
+	batch      []*tracedata.Snapshot
 	batchMutex sync.Mutex
 	timer      *time.Timer
 	stopWait   sync.WaitGroup
@@ -80,7 +87,7 @@ type BatchSpanProcessor struct {
 // span batches to the exporter with the supplied options.
 //
 // If the exporter is nil, the span processor will perform no action.
-func NewBatchSpanProcessor(exporter SpanExporter, h otel.ErrorHandler, maxQueueSize int, batchTimeout time.Duration, exportTimeout time.Duration, maxExportBatchSize int, blockOnQueueFull bool) *BatchSpanProcessor {
+func NewBatchSpanProcessor(exporter *otlptracehttp.Exporter, h otel.ErrorHandler, maxQueueSize int, batchTimeout time.Duration, exportTimeout time.Duration, maxExportBatchSize int, blockOnQueueFull bool) *BatchSpanProcessor {
 	o := BatchSpanProcessorOptions{
 		BatchTimeout:       batchTimeout,
 		ExportTimeout:      exportTimeout,
@@ -91,9 +98,9 @@ func NewBatchSpanProcessor(exporter SpanExporter, h otel.ErrorHandler, maxQueueS
 	bsp := &BatchSpanProcessor{
 		e:      exporter,
 		o:      o,
-		batch:  make([]*Snapshot, 0, o.MaxExportBatchSize),
+		batch:  make([]*tracedata.Snapshot, 0, o.MaxExportBatchSize),
 		timer:  time.NewTimer(o.BatchTimeout),
-		queue:  make(chan *Snapshot, o.MaxQueueSize),
+		queue:  make(chan *SnapshotOrFlush, o.MaxQueueSize),
 		stopCh: make(chan struct{}),
 		eh:     h,
 	}
@@ -107,7 +114,7 @@ func NewBatchSpanProcessor(exporter SpanExporter, h otel.ErrorHandler, maxQueueS
 }
 
 // OnEnd method enqueues a ReadOnlySpan for later processing.
-func (bsp *BatchSpanProcessor) OnEnd(s *Snapshot) {
+func (bsp *BatchSpanProcessor) OnEnd(s *tracedata.Snapshot) {
 	// Do not enqueue spans after Shutdown.
 	if bsp.stopped.Load() {
 		return
@@ -117,7 +124,7 @@ func (bsp *BatchSpanProcessor) OnEnd(s *Snapshot) {
 	if bsp.e == nil {
 		return
 	}
-	bsp.enqueue(s)
+	bsp.enqueue(&SnapshotOrFlush{snapshot: s})
 }
 
 // Shutdown flushes the queue and waits until all spans are processed.
@@ -164,7 +171,7 @@ func (bsp *BatchSpanProcessor) ForceFlush(ctx context.Context) error {
 	var err error
 	if bsp.e != nil {
 		flushCh := make(chan struct{})
-		fl := &Snapshot{flushed: flushCh}
+		fl := &SnapshotOrFlush{flush: flushCh}
 		if bsp.enqueueBlockOnQueueFull(ctx, fl) {
 			select {
 			case <-bsp.stopCh:
@@ -239,12 +246,12 @@ func (bsp *BatchSpanProcessor) processQueue() {
 				otel.Handle(bsp.eh, err)
 			}
 		case sd := <-bsp.queue:
-			if sd.flushed != nil {
-				close(sd.flushed)
+			if sd.flush != nil {
+				close(sd.flush)
 				continue
 			}
 			bsp.batchMutex.Lock()
-			bsp.batch = append(bsp.batch, sd)
+			bsp.batch = append(bsp.batch, sd.snapshot)
 			shouldExport := len(bsp.batch) >= bsp.o.MaxExportBatchSize
 			bsp.batchMutex.Unlock()
 			if shouldExport {
@@ -271,13 +278,13 @@ func (bsp *BatchSpanProcessor) drainQueue() {
 	for {
 		select {
 		case sd := <-bsp.queue:
-			if sd.flushed != nil {
+			if sd.flush != nil {
 				// Ignore flush requests as they are not valid spans.
 				continue
 			}
 
 			bsp.batchMutex.Lock()
-			bsp.batch = append(bsp.batch, sd)
+			bsp.batch = append(bsp.batch, sd.snapshot)
 			shouldExport := len(bsp.batch) == bsp.o.MaxExportBatchSize
 			bsp.batchMutex.Unlock()
 
@@ -296,7 +303,7 @@ func (bsp *BatchSpanProcessor) drainQueue() {
 	}
 }
 
-func (bsp *BatchSpanProcessor) enqueue(sd *Snapshot) {
+func (bsp *BatchSpanProcessor) enqueue(sd *SnapshotOrFlush) {
 	ctx := context.TODO()
 	if bsp.o.BlockOnQueueFull {
 		bsp.enqueueBlockOnQueueFull(ctx, sd)
@@ -305,8 +312,8 @@ func (bsp *BatchSpanProcessor) enqueue(sd *Snapshot) {
 	}
 }
 
-func (bsp *BatchSpanProcessor) enqueueBlockOnQueueFull(ctx context.Context, sd *Snapshot) bool {
-	if !sd.SpanContext().IsSampled() {
+func (bsp *BatchSpanProcessor) enqueueBlockOnQueueFull(ctx context.Context, sd *SnapshotOrFlush) bool {
+	if sd.snapshot != nil && !sd.snapshot.SpanContext.IsSampled() {
 		return false
 	}
 
@@ -318,8 +325,8 @@ func (bsp *BatchSpanProcessor) enqueueBlockOnQueueFull(ctx context.Context, sd *
 	}
 }
 
-func (bsp *BatchSpanProcessor) enqueueDrop(ctx context.Context, sd *Snapshot) bool {
-	if !sd.SpanContext().IsSampled() {
+func (bsp *BatchSpanProcessor) enqueueDrop(ctx context.Context, sd *SnapshotOrFlush) bool {
+	if sd.snapshot != nil && !sd.snapshot.SpanContext.IsSampled() {
 		return false
 	}
 

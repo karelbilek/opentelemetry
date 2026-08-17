@@ -17,6 +17,7 @@ import (
 	"github.com/karelbilek/opentelemetry/codes"
 	"github.com/karelbilek/opentelemetry/internal/global"
 	"github.com/karelbilek/opentelemetry/sdk/internal/attrnorm"
+	"github.com/karelbilek/opentelemetry/sdk/trace/tracedata"
 	semconv "github.com/karelbilek/opentelemetry/semconv"
 	"github.com/karelbilek/opentelemetry/trace"
 )
@@ -46,7 +47,7 @@ type Span struct {
 	endTime time.Time
 
 	// status is the status of this span.
-	status Status
+	status tracedata.Status
 
 	// childSpanCount holds the number of child spans created for this span.
 	childSpanCount int
@@ -65,10 +66,10 @@ type Span struct {
 	logDropAttrsOnce  sync.Once
 
 	// events are stored in FIFO queue capped by configured limit.
-	events evictedQueue[Event]
+	events evictedQueue[tracedata.Event]
 
 	// links are stored in FIFO queue capped by configured limit.
-	links evictedQueue[Link]
+	links evictedQueue[tracedata.Link]
 
 	// executionTracerTaskEnd ends the execution tracer span.
 	executionTracerTaskEnd func()
@@ -127,7 +128,7 @@ func (s *Span) SetStatus(code codes.Code, description string) {
 		return
 	}
 
-	status := Status{Code: code}
+	status := tracedata.Status{Code: code}
 	if code == codes.Error {
 		status.Description = description
 	}
@@ -414,7 +415,7 @@ func (s *Span) AddEvent(name string, o ...trace.EventOption) {
 func (s *Span) addEvent(name string, o ...trace.EventOption) {
 	c := trace.NewEventConfig(o...)
 	attrs, _ := attrnorm.KeyValues(c.Attributes())
-	e := Event{Name: name, Attributes: attrs, Time: c.Timestamp()}
+	e := tracedata.Event{Name: name, Attributes: attrs, Time: c.Timestamp()}
 
 	// Discard attributes over limit.
 	limit := s.tracer.provider.spanLimits.AttributePerEventCountLimit
@@ -491,7 +492,7 @@ func (s *Span) AddLink(link trace.Link) {
 	}
 
 	attrs, _ := attrnorm.KeyValues(link.Attributes)
-	l := Link{SpanContext: link.SpanContext, Attributes: attrs}
+	l := tracedata.Link{SpanContext: link.SpanContext, Attributes: attrs}
 
 	// Discard attributes over limit.
 	limit := s.tracer.provider.spanLimits.AttributePerLinkCountLimit
@@ -522,34 +523,34 @@ func (s *Span) TracerProvider() *TracerProvider {
 }
 
 // snapshot creates a read-only copy of the current state of the span.
-func (s *Span) snapshot() *Snapshot {
-	var sd Snapshot
+func (s *Span) snapshot() *tracedata.Snapshot {
+	var sd tracedata.Snapshot
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	sd.endTime = s.endTime
-	sd.instrumentationScope = s.tracer.instrumentationScope
-	sd.name = s.name
-	sd.parent = s.parent
-	sd.resource = s.tracer.provider.resource
-	sd.spanContext = s.spanContext
-	sd.spanKind = s.spanKind
-	sd.startTime = s.startTime
-	sd.status = s.status
-	sd.childSpanCount = s.childSpanCount
+	sd.EndTime = s.endTime
+	sd.InstrumentationScope = s.tracer.instrumentationScope
+	sd.Name = s.name
+	sd.Parent = s.parent
+	sd.Resource = s.tracer.provider.resource
+	sd.SpanContext = s.spanContext
+	sd.SpanKind = s.spanKind
+	sd.StartTime = s.startTime
+	sd.Status = s.status
+	sd.ChildSpanCount = s.childSpanCount
 
 	if len(s.attributes) > 0 {
 		s.dedupeAttrs()
-		sd.attributes = s.attributes
+		sd.Attributes = s.attributes
 	}
-	sd.droppedAttributeCount = s.droppedAttributes
+	sd.DroppedAttributeCount = s.droppedAttributes
 	if len(s.events.queue) > 0 {
-		sd.events = s.events.copy()
-		sd.droppedEventCount = s.events.droppedCount
+		sd.Events = s.events.copy()
+		sd.DroppedEventCount = s.events.droppedCount
 	}
 	if len(s.links.queue) > 0 {
-		sd.links = s.links.copy()
-		sd.droppedLinkCount = s.links.droppedCount
+		sd.Links = s.links.copy()
+		sd.DroppedLinkCount = s.links.droppedCount
 	}
 	return &sd
 }
@@ -589,13 +590,4 @@ func isRecording(s SamplingResult) bool {
 
 func isSampled(s SamplingResult) bool {
 	return s.Decision == RecordAndSample
-}
-
-// Status is the classified state of a Span.
-type Status struct {
-	// Code is an identifier of a Spans state classification.
-	Code codes.Code
-	// Description is a user hint about why that status was set. It is only
-	// applicable when Code is Error.
-	Description string
 }

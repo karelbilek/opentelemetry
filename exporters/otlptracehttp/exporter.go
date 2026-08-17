@@ -11,7 +11,7 @@ import (
 
 	"github.com/karelbilek/opentelemetry/exporters/otlptracehttp/internal/tracetransform"
 	"github.com/karelbilek/opentelemetry/retry"
-	tracesdk "github.com/karelbilek/opentelemetry/sdk/trace"
+	"github.com/karelbilek/opentelemetry/sdk/trace/tracedata"
 )
 
 // New constructs a new Exporter.
@@ -30,7 +30,7 @@ type Exporter struct {
 }
 
 // ExportSpans exports a batch of spans.
-func (e *Exporter) ExportSpans(ctx context.Context, ss []*tracesdk.Snapshot) error {
+func (e *Exporter) ExportSpans(ctx context.Context, ss []*tracedata.Snapshot) error {
 	protoSpans := tracetransform.Spans(ss)
 	if len(protoSpans) == 0 {
 		return nil
@@ -51,8 +51,6 @@ func (e *Exporter) Shutdown(ctx context.Context) error {
 	})
 	return err
 }
-
-var _ tracesdk.SpanExporter = (*Exporter)(nil)
 
 // MarshalLog is the marshaling function used by the logging system to represent this Exporter.
 func (e *Exporter) MarshalLog() any {

@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/karelbilek/opentelemetry/internal/global"
+	"github.com/karelbilek/opentelemetry/sdk/trace/tracedata"
 )
 
 // evictedQueue is a FIFO queue with a configurable capacity.
@@ -19,17 +20,17 @@ type evictedQueue[T any] struct {
 	logDroppedOnce sync.Once
 }
 
-func newEvictedQueueEvent(capacity int) evictedQueue[Event] {
+func newEvictedQueueEvent(capacity int) evictedQueue[tracedata.Event] {
 	// Do not pre-allocate queue, do this lazily.
-	return evictedQueue[Event]{
+	return evictedQueue[tracedata.Event]{
 		capacity:      capacity,
 		logDroppedMsg: "limit reached: dropping trace trace.Event",
 	}
 }
 
-func newEvictedQueueLink(capacity int) evictedQueue[Link] {
+func newEvictedQueueLink(capacity int) evictedQueue[tracedata.Link] {
 	// Do not pre-allocate queue, do this lazily.
-	return evictedQueue[Link]{
+	return evictedQueue[tracedata.Link]{
 		capacity:      capacity,
 		logDroppedMsg: "limit reached: dropping trace trace.Link",
 	}

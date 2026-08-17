@@ -11,13 +11,13 @@ import (
 	"github.com/karelbilek/opentelemetry/attribute"
 	"github.com/karelbilek/opentelemetry/codes"
 	"github.com/karelbilek/opentelemetry/sdk/instrumentation"
-	tracesdk "github.com/karelbilek/opentelemetry/sdk/trace"
+	"github.com/karelbilek/opentelemetry/sdk/trace/tracedata"
 	"github.com/karelbilek/opentelemetry/trace"
 )
 
 // Spans transforms a slice of OpenTelemetry spans into a slice of OTLP
 // ResourceSpans.
-func Spans(sdl []*tracesdk.Snapshot) []*tracepb.ResourceSpans {
+func Spans(sdl []*tracedata.Snapshot) []*tracepb.ResourceSpans {
 	if len(sdl) == 0 {
 		return nil
 	}
@@ -36,8 +36,8 @@ func Spans(sdl []*tracesdk.Snapshot) []*tracepb.ResourceSpans {
 			continue
 		}
 
-		rKey := sd.Resource().Equivalent()
-		scope := sd.InstrumentationScope()
+		rKey := sd.Resource.Equivalent()
+		scope := sd.InstrumentationScope
 		k := key{
 			r:  rKey,
 			is: scope,
@@ -58,7 +58,7 @@ func Spans(sdl []*tracesdk.Snapshot) []*tracepb.ResourceSpans {
 			resources++
 			// The resource was unknown.
 			rs = &tracepb.ResourceSpans{
-				Resource:   Resource(sd.Resource()),
+				Resource:   Resource(sd.Resource),
 				ScopeSpans: []*tracepb.ScopeSpans{scopeSpan},
 			}
 			rsm[rKey] = rs
@@ -84,34 +84,34 @@ func Spans(sdl []*tracesdk.Snapshot) []*tracepb.ResourceSpans {
 }
 
 // span transforms a Span into an OTLP span.
-func span(sd *tracesdk.Snapshot) *tracepb.Span {
+func span(sd *tracedata.Snapshot) *tracepb.Span {
 	if sd == nil {
 		return nil
 	}
 
-	spanContext := sd.SpanContext()
+	spanContext := sd.SpanContext
 	tid := spanContext.TraceID()
 	sid := spanContext.SpanID()
 
-	sdStatus := sd.Status()
+	sdStatus := sd.Status
 	s := &tracepb.Span{
 		TraceId:                tid[:],
 		SpanId:                 sid[:],
 		TraceState:             spanContext.TraceState().String(),
 		Status:                 status(sdStatus.Code, sdStatus.Description),
-		StartTimeUnixNano:      uint64(max(0, sd.StartTime().UnixNano())), // nolint:gosec // Overflow checked.
-		EndTimeUnixNano:        uint64(max(0, sd.EndTime().UnixNano())),   // nolint:gosec // Overflow checked.
-		Links:                  links(sd.Links()),
-		Kind:                   spanKind(sd.SpanKind()),
-		Name:                   sd.Name(),
-		Attributes:             KeyValues(sd.Attributes()),
-		Events:                 spanEvents(sd.Events()),
-		DroppedAttributesCount: clampUint32(sd.DroppedAttributes()),
-		DroppedEventsCount:     clampUint32(sd.DroppedEvents()),
-		DroppedLinksCount:      clampUint32(sd.DroppedLinks()),
+		StartTimeUnixNano:      uint64(max(0, sd.StartTime.UnixNano())), // nolint:gosec // Overflow checked.
+		EndTimeUnixNano:        uint64(max(0, sd.EndTime.UnixNano())),   // nolint:gosec // Overflow checked.
+		Links:                  links(sd.Links),
+		Kind:                   spanKind(sd.SpanKind),
+		Name:                   sd.Name,
+		Attributes:             KeyValues(sd.Attributes),
+		Events:                 spanEvents(sd.Events),
+		DroppedAttributesCount: clampUint32(sd.DroppedAttributeCount),
+		DroppedEventsCount:     clampUint32(sd.DroppedEventCount),
+		DroppedLinksCount:      clampUint32(sd.DroppedLinkCount),
 	}
 
-	sdParent := sd.Parent()
+	sdParent := sd.Parent
 	if psid := sdParent.SpanID(); psid.IsValid() {
 		s.ParentSpanId = psid[:]
 	}
@@ -148,7 +148,7 @@ func status(status codes.Code, message string) *tracepb.Status {
 }
 
 // links transforms span Links to OTLP span links.
-func links(links []tracesdk.Link) []*tracepb.Span_Link {
+func links(links []tracedata.Link) []*tracepb.Span_Link {
 	if len(links) == 0 {
 		return nil
 	}
@@ -186,7 +186,7 @@ func buildSpanFlagsWith(tf trace.TraceFlags, parent trace.SpanContext) uint32 {
 }
 
 // spanEvents transforms span Events to an OTLP span events.
-func spanEvents(es []tracesdk.Event) []*tracepb.Span_Event {
+func spanEvents(es []tracedata.Event) []*tracepb.Span_Event {
 	if len(es) == 0 {
 		return nil
 	}
