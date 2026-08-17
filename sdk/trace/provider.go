@@ -83,10 +83,6 @@ type TracerProvider struct {
 	h otel.ErrorHandler
 }
 
-type experimentalOption interface {
-	Experimental()
-}
-
 // NewTracerProvider returns a new and configured TracerProvider.
 //
 // By default the returned TracerProvider is configured with:
@@ -223,12 +219,6 @@ func (p *TracerProvider) Shutdown(ctx context.Context) error {
 		return nil
 	}
 	return p.processor.Shutdown(ctx)
-}
-
-type traceProviderOptionFunc func(tracerProviderConfig) tracerProviderConfig
-
-func (fn traceProviderOptionFunc) apply(cfg tracerProviderConfig) tracerProviderConfig {
-	return fn(cfg)
 }
 
 // ensureValidTracerProviderConfig ensures that given TracerProviderConfig is valid.
