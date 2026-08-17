@@ -118,12 +118,11 @@ func (tr *Tracer) newSpan(ctx context.Context, name string, config *trace.SpanCo
 	if !isRecording(samplingResult) {
 		return tr.newNonRecordingSpan(sc)
 	}
-	return tr.newRecordingSpan(ctx, psc, sc, name, samplingResult, config)
+	return tr.newRecordingSpan(psc, sc, name, samplingResult, config)
 }
 
 // newRecordingSpan returns a new configured recordingSpan.
 func (tr *Tracer) newRecordingSpan(
-	ctx context.Context,
 	psc, sc trace.SpanContext,
 	name string,
 	sr SamplingResult,

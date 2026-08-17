@@ -29,10 +29,6 @@ type Logger struct {
 	provider             *LoggerProvider
 	instrumentationScope instrumentation.Scope
 
-	// recCntIncr increments the count of log records created. It will be nil
-	// if observability is disabled.
-	recCntIncr func(context.Context)
-
 	errorHandler otel.ErrorHandler
 }
 
@@ -54,9 +50,6 @@ func (l *Logger) Emit(ctx context.Context, r log.Record) {
 		if l.provider.stopped.Load() {
 			return
 		}
-		// Emit remains observable without processors, but no lifecycle
-		// admission or SDK record construction is needed.
-		l.recordCreated(ctx)
 		return
 	}
 
@@ -71,7 +64,6 @@ func (l *Logger) emit(ctx context.Context, r log.Record, processors []Processor)
 	}
 	defer l.provider.endProcessorOperation()
 
-	l.recordCreated(ctx)
 	newRecord := l.newRecord(ctx, r)
 	var errs []error
 	for _, processor := range processors {
@@ -80,12 +72,6 @@ func (l *Logger) emit(ctx context.Context, r log.Record, processors []Processor)
 		}
 	}
 	return errs
-}
-
-func (l *Logger) recordCreated(ctx context.Context) {
-	if l.recCntIncr != nil {
-		l.recCntIncr(ctx)
-	}
 }
 
 // Enabled returns true if at least one Processor held by the LoggerProvider
