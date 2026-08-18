@@ -49,7 +49,6 @@ func NewTransport(base http.RoundTripper,
 	serverName string,
 	tracerProvider *sdktrace.TracerProvider,
 	spanStartOptions []trace.SpanStartOption,
-	PublicEndpointFn func(*http.Request) bool,
 	readEvent bool,
 	writeEvent bool,
 	filters []Filter,
@@ -63,7 +62,7 @@ func NewTransport(base http.RoundTripper,
 	t := Transport{
 		rt: base,
 	}
-	c := newConfig(serverName, tracerProvider, spanStartOptions, PublicEndpointFn, readEvent, writeEvent, filters, meterProvider, metricAttributesFn)
+	c := newConfig(serverName, tracerProvider, spanStartOptions, nil, readEvent, writeEvent, filters, meterProvider, metricAttributesFn)
 	c.SpanStartOptions = append([]trace.SpanStartOption{trace.WithSpanKind(trace.SpanKindClient)}, c.SpanStartOptions...)
 
 	t.applyConfig(c, eh)
