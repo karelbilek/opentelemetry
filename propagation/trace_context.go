@@ -22,22 +22,12 @@ const (
 	delimiter         = "-"
 )
 
-// TraceContext is a propagator that supports the W3C Trace Context format
-// (https://www.w3.org/TR/trace-context/)
-//
-// This propagator will propagate the traceparent and tracestate headers to
-// guarantee traces are not broken. It is up to the users of this propagator
-// to choose if they want to participate in a trace by modifying the
-// traceparent header and relevant parts of the tracestate header containing
-// their proprietary information.
-type TraceContext struct{}
-
 var (
 	versionPart = fmt.Sprintf("%.2X", supportedVersion)
 )
 
 // Inject injects the trace context from ctx into carrier.
-func (TraceContext) Inject(ctx context.Context, carrier http.Header) {
+func Inject(ctx context.Context, carrier http.Header) {
 	sc := sdktrace.SpanContextFromContext(ctx)
 	if !sc.IsValid() {
 		return
@@ -70,15 +60,15 @@ func (TraceContext) Inject(ctx context.Context, carrier http.Header) {
 // The returned Context will be a copy of ctx and contain the extracted
 // tracecontext as the remote SpanContext. If the extracted tracecontext is
 // invalid, the passed ctx will be returned directly instead.
-func (tc TraceContext) Extract(ctx context.Context, carrier http.Header) context.Context {
-	sc := tc.extract(carrier)
+func Extract(ctx context.Context, carrier http.Header) context.Context {
+	sc := extract(carrier)
 	if !sc.IsValid() {
 		return ctx
 	}
 	return sdktrace.ContextWithRemoteSpanContext(ctx, sc)
 }
 
-func (TraceContext) extract(carrier http.Header) trace.SpanContext {
+func extract(carrier http.Header) trace.SpanContext {
 	h := carrier.Get(traceparentHeader)
 	if h == "" {
 		return trace.SpanContext{}
@@ -151,6 +141,6 @@ func extractPart(dst []byte, h *string, n int) bool {
 }
 
 // Fields returns the keys who's values are set with Inject.
-func (TraceContext) Fields() []string {
+func Fields() []string {
 	return []string{traceparentHeader, tracestateHeader}
 }
