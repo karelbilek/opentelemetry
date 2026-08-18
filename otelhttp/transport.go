@@ -4,11 +4,9 @@
 package otelhttp
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"net/http"
-	"net/http/httptrace"
 	"sync/atomic"
 	"time"
 
@@ -33,7 +31,6 @@ type Transport struct {
 	tracer             *sdktrace.Tracer
 	spanStartOptions   []trace.SpanStartOption
 	filters            []Filter
-	clientTrace        func(context.Context) *httptrace.ClientTrace
 	metricAttributesFn func(*http.Request) []attribute.KeyValue
 
 	semconv semconv.HTTPClient
@@ -56,7 +53,6 @@ func NewTransport(base http.RoundTripper,
 	readEvent bool,
 	writeEvent bool,
 	filters []Filter,
-	clientTrace func(context.Context) *httptrace.ClientTrace,
 	meterProvider metric.MeterProvider,
 	metricAttributesFn func(*http.Request) []attribute.KeyValue,
 ) *Transport {
@@ -67,7 +63,7 @@ func NewTransport(base http.RoundTripper,
 	t := Transport{
 		rt: base,
 	}
-	c := newConfig(serverName, tracerProvider, spanStartOptions, PublicEndpointFn, readEvent, writeEvent, filters, clientTrace, meterProvider, metricAttributesFn)
+	c := newConfig(serverName, tracerProvider, spanStartOptions, PublicEndpointFn, readEvent, writeEvent, filters, meterProvider, metricAttributesFn)
 	c.SpanStartOptions = append([]trace.SpanStartOption{trace.WithSpanKind(trace.SpanKindClient)}, c.SpanStartOptions...)
 
 	t.applyConfig(c, eh)
@@ -79,7 +75,6 @@ func (t *Transport) applyConfig(c *config, eh otel.ErrorHandler) {
 	t.tracer = newTracer(c.TracerProvider)
 	t.spanStartOptions = c.SpanStartOptions
 	t.filters = c.Filters
-	t.clientTrace = c.ClientTrace
 	meter := c.MeterProvider.Meter(
 		ScopeName,
 	)
@@ -103,10 +98,6 @@ func (t *Transport) RoundTrip(r *http.Request) (*http.Response, error) {
 
 	spanName := semconv.SpanName(r)
 	ctx, span := tracer.Start(r.Context(), spanName, t.spanStartOptions...)
-
-	if t.clientTrace != nil {
-		ctx = httptrace.WithClientTrace(ctx, t.clientTrace(ctx))
-	}
 
 	labeler, found := LabelerFromContext(ctx)
 	if !found {

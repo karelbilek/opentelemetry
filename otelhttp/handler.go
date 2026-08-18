@@ -68,7 +68,7 @@ func NewMiddleware(eh otel.ErrorHandler, serverName string,
 ) func(http.Handler) http.Handler {
 	h := middleware{}
 
-	c := newConfig(serverName, tracerProvider, spanStartOptions, PublicEndpointFn, readEvent, writeEvent, filters, clientTrace, meterProvider, metricAttributesFn)
+	c := newConfig(serverName, tracerProvider, spanStartOptions, PublicEndpointFn, readEvent, writeEvent, filters, meterProvider, metricAttributesFn)
 	c.SpanStartOptions = append([]trace.SpanStartOption{trace.WithSpanKind(trace.SpanKindServer)}, c.SpanStartOptions...)
 
 	h.configure(c, eh)

@@ -4,9 +4,7 @@
 package otelhttp
 
 import (
-	"context"
 	"net/http"
-	"net/http/httptrace"
 
 	"github.com/karelbilek/opentelemetry/attribute"
 	"github.com/karelbilek/opentelemetry/metric"
@@ -27,22 +25,10 @@ type config struct {
 	ReadEvent        bool
 	WriteEvent       bool
 	Filters          []Filter
-	ClientTrace      func(context.Context) *httptrace.ClientTrace
 
 	MeterProvider      metric.MeterProvider
 	MetricAttributesFn func(*http.Request) []attribute.KeyValue
 }
-
-// // Option interface used for setting optional config properties.
-// type Option interface {
-// 	apply(*config)
-// }
-
-// type optionFunc func(*config)
-
-// func (o optionFunc) apply(c *config) {
-// 	o(c)
-// }
 
 // newConfig creates a new config struct and applies opts to it.
 func newConfig(
@@ -53,7 +39,6 @@ func newConfig(
 	readEvent bool,
 	writeEvent bool,
 	filters []Filter,
-	clientTrace func(context.Context) *httptrace.ClientTrace,
 	meterProvider metric.MeterProvider,
 	metricAttributesFn func(*http.Request) []attribute.KeyValue,
 ) *config {
@@ -65,7 +50,6 @@ func newConfig(
 		ReadEvent:          readEvent,
 		WriteEvent:         writeEvent,
 		Filters:            filters,
-		ClientTrace:        clientTrace,
 		MeterProvider:      meterProvider,
 		MetricAttributesFn: metricAttributesFn,
 	}
