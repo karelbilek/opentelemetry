@@ -9,7 +9,6 @@ import (
 
 	"github.com/felixge/httpsnoop"
 	otel "github.com/karelbilek/opentelemetry"
-	"github.com/karelbilek/opentelemetry/attribute"
 	"github.com/karelbilek/opentelemetry/metric"
 	"github.com/karelbilek/opentelemetry/otelhttp/internal/request"
 	"github.com/karelbilek/opentelemetry/otelhttp/internal/semconv"
@@ -22,11 +21,10 @@ import (
 type middleware struct {
 	server string
 
-	tracer             *sdktrace.Tracer
-	spanStartOptions   []trace.SpanStartOption
-	filter             Filter
-	publicEndpointFn   Filter
-	metricAttributesFn func(*http.Request) []attribute.KeyValue
+	tracer           *sdktrace.Tracer
+	spanStartOptions []trace.SpanStartOption
+	filter           Filter
+	publicEndpointFn Filter
 
 	semconv semconv.HTTPServer
 }
@@ -40,9 +38,8 @@ func NewHandler(handler http.Handler, eh otel.ErrorHandler,
 	publicEndpointFn Filter,
 	filter Filter,
 	meterProvider metric.MeterProvider,
-	metricAttributesFn func(*http.Request) []attribute.KeyValue,
 ) http.Handler {
-	return NewMiddleware(eh, serverName, tracerProvider, spanStartOptions, publicEndpointFn, filter, meterProvider, metricAttributesFn)(handler)
+	return NewMiddleware(eh, serverName, tracerProvider, spanStartOptions, publicEndpointFn, filter, meterProvider)(handler)
 }
 
 // NewMiddleware returns a tracing and metrics instrumentation middleware.
@@ -54,7 +51,6 @@ func NewMiddleware(eh otel.ErrorHandler, serverName string,
 	publicEndpointFn Filter,
 	filter Filter,
 	meterProvider metric.MeterProvider,
-	metricAttributesFn func(*http.Request) []attribute.KeyValue,
 ) func(http.Handler) http.Handler {
 	h := middleware{}
 
@@ -69,7 +65,6 @@ func NewMiddleware(eh otel.ErrorHandler, serverName string,
 		ScopeName,
 	)
 	h.semconv = semconv.NewHTTPServer(meter, eh)
-	h.metricAttributesFn = metricAttributesFn
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -150,11 +145,6 @@ func (h *middleware) serveHTTP(w http.ResponseWriter, r *http.Request, next http
 		},
 	})
 
-	labeler, found := LabelerFromContext(ctx)
-	if !found {
-		ctx = ContextWithLabeler(ctx, labeler)
-	}
-
 	r = r.WithContext(ctx)
 	next.ServeHTTP(w, r)
 
@@ -178,21 +168,12 @@ func (h *middleware) serveHTTP(w http.ResponseWriter, r *http.Request, next http
 		ServerName:   h.server,
 		ResponseSize: bytesWritten,
 		MetricAttributes: semconv.MetricAttributes{
-			Req:                  r,
-			StatusCode:           statusCode,
-			AdditionalAttributes: append(labeler.Get(), h.metricAttributesFromRequest(r)...),
+			Req:        r,
+			StatusCode: statusCode,
 		},
 		MetricData: semconv.MetricData{
 			RequestSize:     bytesRead,
 			RequestDuration: time.Since(requestStartTime),
 		},
 	})
-}
-
-func (h *middleware) metricAttributesFromRequest(r *http.Request) []attribute.KeyValue {
-	var attributeForRequest []attribute.KeyValue
-	if h.metricAttributesFn != nil {
-		attributeForRequest = h.metricAttributesFn(r)
-	}
-	return attributeForRequest
 }

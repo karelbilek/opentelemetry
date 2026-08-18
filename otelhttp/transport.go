@@ -11,7 +11,6 @@ import (
 	"time"
 
 	otel "github.com/karelbilek/opentelemetry"
-	"github.com/karelbilek/opentelemetry/attribute"
 	"github.com/karelbilek/opentelemetry/codes"
 	"github.com/karelbilek/opentelemetry/metric"
 	"github.com/karelbilek/opentelemetry/propagation"
@@ -28,9 +27,8 @@ import (
 type Transport struct {
 	rt http.RoundTripper
 
-	tracer             *sdktrace.Tracer
-	spanStartOptions   []trace.SpanStartOption
-	metricAttributesFn func(*http.Request) []attribute.KeyValue
+	tracer           *sdktrace.Tracer
+	spanStartOptions []trace.SpanStartOption
 
 	semconv semconv.HTTPClient
 }
@@ -48,7 +46,6 @@ func NewTransport(base http.RoundTripper,
 	tracerProvider *sdktrace.TracerProvider,
 	spanStartOptions []trace.SpanStartOption,
 	meterProvider metric.MeterProvider,
-	metricAttributesFn func(*http.Request) []attribute.KeyValue,
 ) *Transport {
 	if base == nil {
 		base = http.DefaultTransport
@@ -65,7 +62,6 @@ func NewTransport(base http.RoundTripper,
 		ScopeName,
 	)
 	t.semconv = semconv.NewHTTPClient(meter, eh)
-	t.metricAttributesFn = metricAttributesFn
 
 	return &t
 }
@@ -80,11 +76,6 @@ func (t *Transport) RoundTrip(r *http.Request) (*http.Response, error) {
 
 	spanName := semconv.SpanName(r)
 	ctx, span := tracer.Start(r.Context(), spanName, t.spanStartOptions...)
-
-	labeler, found := LabelerFromContext(ctx)
-	if !found {
-		ctx = ContextWithLabeler(ctx, labeler)
-	}
 
 	r = r.Clone(ctx) // According to RoundTripper spec, we shouldn't modify the origin request.
 
@@ -134,11 +125,10 @@ func (t *Transport) RoundTrip(r *http.Request) (*http.Response, error) {
 			RequestDuration: time.Since(requestStartTime),
 		},
 		t.semconv.MetricOptions(semconv.MetricAttributes{
-			Req:                  r,
-			Resp:                 res,
-			StatusCode:           statusCode,
-			Err:                  err,
-			AdditionalAttributes: append(labeler.Get(), t.metricAttributesFromRequest(r)...),
+			Req:        r,
+			Resp:       res,
+			StatusCode: statusCode,
+			Err:        err,
 		}),
 	)
 
@@ -171,14 +161,6 @@ func ensureResponseBody(rt http.RoundTripper, r *http.Request, res *http.Respons
 		res.Body = http.NoBody
 		return res, nil
 	}
-}
-
-func (t *Transport) metricAttributesFromRequest(r *http.Request) []attribute.KeyValue {
-	var attributeForRequest []attribute.KeyValue
-	if t.metricAttributesFn != nil {
-		attributeForRequest = t.metricAttributesFn(r)
-	}
-	return attributeForRequest
 }
 
 // newWrappedBody returns a new and appropriately scoped *wrappedBody as an
