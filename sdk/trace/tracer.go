@@ -94,7 +94,7 @@ func (tr *Tracer) newSpan(ctx context.Context, name string, config *trace.SpanCo
 		sid = tr.provider.idGenerator.NewSpanID(ctx, tid)
 	}
 
-	samplingResult := tr.provider.sampler.ShouldSample(SamplingParameters{
+	samplingResult := shouldSample(samplingParameters{
 		ParentContext: ctx,
 		TraceID:       tid,
 		Name:          name,

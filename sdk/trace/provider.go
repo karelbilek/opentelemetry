@@ -26,9 +26,6 @@ type tracerProviderConfig struct {
 	// registered.
 	processor *BatchSpanProcessor
 
-	// sampler is the default sampler used when creating new spans.
-	sampler Sampler
-
 	// idGenerator is used to generate all Span and Trace IDs when needed.
 	idGenerator IDGenerator
 
@@ -46,14 +43,12 @@ type tracerProviderConfig struct {
 func (cfg tracerProviderConfig) MarshalLog() any {
 	return struct {
 		SpanProcessors         *BatchSpanProcessor
-		SamplerType            string
 		IDGeneratorType        string
 		SpanLimits             SpanLimits
 		Resource               *resource.Resource
 		PanicRecordingDisabled bool
 	}{
 		SpanProcessors:         cfg.processor,
-		SamplerType:            fmt.Sprintf("%T", cfg.sampler),
 		IDGeneratorType:        fmt.Sprintf("%T", cfg.idGenerator),
 		SpanLimits:             cfg.spanLimits,
 		Resource:               cfg.resource,
@@ -74,7 +69,6 @@ type TracerProvider struct {
 	// These fields are not protected by the lock mu. They are assumed to be
 	// immutable after creation of the TracerProvider.
 	processor              *BatchSpanProcessor
-	sampler                Sampler
 	idGenerator            IDGenerator
 	spanLimits             SpanLimits
 	resource               *resource.Resource
@@ -102,14 +96,12 @@ func NewTracerProvider(
 	attributePerEventCountLimit int,
 	attributePerLinkCountLimit int,
 	processor *BatchSpanProcessor,
-	sampler Sampler,
 	idGenerator IDGenerator,
 	resource *resource.Resource,
 	panicRecordingDisabled bool) *TracerProvider {
 	o := tracerProviderConfig{
 		spanLimits:             NewSpanLimits(attributeValueLengthLimit, attributeCountLimit, eventCountLimit, linkCountLimit, attributePerEventCountLimit, attributePerEventCountLimit),
 		processor:              processor,
-		sampler:                sampler,
 		idGenerator:            idGenerator,
 		resource:               resource,
 		panicRecordingDisabled: panicRecordingDisabled,
@@ -120,7 +112,6 @@ func NewTracerProvider(
 	tp := &TracerProvider{
 		namedTracer:            make(map[instrumentation.Scope]*Tracer),
 		processor:              o.processor,
-		sampler:                o.sampler,
 		idGenerator:            o.idGenerator,
 		spanLimits:             o.spanLimits,
 		resource:               o.resource,
@@ -221,11 +212,10 @@ func (p *TracerProvider) Shutdown(ctx context.Context) error {
 	return p.processor.Shutdown(ctx)
 }
 
+// 		cfg.sampler = ParentBased(AlwaysSample())
+
 // ensureValidTracerProviderConfig ensures that given TracerProviderConfig is valid.
 func ensureValidTracerProviderConfig(cfg tracerProviderConfig, errorHandler otel.ErrorHandler) tracerProviderConfig {
-	if cfg.sampler == nil {
-		cfg.sampler = ParentBased(AlwaysSample())
-	}
 	if cfg.idGenerator == nil {
 		cfg.idGenerator = defaultIDGenerator()
 	}
