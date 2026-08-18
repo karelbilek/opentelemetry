@@ -12,7 +12,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -246,11 +245,10 @@ type MetricAttributes struct {
 	// Resp is the client response, if any. It is only consulted by
 	// HTTPClient.MetricAttributes to source the negotiated protocol version;
 	// server-side metric recording ignores it.
-	Resp                 *http.Response
-	StatusCode           int
-	Route                string
-	AdditionalAttributes []attribute.KeyValue
-	Err                  error
+	Resp       *http.Response
+	StatusCode int
+	Route      string
+	Err        error
 }
 
 type MetricData struct {
@@ -265,7 +263,7 @@ var metricRecordOptionPool = &sync.Pool{
 }
 
 func (n HTTPServer) RecordMetrics(ctx context.Context, md ServerMetricData) {
-	attributes := n.MetricAttributes(md.ServerName, md.Req, md.StatusCode, md.Route, md.AdditionalAttributes)
+	attributes := n.MetricAttributes(md.ServerName, md.Req, md.StatusCode, md.Route)
 	o := metric.WithAttributeSet(attribute.NewSet(attributes...))
 	recordOpts := metricRecordOptionPool.Get().(*[]metric.RecordOption)
 	*recordOpts = append(*recordOpts, o)
@@ -366,8 +364,8 @@ func (HTTPServer) Route(route string) attribute.KeyValue {
 	return semconv.HTTPRoute(route)
 }
 
-func (n HTTPServer) MetricAttributes(server string, req *http.Request, statusCode int, route string, additionalAttributes []attribute.KeyValue) []attribute.KeyValue {
-	num := len(additionalAttributes) + 3
+func (n HTTPServer) MetricAttributes(server string, req *http.Request, statusCode int, route string) []attribute.KeyValue {
+	num := 3
 	var host string
 	var p int
 	if server == "" {
@@ -401,11 +399,11 @@ func (n HTTPServer) MetricAttributes(server string, req *http.Request, statusCod
 		num++
 	}
 
-	attributes := slices.Grow(additionalAttributes, num)
-	attributes = append(attributes,
+	attributes := []attribute.KeyValue{
 		semconv.HTTPRequestMethodKey.String(standardizeHTTPMethod(req.Method)),
 		n.scheme(req.TLS != nil),
-		semconv.ServerAddress(host))
+		semconv.ServerAddress(host),
+	}
 
 	if hostPort > 0 {
 		attributes = append(attributes, semconv.ServerPort(hostPort))

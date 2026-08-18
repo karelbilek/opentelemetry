@@ -13,7 +13,6 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
-	"slices"
 	"strconv"
 	"strings"
 
@@ -204,8 +203,8 @@ func (HTTPClient) method(method string) (attribute.KeyValue, attribute.KeyValue)
 	return semconv.HTTPRequestMethodOther, orig
 }
 
-func (n HTTPClient) MetricAttributes(req *http.Request, resp *http.Response, statusCode int, additionalAttributes []attribute.KeyValue) []attribute.KeyValue {
-	num := len(additionalAttributes) + 2
+func (n HTTPClient) MetricAttributes(req *http.Request, resp *http.Response, statusCode int) []attribute.KeyValue {
+	num := 2
 	var h string
 	if req.URL != nil {
 		h = req.URL.Host
@@ -243,13 +242,11 @@ func (n HTTPClient) MetricAttributes(req *http.Request, resp *http.Response, sta
 		num++
 	}
 
-	attributes := slices.Grow(additionalAttributes, num)
-	attributes = append(
-		attributes,
+	attributes := []attribute.KeyValue{
 		semconv.HTTPRequestMethodKey.String(standardizeHTTPMethod(req.Method)),
 		semconv.ServerAddress(requestHost),
 		n.scheme(req),
-	)
+	}
 
 	if port > 0 {
 		attributes = append(attributes, semconv.ServerPort(port))
@@ -281,7 +278,7 @@ func (o MetricOpts) AddOptions() metric.AddOption {
 }
 
 func (n HTTPClient) MetricOptions(ma MetricAttributes) MetricOpts {
-	attributes := n.MetricAttributes(ma.Req, ma.Resp, ma.StatusCode, ma.AdditionalAttributes)
+	attributes := n.MetricAttributes(ma.Req, ma.Resp, ma.StatusCode)
 	if ma.StatusCode == 0 && ma.Err != nil {
 		attributes = append(attributes, n.ErrorType(ma.Err))
 	}
