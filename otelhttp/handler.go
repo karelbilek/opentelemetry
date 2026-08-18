@@ -58,27 +58,8 @@ func NewMiddleware(eh otel.ErrorHandler, serverName string,
 ) func(http.Handler) http.Handler {
 	h := middleware{}
 
-	// c := newConfig(serverName, tracerProvider, spanStartOptions, PublicEndpointFn, filters, meterProvider, metricAttributesFn)
 	spanStartOptions = append([]trace.SpanStartOption{trace.WithSpanKind(trace.SpanKindServer)}, spanStartOptions...)
 
-	h.configure(serverName, tracerProvider, spanStartOptions, publicEndpointFn, filters, meterProvider, metricAttributesFn, eh)
-
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			h.serveHTTP(w, r, next)
-		})
-	}
-}
-
-func (h *middleware) configure(
-	serverName string,
-	tracerProvider *sdktrace.TracerProvider,
-	spanStartOptions []trace.SpanStartOption,
-	publicEndpointFn func(*http.Request) bool,
-	filters []Filter,
-	meterProvider metric.MeterProvider,
-	metricAttributesFn func(*http.Request) []attribute.KeyValue,
-	eh otel.ErrorHandler) {
 	h.tracer = newTracer(tracerProvider)
 	h.spanStartOptions = spanStartOptions
 	h.filters = filters
@@ -89,6 +70,12 @@ func (h *middleware) configure(
 	)
 	h.semconv = semconv.NewHTTPServer(meter, eh)
 	h.metricAttributesFn = metricAttributesFn
+
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			h.serveHTTP(w, r, next)
+		})
+	}
 }
 
 // serveHTTP sets up tracing and calls the given next http.Handler with the span

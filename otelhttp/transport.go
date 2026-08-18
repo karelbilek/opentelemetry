@@ -30,7 +30,6 @@ type Transport struct {
 
 	tracer             *sdktrace.Tracer
 	spanStartOptions   []trace.SpanStartOption
-	filters            []Filter
 	metricAttributesFn func(*http.Request) []attribute.KeyValue
 
 	semconv semconv.HTTPClient
@@ -48,7 +47,6 @@ func NewTransport(base http.RoundTripper,
 	eh otel.ErrorHandler,
 	tracerProvider *sdktrace.TracerProvider,
 	spanStartOptions []trace.SpanStartOption,
-	filters []Filter,
 	meterProvider metric.MeterProvider,
 	metricAttributesFn func(*http.Request) []attribute.KeyValue,
 ) *Transport {
@@ -61,27 +59,15 @@ func NewTransport(base http.RoundTripper,
 	}
 	spanStartOptions = append([]trace.SpanStartOption{trace.WithSpanKind(trace.SpanKindClient)}, spanStartOptions...)
 
-	t.applyConfig(tracerProvider, spanStartOptions, filters, meterProvider, metricAttributesFn, eh)
-
-	return &t
-}
-
-func (t *Transport) applyConfig(
-	tracerProvider *sdktrace.TracerProvider,
-	spanStartOptions []trace.SpanStartOption,
-	filters []Filter,
-	meterProvider metric.MeterProvider,
-	metricAttributesFn func(*http.Request) []attribute.KeyValue,
-	eh otel.ErrorHandler,
-) {
 	t.tracer = newTracer(tracerProvider)
 	t.spanStartOptions = spanStartOptions
-	t.filters = filters
 	meter := meterProvider.Meter(
 		ScopeName,
 	)
 	t.semconv = semconv.NewHTTPClient(meter, eh)
 	t.metricAttributesFn = metricAttributesFn
+
+	return &t
 }
 
 // RoundTrip creates a Span and propagates its context via the provided request's headers
@@ -89,12 +75,6 @@ func (t *Transport) applyConfig(
 // end when the response body is closed or when a read from the body returns io.EOF.
 func (t *Transport) RoundTrip(r *http.Request) (*http.Response, error) {
 	requestStartTime := time.Now()
-	for _, f := range t.filters {
-		if !f(r) {
-			// Simply pass through to the base RoundTripper if a filter rejects the request
-			return t.rt.RoundTrip(r)
-		}
-	}
 
 	tracer := t.tracer
 
