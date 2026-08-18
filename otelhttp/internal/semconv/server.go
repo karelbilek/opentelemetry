@@ -281,17 +281,20 @@ func (n HTTPServer) RecordMetrics(ctx context.Context, md ServerMetricData) {
 // It returns "{method} {route}" when the request has a pattern,
 // or just "{method}" when no route is available.
 // Non-standard HTTP methods are replaced by "HTTP".
-func (HTTPServer) SpanName(r *http.Request) string {
+func SpanName(r *http.Request) string {
+	b := strings.Builder{}
 	method := strings.ToUpper(r.Method)
 	if _, ok := methodLookup[method]; !ok {
 		method = "HTTP"
 	}
+	b.WriteString(method)
 
 	route := httpRoute(r.Pattern)
 	if route != "" {
-		return method + " " + route
+		b.WriteByte(' ')
+		b.WriteString(route)
 	}
-	return method
+	return b.String()
 }
 
 func (HTTPServer) method(method string) (attribute.KeyValue, attribute.KeyValue) {

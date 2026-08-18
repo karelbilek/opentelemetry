@@ -20,15 +20,14 @@ const ScopeName = "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp
 // config represents the configuration options available for the http.Handler
 // and http.Transport types.
 type config struct {
-	ServerName        string
-	TracerProvider    *sdktrace.TracerProvider
-	SpanStartOptions  []trace.SpanStartOption
-	PublicEndpointFn  func(*http.Request) bool
-	ReadEvent         bool
-	WriteEvent        bool
-	Filters           []Filter
-	SpanNameFormatter func(string, *http.Request) string
-	ClientTrace       func(context.Context) *httptrace.ClientTrace
+	ServerName       string
+	TracerProvider   *sdktrace.TracerProvider
+	SpanStartOptions []trace.SpanStartOption
+	PublicEndpointFn func(*http.Request) bool
+	ReadEvent        bool
+	WriteEvent       bool
+	Filters          []Filter
+	ClientTrace      func(context.Context) *httptrace.ClientTrace
 
 	MeterProvider      metric.MeterProvider
 	MetricAttributesFn func(*http.Request) []attribute.KeyValue
@@ -54,7 +53,6 @@ func newConfig(
 	readEvent bool,
 	writeEvent bool,
 	filters []Filter,
-	spanNameFormatter func(string, *http.Request) string,
 	clientTrace func(context.Context) *httptrace.ClientTrace,
 	meterProvider metric.MeterProvider,
 	metricAttributesFn func(*http.Request) []attribute.KeyValue,
@@ -67,7 +65,6 @@ func newConfig(
 		ReadEvent:          readEvent,
 		WriteEvent:         writeEvent,
 		Filters:            filters,
-		SpanNameFormatter:  spanNameFormatter,
 		ClientTrace:        clientTrace,
 		MeterProvider:      meterProvider,
 		MetricAttributesFn: metricAttributesFn,

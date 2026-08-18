@@ -33,7 +33,6 @@ type Transport struct {
 	tracer             *sdktrace.Tracer
 	spanStartOptions   []trace.SpanStartOption
 	filters            []Filter
-	spanNameFormatter  func(string, *http.Request) string
 	clientTrace        func(context.Context) *httptrace.ClientTrace
 	metricAttributesFn func(*http.Request) []attribute.KeyValue
 
@@ -57,7 +56,6 @@ func NewTransport(base http.RoundTripper,
 	readEvent bool,
 	writeEvent bool,
 	filters []Filter,
-	spanNameFormatter func(string, *http.Request) string,
 	clientTrace func(context.Context) *httptrace.ClientTrace,
 	meterProvider metric.MeterProvider,
 	metricAttributesFn func(*http.Request) []attribute.KeyValue,
@@ -69,7 +67,7 @@ func NewTransport(base http.RoundTripper,
 	t := Transport{
 		rt: base,
 	}
-	c := newConfig(serverName, tracerProvider, spanStartOptions, PublicEndpointFn, readEvent, writeEvent, filters, spanNameFormatter, clientTrace, meterProvider, metricAttributesFn)
+	c := newConfig(serverName, tracerProvider, spanStartOptions, PublicEndpointFn, readEvent, writeEvent, filters, clientTrace, meterProvider, metricAttributesFn)
 	c.SpanStartOptions = append([]trace.SpanStartOption{trace.WithSpanKind(trace.SpanKindClient)}, c.SpanStartOptions...)
 
 	t.applyConfig(c, eh)
@@ -81,7 +79,6 @@ func (t *Transport) applyConfig(c *config, eh otel.ErrorHandler) {
 	t.tracer = newTracer(c.TracerProvider)
 	t.spanStartOptions = c.SpanStartOptions
 	t.filters = c.Filters
-	t.spanNameFormatter = c.SpanNameFormatter
 	t.clientTrace = c.ClientTrace
 	meter := c.MeterProvider.Meter(
 		ScopeName,
@@ -104,7 +101,8 @@ func (t *Transport) RoundTrip(r *http.Request) (*http.Response, error) {
 
 	tracer := t.tracer
 
-	ctx, span := tracer.Start(r.Context(), t.spanNameFormatter("", r), t.spanStartOptions...)
+	spanName := semconv.SpanName(r)
+	ctx, span := tracer.Start(r.Context(), spanName, t.spanStartOptions...)
 
 	if t.clientTrace != nil {
 		ctx = httptrace.WithClientTrace(ctx, t.clientTrace(ctx))

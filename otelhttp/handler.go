@@ -22,15 +22,13 @@ import (
 
 // middleware is an http middleware which wraps the next handler in a span.
 type middleware struct {
-	operation string
-	server    string
+	server string
 
 	tracer             *sdktrace.Tracer
 	spanStartOptions   []trace.SpanStartOption
 	readEvent          bool
 	writeEvent         bool
 	filters            []Filter
-	spanNameFormatter  func(string, *http.Request) string
 	publicEndpointFn   func(*http.Request) bool
 	metricAttributesFn func(*http.Request) []attribute.KeyValue
 
@@ -39,7 +37,7 @@ type middleware struct {
 
 // NewHandler wraps the passed handler in a span named after the operation and
 // enriches it with metrics.
-func NewHandler(handler http.Handler, eh otel.ErrorHandler, operation string,
+func NewHandler(handler http.Handler, eh otel.ErrorHandler,
 	serverName string,
 	tracerProvider *sdktrace.TracerProvider,
 	spanStartOptions []trace.SpanStartOption,
@@ -47,43 +45,33 @@ func NewHandler(handler http.Handler, eh otel.ErrorHandler, operation string,
 	readEvent bool,
 	writeEvent bool,
 	filters []Filter,
-	spanNameFormatter func(string, *http.Request) string,
 	clientTrace func(context.Context) *httptrace.ClientTrace,
 	meterProvider metric.MeterProvider,
 	metricAttributesFn func(*http.Request) []attribute.KeyValue,
 ) http.Handler {
-	return NewMiddleware(operation, eh, serverName, tracerProvider, spanStartOptions, PublicEndpointFn, readEvent, writeEvent, filters, spanNameFormatter, clientTrace, meterProvider, metricAttributesFn)(handler)
+	return NewMiddleware(eh, serverName, tracerProvider, spanStartOptions, PublicEndpointFn, readEvent, writeEvent, filters, clientTrace, meterProvider, metricAttributesFn)(handler)
 }
 
 // NewMiddleware returns a tracing and metrics instrumentation middleware.
 // The handler returned by the middleware wraps a handler
 // in a span named after the operation and enriches it with metrics.
-func NewMiddleware(operation string, eh otel.ErrorHandler, serverName string,
+func NewMiddleware(eh otel.ErrorHandler, serverName string,
 	tracerProvider *sdktrace.TracerProvider,
 	spanStartOptions []trace.SpanStartOption,
 	PublicEndpointFn func(*http.Request) bool,
 	readEvent bool,
 	writeEvent bool,
 	filters []Filter,
-	spanNameFormatter func(string, *http.Request) string,
 	clientTrace func(context.Context) *httptrace.ClientTrace,
 	meterProvider metric.MeterProvider,
 	metricAttributesFn func(*http.Request) []attribute.KeyValue,
 ) func(http.Handler) http.Handler {
-	h := middleware{
-		operation: operation,
-	}
+	h := middleware{}
 
-	c := newConfig(serverName, tracerProvider, spanStartOptions, PublicEndpointFn, readEvent, writeEvent, filters, spanNameFormatter, clientTrace, meterProvider, metricAttributesFn)
+	c := newConfig(serverName, tracerProvider, spanStartOptions, PublicEndpointFn, readEvent, writeEvent, filters, clientTrace, meterProvider, metricAttributesFn)
 	c.SpanStartOptions = append([]trace.SpanStartOption{trace.WithSpanKind(trace.SpanKindServer)}, c.SpanStartOptions...)
 
 	h.configure(c, eh)
-
-	if h.spanNameFormatter == nil {
-		h.spanNameFormatter = func(_ string, r *http.Request) string {
-			return h.semconv.SpanName(r)
-		}
-	}
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -98,7 +86,6 @@ func (h *middleware) configure(c *config, eh otel.ErrorHandler) {
 	h.readEvent = c.ReadEvent
 	h.writeEvent = c.WriteEvent
 	h.filters = c.Filters
-	h.spanNameFormatter = c.SpanNameFormatter
 	h.publicEndpointFn = c.PublicEndpointFn
 	h.server = c.ServerName
 	meter := c.MeterProvider.Meter(
@@ -141,7 +128,8 @@ func (h *middleware) serveHTTP(w http.ResponseWriter, r *http.Request, next http
 		requestStartTime = startTime
 	}
 
-	ctx, span := tracer.Start(ctx, h.spanNameFormatter(h.operation, r), opts...)
+	spanName := semconv.SpanName(r)
+	ctx, span := tracer.Start(ctx, spanName, opts...)
 	defer span.End()
 
 	readRecordFunc := func(int64) {}
@@ -202,7 +190,7 @@ func (h *middleware) serveHTTP(w http.ResponseWriter, r *http.Request, next http
 	next.ServeHTTP(w, r)
 
 	if r.Pattern != "" {
-		span.SetName(h.spanNameFormatter(h.operation, r))
+		span.SetName(semconv.SpanName(r))
 	}
 
 	statusCode := rww.StatusCode()
