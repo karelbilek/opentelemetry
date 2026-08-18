@@ -24,8 +24,8 @@ type middleware struct {
 
 	tracer             *sdktrace.Tracer
 	spanStartOptions   []trace.SpanStartOption
-	filters            []Filter
-	publicEndpointFn   func(*http.Request) bool
+	filter             Filter
+	publicEndpointFn   Filter
 	metricAttributesFn func(*http.Request) []attribute.KeyValue
 
 	semconv semconv.HTTPServer
@@ -37,12 +37,12 @@ func NewHandler(handler http.Handler, eh otel.ErrorHandler,
 	serverName string,
 	tracerProvider *sdktrace.TracerProvider,
 	spanStartOptions []trace.SpanStartOption,
-	publicEndpointFn func(*http.Request) bool,
-	filters []Filter,
+	publicEndpointFn Filter,
+	filter Filter,
 	meterProvider metric.MeterProvider,
 	metricAttributesFn func(*http.Request) []attribute.KeyValue,
 ) http.Handler {
-	return NewMiddleware(eh, serverName, tracerProvider, spanStartOptions, publicEndpointFn, filters, meterProvider, metricAttributesFn)(handler)
+	return NewMiddleware(eh, serverName, tracerProvider, spanStartOptions, publicEndpointFn, filter, meterProvider, metricAttributesFn)(handler)
 }
 
 // NewMiddleware returns a tracing and metrics instrumentation middleware.
@@ -51,8 +51,8 @@ func NewHandler(handler http.Handler, eh otel.ErrorHandler,
 func NewMiddleware(eh otel.ErrorHandler, serverName string,
 	tracerProvider *sdktrace.TracerProvider,
 	spanStartOptions []trace.SpanStartOption,
-	publicEndpointFn func(*http.Request) bool,
-	filters []Filter,
+	publicEndpointFn Filter,
+	filter Filter,
 	meterProvider metric.MeterProvider,
 	metricAttributesFn func(*http.Request) []attribute.KeyValue,
 ) func(http.Handler) http.Handler {
@@ -62,7 +62,7 @@ func NewMiddleware(eh otel.ErrorHandler, serverName string,
 
 	h.tracer = newTracer(tracerProvider)
 	h.spanStartOptions = spanStartOptions
-	h.filters = filters
+	h.filter = filter
 	h.publicEndpointFn = publicEndpointFn
 	h.server = serverName
 	meter := meterProvider.Meter(
@@ -82,8 +82,8 @@ func NewMiddleware(eh otel.ErrorHandler, serverName string,
 // context injected into the request context.
 func (h *middleware) serveHTTP(w http.ResponseWriter, r *http.Request, next http.Handler) {
 	requestStartTime := time.Now()
-	for _, f := range h.filters {
-		if !f(r) {
+	if h.filter != nil {
+		if !h.filter(r) {
 			// Simply pass through to the handler if a filter rejects the request
 			next.ServeHTTP(w, r)
 			return
