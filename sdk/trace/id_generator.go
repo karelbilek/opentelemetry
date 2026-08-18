@@ -11,28 +11,8 @@ import (
 	"github.com/karelbilek/opentelemetry/trace"
 )
 
-// IDGenerator allows custom generators for TraceID and SpanID.
-type IDGenerator interface {
-	// DO NOT CHANGE: any modification will not be backwards compatible and
-	// must never be done outside of a new major release.
-
-	// NewIDs returns a new trace and span ID.
-	NewIDs(ctx context.Context) (trace.TraceID, trace.SpanID)
-	// DO NOT CHANGE: any modification will not be backwards compatible and
-	// must never be done outside of a new major release.
-
-	// NewSpanID returns a ID for a new span in the trace with traceID.
-	NewSpanID(ctx context.Context, traceID trace.TraceID) trace.SpanID
-	// DO NOT CHANGE: any modification will not be backwards compatible and
-	// must never be done outside of a new major release.
-}
-
-type randomIDGenerator struct{}
-
-var _ IDGenerator = &randomIDGenerator{}
-
-// NewSpanID returns a non-zero span ID from a randomly-chosen sequence.
-func (*randomIDGenerator) NewSpanID(context.Context, trace.TraceID) trace.SpanID {
+// newSpanID returns a non-zero span ID from a randomly-chosen sequence.
+func newSpanID(context.Context, trace.TraceID) trace.SpanID {
 	sid := trace.SpanID{}
 	for {
 		binary.NativeEndian.PutUint64(sid[:], rand.Uint64())
@@ -43,9 +23,9 @@ func (*randomIDGenerator) NewSpanID(context.Context, trace.TraceID) trace.SpanID
 	return sid
 }
 
-// NewIDs returns a non-zero trace ID and a non-zero span ID from a
+// newIDs returns a non-zero trace ID and a non-zero span ID from a
 // randomly-chosen sequence.
-func (*randomIDGenerator) NewIDs(context.Context) (trace.TraceID, trace.SpanID) {
+func newIDs(context.Context) (trace.TraceID, trace.SpanID) {
 	tid := trace.TraceID{}
 	sid := trace.SpanID{}
 	for {
@@ -62,8 +42,4 @@ func (*randomIDGenerator) NewIDs(context.Context) (trace.TraceID, trace.SpanID) 
 		}
 	}
 	return tid, sid
-}
-
-func defaultIDGenerator() IDGenerator {
-	return &randomIDGenerator{}
 }

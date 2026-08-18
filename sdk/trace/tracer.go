@@ -88,10 +88,10 @@ func (tr *Tracer) newSpan(ctx context.Context, name string, config *trace.SpanCo
 	var tid trace.TraceID
 	var sid trace.SpanID
 	if !psc.TraceID().IsValid() {
-		tid, sid = tr.provider.idGenerator.NewIDs(ctx)
+		tid, sid = newIDs(ctx)
 	} else {
 		tid = psc.TraceID()
-		sid = tr.provider.idGenerator.NewSpanID(ctx, tid)
+		sid = newSpanID(ctx, tid)
 	}
 
 	samplingResult := shouldSample(samplingParameters{

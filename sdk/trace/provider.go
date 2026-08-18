@@ -5,7 +5,6 @@ package trace
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"sync/atomic"
 
@@ -25,9 +24,6 @@ type tracerProviderConfig struct {
 	// and end of a Span's lifecycle, and are called in the order they are
 	// registered.
 	processor *BatchSpanProcessor
-
-	// idGenerator is used to generate all Span and Trace IDs when needed.
-	idGenerator IDGenerator
 
 	// spanLimits defines the attribute, event, and link limits for spans.
 	spanLimits SpanLimits
@@ -49,7 +45,6 @@ func (cfg tracerProviderConfig) MarshalLog() any {
 		PanicRecordingDisabled bool
 	}{
 		SpanProcessors:         cfg.processor,
-		IDGeneratorType:        fmt.Sprintf("%T", cfg.idGenerator),
 		SpanLimits:             cfg.spanLimits,
 		Resource:               cfg.resource,
 		PanicRecordingDisabled: cfg.panicRecordingDisabled,
@@ -69,7 +64,6 @@ type TracerProvider struct {
 	// These fields are not protected by the lock mu. They are assumed to be
 	// immutable after creation of the TracerProvider.
 	processor              *BatchSpanProcessor
-	idGenerator            IDGenerator
 	spanLimits             SpanLimits
 	resource               *resource.Resource
 	panicRecordingDisabled bool
@@ -96,13 +90,11 @@ func NewTracerProvider(
 	attributePerEventCountLimit int,
 	attributePerLinkCountLimit int,
 	processor *BatchSpanProcessor,
-	idGenerator IDGenerator,
 	resource *resource.Resource,
 	panicRecordingDisabled bool) *TracerProvider {
 	o := tracerProviderConfig{
 		spanLimits:             NewSpanLimits(attributeValueLengthLimit, attributeCountLimit, eventCountLimit, linkCountLimit, attributePerEventCountLimit, attributePerEventCountLimit),
 		processor:              processor,
-		idGenerator:            idGenerator,
 		resource:               resource,
 		panicRecordingDisabled: panicRecordingDisabled,
 	}
@@ -112,7 +104,6 @@ func NewTracerProvider(
 	tp := &TracerProvider{
 		namedTracer:            make(map[instrumentation.Scope]*Tracer),
 		processor:              o.processor,
-		idGenerator:            o.idGenerator,
 		spanLimits:             o.spanLimits,
 		resource:               o.resource,
 		panicRecordingDisabled: o.panicRecordingDisabled,
@@ -216,9 +207,6 @@ func (p *TracerProvider) Shutdown(ctx context.Context) error {
 
 // ensureValidTracerProviderConfig ensures that given TracerProviderConfig is valid.
 func ensureValidTracerProviderConfig(cfg tracerProviderConfig, errorHandler otel.ErrorHandler) tracerProviderConfig {
-	if cfg.idGenerator == nil {
-		cfg.idGenerator = defaultIDGenerator()
-	}
 	if cfg.resource == nil {
 		cfg.resource = resource.Default(errorHandler, "")
 	}
