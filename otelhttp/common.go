@@ -9,6 +9,8 @@ import (
 	sdktrace "github.com/karelbilek/opentelemetry/sdk/trace"
 )
 
+const ScopeName = "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+
 // Filter is a predicate used to determine whether a given http.request should
 // be traced. A Filter must return true if the request should be traced.
 type Filter func(*http.Request) bool

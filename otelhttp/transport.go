@@ -46,7 +46,6 @@ var _ http.RoundTripper = &Transport{}
 // as the base http.RoundTripper.
 func NewTransport(base http.RoundTripper,
 	eh otel.ErrorHandler,
-	serverName string,
 	tracerProvider *sdktrace.TracerProvider,
 	spanStartOptions []trace.SpanStartOption,
 	filters []Filter,
@@ -60,23 +59,29 @@ func NewTransport(base http.RoundTripper,
 	t := Transport{
 		rt: base,
 	}
-	c := newConfig(serverName, tracerProvider, spanStartOptions, nil, filters, meterProvider, metricAttributesFn)
-	c.SpanStartOptions = append([]trace.SpanStartOption{trace.WithSpanKind(trace.SpanKindClient)}, c.SpanStartOptions...)
+	spanStartOptions = append([]trace.SpanStartOption{trace.WithSpanKind(trace.SpanKindClient)}, spanStartOptions...)
 
-	t.applyConfig(c, eh)
+	t.applyConfig(tracerProvider, spanStartOptions, filters, meterProvider, metricAttributesFn, eh)
 
 	return &t
 }
 
-func (t *Transport) applyConfig(c *config, eh otel.ErrorHandler) {
-	t.tracer = newTracer(c.TracerProvider)
-	t.spanStartOptions = c.SpanStartOptions
-	t.filters = c.Filters
-	meter := c.MeterProvider.Meter(
+func (t *Transport) applyConfig(
+	tracerProvider *sdktrace.TracerProvider,
+	spanStartOptions []trace.SpanStartOption,
+	filters []Filter,
+	meterProvider metric.MeterProvider,
+	metricAttributesFn func(*http.Request) []attribute.KeyValue,
+	eh otel.ErrorHandler,
+) {
+	t.tracer = newTracer(tracerProvider)
+	t.spanStartOptions = spanStartOptions
+	t.filters = filters
+	meter := meterProvider.Meter(
 		ScopeName,
 	)
 	t.semconv = semconv.NewHTTPClient(meter, eh)
-	t.metricAttributesFn = c.MetricAttributesFn
+	t.metricAttributesFn = metricAttributesFn
 }
 
 // RoundTrip creates a Span and propagates its context via the provided request's headers

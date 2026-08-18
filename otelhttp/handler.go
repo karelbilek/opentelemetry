@@ -4,9 +4,7 @@
 package otelhttp
 
 import (
-	"context"
 	"net/http"
-	"net/http/httptrace"
 	"time"
 
 	"github.com/felixge/httpsnoop"
@@ -39,15 +37,12 @@ func NewHandler(handler http.Handler, eh otel.ErrorHandler,
 	serverName string,
 	tracerProvider *sdktrace.TracerProvider,
 	spanStartOptions []trace.SpanStartOption,
-	PublicEndpointFn func(*http.Request) bool,
-	readEvent bool,
-	writeEvent bool,
+	publicEndpointFn func(*http.Request) bool,
 	filters []Filter,
-	clientTrace func(context.Context) *httptrace.ClientTrace,
 	meterProvider metric.MeterProvider,
 	metricAttributesFn func(*http.Request) []attribute.KeyValue,
 ) http.Handler {
-	return NewMiddleware(eh, serverName, tracerProvider, spanStartOptions, PublicEndpointFn, readEvent, writeEvent, filters, clientTrace, meterProvider, metricAttributesFn)(handler)
+	return NewMiddleware(eh, serverName, tracerProvider, spanStartOptions, publicEndpointFn, filters, meterProvider, metricAttributesFn)(handler)
 }
 
 // NewMiddleware returns a tracing and metrics instrumentation middleware.
@@ -56,20 +51,17 @@ func NewHandler(handler http.Handler, eh otel.ErrorHandler,
 func NewMiddleware(eh otel.ErrorHandler, serverName string,
 	tracerProvider *sdktrace.TracerProvider,
 	spanStartOptions []trace.SpanStartOption,
-	PublicEndpointFn func(*http.Request) bool,
-	readEvent bool,
-	writeEvent bool,
+	publicEndpointFn func(*http.Request) bool,
 	filters []Filter,
-	clientTrace func(context.Context) *httptrace.ClientTrace,
 	meterProvider metric.MeterProvider,
 	metricAttributesFn func(*http.Request) []attribute.KeyValue,
 ) func(http.Handler) http.Handler {
 	h := middleware{}
 
-	c := newConfig(serverName, tracerProvider, spanStartOptions, PublicEndpointFn, filters, meterProvider, metricAttributesFn)
-	c.SpanStartOptions = append([]trace.SpanStartOption{trace.WithSpanKind(trace.SpanKindServer)}, c.SpanStartOptions...)
+	// c := newConfig(serverName, tracerProvider, spanStartOptions, PublicEndpointFn, filters, meterProvider, metricAttributesFn)
+	spanStartOptions = append([]trace.SpanStartOption{trace.WithSpanKind(trace.SpanKindServer)}, spanStartOptions...)
 
-	h.configure(c, eh)
+	h.configure(serverName, tracerProvider, spanStartOptions, publicEndpointFn, filters, meterProvider, metricAttributesFn, eh)
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -78,17 +70,25 @@ func NewMiddleware(eh otel.ErrorHandler, serverName string,
 	}
 }
 
-func (h *middleware) configure(c *config, eh otel.ErrorHandler) {
-	h.tracer = newTracer(c.TracerProvider)
-	h.spanStartOptions = c.SpanStartOptions
-	h.filters = c.Filters
-	h.publicEndpointFn = c.PublicEndpointFn
-	h.server = c.ServerName
-	meter := c.MeterProvider.Meter(
+func (h *middleware) configure(
+	serverName string,
+	tracerProvider *sdktrace.TracerProvider,
+	spanStartOptions []trace.SpanStartOption,
+	publicEndpointFn func(*http.Request) bool,
+	filters []Filter,
+	meterProvider metric.MeterProvider,
+	metricAttributesFn func(*http.Request) []attribute.KeyValue,
+	eh otel.ErrorHandler) {
+	h.tracer = newTracer(tracerProvider)
+	h.spanStartOptions = spanStartOptions
+	h.filters = filters
+	h.publicEndpointFn = publicEndpointFn
+	h.server = serverName
+	meter := meterProvider.Meter(
 		ScopeName,
 	)
 	h.semconv = semconv.NewHTTPServer(meter, eh)
-	h.metricAttributesFn = c.MetricAttributesFn
+	h.metricAttributesFn = metricAttributesFn
 }
 
 // serveHTTP sets up tracing and calls the given next http.Handler with the span
