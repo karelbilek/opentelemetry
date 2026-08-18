@@ -22,8 +22,6 @@ type config struct {
 	TracerProvider   *sdktrace.TracerProvider
 	SpanStartOptions []trace.SpanStartOption
 	PublicEndpointFn func(*http.Request) bool
-	ReadEvent        bool
-	WriteEvent       bool
 	Filters          []Filter
 
 	MeterProvider      metric.MeterProvider
@@ -36,8 +34,6 @@ func newConfig(
 	tracerProvider *sdktrace.TracerProvider,
 	spanStartOptions []trace.SpanStartOption,
 	publicEndpointFn func(*http.Request) bool,
-	readEvent bool,
-	writeEvent bool,
 	filters []Filter,
 	meterProvider metric.MeterProvider,
 	metricAttributesFn func(*http.Request) []attribute.KeyValue,
@@ -47,8 +43,6 @@ func newConfig(
 		TracerProvider:     tracerProvider,
 		SpanStartOptions:   spanStartOptions,
 		PublicEndpointFn:   publicEndpointFn,
-		ReadEvent:          readEvent,
-		WriteEvent:         writeEvent,
 		Filters:            filters,
 		MeterProvider:      meterProvider,
 		MetricAttributesFn: metricAttributesFn,

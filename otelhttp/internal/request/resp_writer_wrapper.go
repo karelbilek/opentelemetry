@@ -20,7 +20,6 @@ var _ http.ResponseWriter = &RespWriterWrapper{}
 // that may be useful when using it in real life situations.
 type RespWriterWrapper struct {
 	http.ResponseWriter
-	OnWrite func(n int64) // must not be nil
 
 	mu          sync.RWMutex
 	written     int64
@@ -33,10 +32,9 @@ type RespWriterWrapper struct {
 //
 // The onWrite attribute is a callback that will be called every time the data
 // is written, with the number of bytes that were written.
-func NewRespWriterWrapper(w http.ResponseWriter, onWrite func(int64)) *RespWriterWrapper {
+func NewRespWriterWrapper(w http.ResponseWriter) *RespWriterWrapper {
 	return &RespWriterWrapper{
 		ResponseWriter: w,
-		OnWrite:        onWrite,
 		statusCode:     http.StatusOK, // default status code in case the Handler doesn't write anything
 	}
 }
@@ -53,7 +51,6 @@ func (w *RespWriterWrapper) Write(p []byte) (int, error) {
 
 	n, err := w.ResponseWriter.Write(p)
 	n1 := int64(n)
-	w.OnWrite(n1)
 	w.written += n1
 	w.err = err
 	return n, err

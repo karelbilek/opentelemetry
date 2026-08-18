@@ -19,7 +19,6 @@ var _ io.ReadCloser = &BodyWrapper{}
 // of bytes read and the last error.
 type BodyWrapper struct {
 	io.ReadCloser
-	OnRead func(n int64) // must not be nil
 
 	mu   sync.Mutex
 	read int64
@@ -30,10 +29,9 @@ type BodyWrapper struct {
 //
 // The onRead attribute is a callback that will be called every time the data
 // is read, with the number of bytes being read.
-func NewBodyWrapper(body io.ReadCloser, onRead func(int64)) *BodyWrapper {
+func NewBodyWrapper(body io.ReadCloser) *BodyWrapper {
 	return &BodyWrapper{
 		ReadCloser: body,
-		OnRead:     onRead,
 	}
 }
 
@@ -44,7 +42,6 @@ func (w *BodyWrapper) Read(b []byte) (int, error) {
 	n1 := int64(n)
 
 	w.updateReadData(n1, err)
-	w.OnRead(n1)
 	return n, err
 }
 

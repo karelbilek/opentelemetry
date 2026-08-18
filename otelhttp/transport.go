@@ -49,8 +49,6 @@ func NewTransport(base http.RoundTripper,
 	serverName string,
 	tracerProvider *sdktrace.TracerProvider,
 	spanStartOptions []trace.SpanStartOption,
-	readEvent bool,
-	writeEvent bool,
 	filters []Filter,
 	meterProvider metric.MeterProvider,
 	metricAttributesFn func(*http.Request) []attribute.KeyValue,
@@ -62,7 +60,7 @@ func NewTransport(base http.RoundTripper,
 	t := Transport{
 		rt: base,
 	}
-	c := newConfig(serverName, tracerProvider, spanStartOptions, nil, readEvent, writeEvent, filters, meterProvider, metricAttributesFn)
+	c := newConfig(serverName, tracerProvider, spanStartOptions, nil, filters, meterProvider, metricAttributesFn)
 	c.SpanStartOptions = append([]trace.SpanStartOption{trace.WithSpanKind(trace.SpanKindClient)}, c.SpanStartOptions...)
 
 	t.applyConfig(c, eh)
@@ -110,7 +108,7 @@ func (t *Transport) RoundTrip(r *http.Request) (*http.Response, error) {
 		if body == nil || body == http.NoBody {
 			return body
 		}
-		bw := request.NewBodyWrapper(body, func(int64) {})
+		bw := request.NewBodyWrapper(body)
 		lastBW = bw
 		return bw
 	}

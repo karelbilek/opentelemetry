@@ -26,8 +26,6 @@ type middleware struct {
 
 	tracer             *sdktrace.Tracer
 	spanStartOptions   []trace.SpanStartOption
-	readEvent          bool
-	writeEvent         bool
 	filters            []Filter
 	publicEndpointFn   func(*http.Request) bool
 	metricAttributesFn func(*http.Request) []attribute.KeyValue
@@ -68,7 +66,7 @@ func NewMiddleware(eh otel.ErrorHandler, serverName string,
 ) func(http.Handler) http.Handler {
 	h := middleware{}
 
-	c := newConfig(serverName, tracerProvider, spanStartOptions, PublicEndpointFn, readEvent, writeEvent, filters, meterProvider, metricAttributesFn)
+	c := newConfig(serverName, tracerProvider, spanStartOptions, PublicEndpointFn, filters, meterProvider, metricAttributesFn)
 	c.SpanStartOptions = append([]trace.SpanStartOption{trace.WithSpanKind(trace.SpanKindServer)}, c.SpanStartOptions...)
 
 	h.configure(c, eh)
@@ -83,8 +81,6 @@ func NewMiddleware(eh otel.ErrorHandler, serverName string,
 func (h *middleware) configure(c *config, eh otel.ErrorHandler) {
 	h.tracer = newTracer(c.TracerProvider)
 	h.spanStartOptions = c.SpanStartOptions
-	h.readEvent = c.ReadEvent
-	h.writeEvent = c.WriteEvent
 	h.filters = c.Filters
 	h.publicEndpointFn = c.PublicEndpointFn
 	h.server = c.ServerName
@@ -132,17 +128,10 @@ func (h *middleware) serveHTTP(w http.ResponseWriter, r *http.Request, next http
 	ctx, span := tracer.Start(ctx, spanName, opts...)
 	defer span.End()
 
-	readRecordFunc := func(int64) {}
-	if h.readEvent {
-		readRecordFunc = func(n int64) {
-			span.AddEvent("read", trace.WithAttributes(ReadBytesKey.Int64(n)))
-		}
-	}
-
 	// if request body is nil or NoBody, we don't want to mutate the body as it
 	// will affect the identity of it in an unforeseeable way because we assert
 	// ReadCloser fulfills a certain interface and it is indeed nil or NoBody.
-	bw := request.NewBodyWrapper(r.Body, readRecordFunc)
+	bw := request.NewBodyWrapper(r.Body)
 	if r.Body != nil && r.Body != http.NoBody {
 		origReq := r
 		prevBody := r.Body
@@ -153,14 +142,7 @@ func (h *middleware) serveHTTP(w http.ResponseWriter, r *http.Request, next http
 		defer func() { origReq.Body = prevBody }()
 	}
 
-	writeRecordFunc := func(int64) {}
-	if h.writeEvent {
-		writeRecordFunc = func(n int64) {
-			span.AddEvent("write", trace.WithAttributes(WroteBytesKey.Int64(n)))
-		}
-	}
-
-	rww := request.NewRespWriterWrapper(w, writeRecordFunc)
+	rww := request.NewRespWriterWrapper(w)
 
 	// Wrap w to use our ResponseWriter methods while also exposing
 	// other interfaces that w may implement (http.CloseNotifier,
