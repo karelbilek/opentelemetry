@@ -19,8 +19,6 @@ import (
 
 // middleware is an http middleware which wraps the next handler in a span.
 type middleware struct {
-	server string
-
 	tracer           *sdktrace.Tracer
 	spanStartOptions []trace.SpanStartOption
 	filter           Filter
@@ -32,20 +30,19 @@ type middleware struct {
 // NewHandler wraps the passed handler in a span named after the operation and
 // enriches it with metrics.
 func NewHandler(handler http.Handler, eh otel.ErrorHandler,
-	serverName string,
 	tracerProvider *sdktrace.TracerProvider,
 	spanStartOptions []trace.SpanStartOption,
 	publicEndpointFn Filter,
 	filter Filter,
 	meterProvider metric.MeterProvider,
 ) http.Handler {
-	return NewMiddleware(eh, serverName, tracerProvider, spanStartOptions, publicEndpointFn, filter, meterProvider)(handler)
+	return NewMiddleware(eh, tracerProvider, spanStartOptions, publicEndpointFn, filter, meterProvider)(handler)
 }
 
 // NewMiddleware returns a tracing and metrics instrumentation middleware.
 // The handler returned by the middleware wraps a handler
 // in a span named after the operation and enriches it with metrics.
-func NewMiddleware(eh otel.ErrorHandler, serverName string,
+func NewMiddleware(eh otel.ErrorHandler,
 	tracerProvider *sdktrace.TracerProvider,
 	spanStartOptions []trace.SpanStartOption,
 	publicEndpointFn Filter,
@@ -60,7 +57,6 @@ func NewMiddleware(eh otel.ErrorHandler, serverName string,
 	h.spanStartOptions = spanStartOptions
 	h.filter = filter
 	h.publicEndpointFn = publicEndpointFn
-	h.server = serverName
 	meter := meterProvider.Meter(
 		ScopeName,
 	)
@@ -87,7 +83,7 @@ func (h *middleware) serveHTTP(w http.ResponseWriter, r *http.Request, next http
 
 	ctx := propagation.Extract(r.Context(), r.Header)
 	opts := []trace.SpanStartOption{
-		trace.WithAttributes(h.semconv.RequestTraceAttrs(h.server, r, semconv.RequestTraceAttrsOpts{})...),
+		trace.WithAttributes(h.semconv.RequestTraceAttrs(r, semconv.RequestTraceAttrsOpts{})...),
 	}
 
 	opts = append(opts, h.spanStartOptions...)
@@ -165,7 +161,6 @@ func (h *middleware) serveHTTP(w http.ResponseWriter, r *http.Request, next http
 	})...)
 
 	h.semconv.RecordMetrics(ctx, semconv.ServerMetricData{
-		ServerName:   h.server,
 		ResponseSize: bytesWritten,
 		MetricAttributes: semconv.MetricAttributes{
 			Req:        r,

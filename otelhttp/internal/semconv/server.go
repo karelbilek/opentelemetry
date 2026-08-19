@@ -94,20 +94,12 @@ func (HTTPServer) Status(code int) (codes.Code, string) {
 //
 // If the primary server name is not known, server should be an empty string.
 // The req Host will be used to determine the server instead.
-func (n HTTPServer) RequestTraceAttrs(server string, req *http.Request, opts RequestTraceAttrsOpts) []attribute.KeyValue {
+func (n HTTPServer) RequestTraceAttrs(req *http.Request, opts RequestTraceAttrsOpts) []attribute.KeyValue {
 	count := 3 // ServerAddress, Method, Scheme
 
 	var host string
 	var p int
-	if server == "" {
-		host, p = SplitHostPort(req.Host)
-	} else {
-		// Prioritize the primary server name.
-		host, p = SplitHostPort(server)
-		if p < 0 {
-			_, p = SplitHostPort(req.Host)
-		}
-	}
+	host, p = SplitHostPort(req.Host)
 
 	hostPort := requiredHTTPPort(req.TLS != nil, p)
 	if hostPort > 0 {
@@ -233,7 +225,6 @@ func (HTTPServer) NetworkTransportAttr(network string) []attribute.KeyValue {
 }
 
 type ServerMetricData struct {
-	ServerName   string
 	ResponseSize int64
 
 	MetricData
@@ -263,7 +254,7 @@ var metricRecordOptionPool = &sync.Pool{
 }
 
 func (n HTTPServer) RecordMetrics(ctx context.Context, md ServerMetricData) {
-	attributes := n.MetricAttributes(md.ServerName, md.Req, md.StatusCode, md.Route)
+	attributes := n.MetricAttributes(md.Req, md.StatusCode, md.Route)
 	o := metric.WithAttributeSet(attribute.NewSet(attributes...))
 	recordOpts := metricRecordOptionPool.Get().(*[]metric.RecordOption)
 	*recordOpts = append(*recordOpts, o)
@@ -364,19 +355,12 @@ func (HTTPServer) Route(route string) attribute.KeyValue {
 	return semconv.HTTPRoute(route)
 }
 
-func (n HTTPServer) MetricAttributes(server string, req *http.Request, statusCode int, route string) []attribute.KeyValue {
+func (n HTTPServer) MetricAttributes(req *http.Request, statusCode int, route string) []attribute.KeyValue {
 	num := 3
 	var host string
 	var p int
-	if server == "" {
-		host, p = SplitHostPort(req.Host)
-	} else {
-		// Prioritize the primary server name.
-		host, p = SplitHostPort(server)
-		if p < 0 {
-			_, p = SplitHostPort(req.Host)
-		}
-	}
+	host, p = SplitHostPort(req.Host)
+
 	hostPort := requiredHTTPPort(req.TLS != nil, p)
 	if hostPort > 0 {
 		num++
