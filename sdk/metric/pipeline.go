@@ -39,8 +39,6 @@ type instrumentSync struct {
 func newPipeline(
 	res *resource.Resource,
 	reader Reader,
-	views []View,
-	// exemplarFilter exemplar.Filter,
 	cardinalityLimit int,
 ) *pipeline {
 	if res == nil {
@@ -49,7 +47,6 @@ func newPipeline(
 	return &pipeline{
 		resource:        res,
 		reader:          reader,
-		views:           views,
 		int64Measures:   map[observableID[int64]][]aggregate.Measure[int64]{},
 		float64Measures: map[observableID[float64]][]aggregate.Measure[float64]{},
 		// exemplarFilter:   exemplarFilter,
@@ -68,7 +65,6 @@ type pipeline struct {
 	resource *resource.Resource
 
 	reader Reader
-	views  []View
 
 	sync.Mutex
 	int64Measures   map[observableID[int64]][]aggregate.Measure[int64]
@@ -243,40 +239,10 @@ func (i *inserter[N]) Instrument(
 	h otel.ErrorHandler,
 ) ([]aggregate.Measure[N], error) {
 	var (
-		matched  bool
 		measures []aggregate.Measure[N]
 	)
 
 	var err error
-	seen := make(map[uint64]struct{})
-	for _, v := range i.pipeline.views {
-		stream, match := v(inst)
-		if !match {
-			continue
-		}
-		matched = true
-		in, id, e := i.cachedAggregator(inst.Scope, inst.Kind, stream, readerAggregation, h)
-		if e != nil {
-			err = errors.Join(err, e)
-		}
-		if in == nil { // Drop aggregation.
-			continue
-		}
-		if _, ok := seen[id]; ok {
-			// This aggregate function has already been added.
-			continue
-		}
-		seen[id] = struct{}{}
-		measures = append(measures, in)
-	}
-
-	if err != nil {
-		err = errors.Join(errCreatingAggregators, err)
-	}
-
-	if matched {
-		return measures, err
-	}
 
 	// Apply implicit default view if no explicit matched.
 	stream := Stream{
@@ -624,13 +590,11 @@ type pipelines []*pipeline
 func newPipelines(
 	res *resource.Resource,
 	readers []Reader,
-	views []View,
-	// exemplarFilter exemplar.Filter,
 	cardinalityLimit int,
 ) pipelines {
 	pipes := make([]*pipeline, 0, len(readers))
 	for _, r := range readers {
-		p := newPipeline(res, r, views, cardinalityLimit)
+		p := newPipeline(res, r, cardinalityLimit)
 		r.register(p)
 		pipes = append(pipes, p)
 	}

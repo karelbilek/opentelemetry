@@ -15,7 +15,6 @@ import (
 type config struct {
 	res              *resource.Resource
 	readers          []Reader
-	views            []View
 	cardinalityLimit int
 }
 
@@ -68,13 +67,11 @@ func unifyShutdown(funcs []func(context.Context) error) func(context.Context) er
 func newConfig(
 	res *resource.Resource,
 	readers []Reader,
-	views []View,
 	cardinalityLimit int,
 ) config {
 	return config{
 		res:              res,
 		readers:          readers,
-		views:            views,
 		cardinalityLimit: cardinalityLimit,
 	}
 }

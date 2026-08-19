@@ -37,14 +37,13 @@ var _ metric.MeterProvider = (*MeterProvider)(nil)
 // Readers, will perform no operations.
 func NewMeterProvider(res *resource.Resource,
 	readers []Reader,
-	views []View,
 	// exemplarFilter exemplar.Filter,
 	cardinalityLimit int) *MeterProvider {
-	conf := newConfig(res, readers, views, cardinalityLimit)
+	conf := newConfig(res, readers, cardinalityLimit)
 	flush, sdown := conf.readerSignals()
 
 	mp := &MeterProvider{
-		pipes:      newPipelines(conf.res, conf.readers, conf.views, conf.cardinalityLimit),
+		pipes:      newPipelines(conf.res, conf.readers, conf.cardinalityLimit),
 		forceFlush: flush,
 		shutdown:   sdown,
 	}
@@ -53,7 +52,6 @@ func NewMeterProvider(res *resource.Resource,
 		"MeterProvider created",
 		"Resource", conf.res,
 		"Readers", conf.readers,
-		"Views", len(conf.views),
 	)
 	return mp
 }
