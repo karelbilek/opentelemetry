@@ -97,11 +97,6 @@ func (h *middleware) serveHTTP(w http.ResponseWriter, r *http.Request, next http
 
 	tracer := h.tracer
 
-	if startTime := StartTimeFromContext(ctx); !startTime.IsZero() {
-		opts = append(opts, trace.WithTimestamp(startTime))
-		requestStartTime = startTime
-	}
-
 	spanName := semconv.SpanName(r)
 	ctx, span := tracer.Start(ctx, spanName, opts...)
 	defer span.End()
