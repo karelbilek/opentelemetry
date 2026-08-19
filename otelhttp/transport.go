@@ -27,8 +27,7 @@ import (
 type Transport struct {
 	rt http.RoundTripper
 
-	tracer           *sdktrace.Tracer
-	spanStartOptions []trace.SpanStartOption
+	tracer *sdktrace.Tracer
 
 	semconv semconv.HTTPClient
 }
@@ -44,7 +43,6 @@ var _ http.RoundTripper = &Transport{}
 func NewTransport(base http.RoundTripper,
 	eh otel.ErrorHandler,
 	tracerProvider *sdktrace.TracerProvider,
-	spanStartOptions []trace.SpanStartOption,
 	meterProvider metric.MeterProvider,
 ) *Transport {
 	if base == nil {
@@ -54,10 +52,8 @@ func NewTransport(base http.RoundTripper,
 	t := Transport{
 		rt: base,
 	}
-	spanStartOptions = append([]trace.SpanStartOption{trace.WithSpanKind(trace.SpanKindClient)}, spanStartOptions...)
 
 	t.tracer = newTracer(tracerProvider)
-	t.spanStartOptions = spanStartOptions
 	meter := meterProvider.Meter(
 		ScopeName,
 	)
@@ -75,7 +71,7 @@ func (t *Transport) RoundTrip(r *http.Request) (*http.Response, error) {
 	tracer := t.tracer
 
 	spanName := semconv.SpanName(r)
-	ctx, span := tracer.Start(r.Context(), spanName, t.spanStartOptions...)
+	ctx, span := tracer.Start(r.Context(), spanName, trace.WithSpanKind(trace.SpanKindClient))
 
 	r = r.Clone(ctx) // According to RoundTripper spec, we shouldn't modify the origin request.
 

@@ -20,7 +20,6 @@ import (
 // middleware is an http middleware which wraps the next handler in a span.
 type middleware struct {
 	tracer           *sdktrace.Tracer
-	spanStartOptions []trace.SpanStartOption
 	filter           Filter
 	publicEndpointFn Filter
 
@@ -31,12 +30,11 @@ type middleware struct {
 // enriches it with metrics.
 func NewHandler(handler http.Handler, eh otel.ErrorHandler,
 	tracerProvider *sdktrace.TracerProvider,
-	spanStartOptions []trace.SpanStartOption,
 	publicEndpointFn Filter,
 	filter Filter,
 	meterProvider metric.MeterProvider,
 ) http.Handler {
-	return NewMiddleware(eh, tracerProvider, spanStartOptions, publicEndpointFn, filter, meterProvider)(handler)
+	return NewMiddleware(eh, tracerProvider, publicEndpointFn, filter, meterProvider)(handler)
 }
 
 // NewMiddleware returns a tracing and metrics instrumentation middleware.
@@ -44,17 +42,13 @@ func NewHandler(handler http.Handler, eh otel.ErrorHandler,
 // in a span named after the operation and enriches it with metrics.
 func NewMiddleware(eh otel.ErrorHandler,
 	tracerProvider *sdktrace.TracerProvider,
-	spanStartOptions []trace.SpanStartOption,
 	publicEndpointFn Filter,
 	filter Filter,
 	meterProvider metric.MeterProvider,
 ) func(http.Handler) http.Handler {
 	h := middleware{}
 
-	spanStartOptions = append([]trace.SpanStartOption{trace.WithSpanKind(trace.SpanKindServer)}, spanStartOptions...)
-
 	h.tracer = newTracer(tracerProvider)
-	h.spanStartOptions = spanStartOptions
 	h.filter = filter
 	h.publicEndpointFn = publicEndpointFn
 	meter := meterProvider.Meter(
@@ -86,7 +80,7 @@ func (h *middleware) serveHTTP(w http.ResponseWriter, r *http.Request, next http
 		trace.WithAttributes(h.semconv.RequestTraceAttrs(r, semconv.RequestTraceAttrsOpts{})...),
 	}
 
-	opts = append(opts, h.spanStartOptions...)
+	opts = append(opts, trace.WithSpanKind(trace.SpanKindServer))
 	if h.publicEndpointFn != nil && h.publicEndpointFn(r.WithContext(ctx)) {
 		opts = append(opts, trace.WithNewRoot())
 		// Linking incoming span context if any for public endpoint.
