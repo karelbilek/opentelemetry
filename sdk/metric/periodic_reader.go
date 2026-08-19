@@ -107,9 +107,6 @@ type PeriodicReader struct {
 	cardinalityLimitSelector CardinalityLimitSelector
 }
 
-// Compile time check the periodicReader implements Reader and is comparable.
-var _ = map[Reader]struct{}{&PeriodicReader{}: {}}
-
 // newTicker allows testing override.
 var newTicker = time.NewTicker
 

@@ -22,8 +22,8 @@ type MeterProvider struct {
 	pipe   *pipeline
 	meters cache[instrumentation.Scope, *meter]
 
-	forceFlush, shutdown func(context.Context) error
-	stopped              atomic.Bool
+	reader  *PeriodicReader
+	stopped atomic.Bool
 }
 
 // Compile-time check MeterProvider implements metric.MeterProvider.
@@ -36,16 +36,15 @@ var _ metric.MeterProvider = (*MeterProvider)(nil)
 // created. This means the returned MeterProvider, one created with no
 // Readers, will perform no operations.
 func NewMeterProvider(res *resource.Resource,
-	reader Reader,
+	reader *PeriodicReader,
 	// exemplarFilter exemplar.Filter,
 	cardinalityLimit int) *MeterProvider {
 	conf := newConfig(res, reader, cardinalityLimit)
-	flush, sdown := conf.readerSignals()
+	// flush, sdown := conf.readerSignals()
 
 	mp := &MeterProvider{
-		pipe:       newPipeline(conf.res, conf.reader, conf.cardinalityLimit),
-		forceFlush: flush,
-		shutdown:   sdown,
+		pipe:   newPipeline(conf.res, conf.reader, conf.cardinalityLimit),
+		reader: conf.reader,
 	}
 	// Log after creation so all readers show correctly they are registered.
 	global.Info(
@@ -101,10 +100,7 @@ func (mp *MeterProvider) Meter(name string) metric.Meter {
 //
 // This method is safe to call concurrently.
 func (mp *MeterProvider) ForceFlush(ctx context.Context) error {
-	if mp.forceFlush != nil {
-		return mp.forceFlush(ctx)
-	}
-	return nil
+	return mp.reader.ForceFlush(ctx)
 }
 
 // Shutdown shuts down the MeterProvider flushing all pending telemetry and
@@ -133,8 +129,5 @@ func (mp *MeterProvider) Shutdown(ctx context.Context) error {
 	// See https://go.dev/ref/mem#atomic and https://pkg.go.dev/sync/atomic.
 
 	mp.stopped.Store(true)
-	if mp.shutdown != nil {
-		return mp.shutdown(ctx)
-	}
-	return nil
+	return mp.reader.Shutdown(ctx)
 }

@@ -38,7 +38,7 @@ type instrumentSync struct {
 
 func newPipeline(
 	res *resource.Resource,
-	reader Reader,
+	reader *PeriodicReader,
 	cardinalityLimit int,
 ) *pipeline {
 	if res == nil {
@@ -66,15 +66,14 @@ func newPipeline(
 type pipeline struct {
 	resource *resource.Resource
 
-	reader Reader
+	reader *PeriodicReader
 
 	sync.Mutex
-	int64Measures   map[observableID[int64]][]aggregate.Measure[int64]
-	float64Measures map[observableID[float64]][]aggregate.Measure[float64]
-	aggregations    map[instrumentation.Scope][]instrumentSync
-	callbacks       []func(context.Context) error
-	multiCallbacks  list.List
-	// exemplarFilter   exemplar.Filter
+	int64Measures    map[observableID[int64]][]aggregate.Measure[int64]
+	float64Measures  map[observableID[float64]][]aggregate.Measure[float64]
+	aggregations     map[instrumentation.Scope][]instrumentSync
+	callbacks        []func(context.Context) error
+	multiCallbacks   list.List
 	cardinalityLimit int
 }
 
