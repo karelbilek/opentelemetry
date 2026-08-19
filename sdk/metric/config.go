@@ -5,8 +5,6 @@ package metric
 
 import (
 	"context"
-	"errors"
-	"sync"
 
 	"github.com/karelbilek/opentelemetry/sdk/resource"
 )
@@ -14,7 +12,7 @@ import (
 // config contains configuration options for a MeterProvider.
 type config struct {
 	res              *resource.Resource
-	readers          []Reader
+	reader           Reader
 	cardinalityLimit int
 }
 
@@ -25,53 +23,26 @@ const defaultCardinalityLimit = 2000
 // will have their force-flush and shutdown methods unified into returned
 // single functions.
 func (c config) readerSignals() (forceFlush, shutdown func(context.Context) error) {
-	var fFuncs, sFuncs []func(context.Context) error
-	for _, r := range c.readers {
-		sFuncs = append(sFuncs, r.Shutdown)
-		if f, ok := r.(interface{ ForceFlush(context.Context) error }); ok {
-			fFuncs = append(fFuncs, f.ForceFlush)
-		}
+	var fFunc, sFunc func(context.Context) error
+	sFunc = c.reader.Shutdown
+	if f, ok := c.reader.(interface{ ForceFlush(context.Context) error }); ok {
+		fFunc = f.ForceFlush
+	} else {
+		fFunc = func(ctx context.Context) error { return nil }
 	}
 
-	return unify(fFuncs), unifyShutdown(sFuncs)
-}
-
-// unify unifies calling all of funcs into a single function call. All errors
-// returned from calls to funcs will be unify into a single error return
-// value.
-func unify(funcs []func(context.Context) error) func(context.Context) error {
-	return func(ctx context.Context) error {
-		var err error
-		for _, f := range funcs {
-			if e := f(ctx); e != nil {
-				err = errors.Join(err, e)
-			}
-		}
-		return err
-	}
-}
-
-// unifyShutdown unifies calling all of funcs once for a shutdown. If called
-// more than once, an ErrReaderShutdown error is returned.
-func unifyShutdown(funcs []func(context.Context) error) func(context.Context) error {
-	f := unify(funcs)
-	var once sync.Once
-	return func(ctx context.Context) error {
-		err := ErrReaderShutdown
-		once.Do(func() { err = f(ctx) })
-		return err
-	}
+	return fFunc, sFunc
 }
 
 // newConfig returns a config configured with options.
 func newConfig(
 	res *resource.Resource,
-	readers []Reader,
+	reader Reader,
 	cardinalityLimit int,
 ) config {
 	return config{
 		res:              res,
-		readers:          readers,
+		reader:           reader,
 		cardinalityLimit: cardinalityLimit,
 	}
 }

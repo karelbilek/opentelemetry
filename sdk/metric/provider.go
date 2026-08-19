@@ -19,7 +19,7 @@ import (
 // the same Views applied to them, and have their produced metric telemetry
 // passed to the configured Readers.
 type MeterProvider struct {
-	pipes  pipelines
+	pipe   *pipeline
 	meters cache[instrumentation.Scope, *meter]
 
 	forceFlush, shutdown func(context.Context) error
@@ -36,14 +36,14 @@ var _ metric.MeterProvider = (*MeterProvider)(nil)
 // created. This means the returned MeterProvider, one created with no
 // Readers, will perform no operations.
 func NewMeterProvider(res *resource.Resource,
-	readers []Reader,
+	reader Reader,
 	// exemplarFilter exemplar.Filter,
 	cardinalityLimit int) *MeterProvider {
-	conf := newConfig(res, readers, cardinalityLimit)
+	conf := newConfig(res, reader, cardinalityLimit)
 	flush, sdown := conf.readerSignals()
 
 	mp := &MeterProvider{
-		pipes:      newPipelines(conf.res, conf.readers, conf.cardinalityLimit),
+		pipe:       newPipeline(conf.res, conf.reader, conf.cardinalityLimit),
 		forceFlush: flush,
 		shutdown:   sdown,
 	}
@@ -51,7 +51,7 @@ func NewMeterProvider(res *resource.Resource,
 	global.Info(
 		"MeterProvider created",
 		"Resource", conf.res,
-		"Readers", conf.readers,
+		"Reader", conf.reader,
 	)
 	return mp
 }
@@ -85,7 +85,7 @@ func (mp *MeterProvider) Meter(name string) metric.Meter {
 	)
 
 	return mp.meters.Lookup(s, func() *meter {
-		return newMeter(s, mp.pipes)
+		return newMeter(s, mp.pipe)
 	})
 }
 

@@ -26,7 +26,7 @@ var ErrInstrumentName = errors.New("invalid instrument name")
 // single meter.
 type meter struct {
 	scope instrumentation.Scope
-	pipes pipelines
+	pipe  *pipeline
 
 	int64Insts             *cacheWithErr[instID, *int64Inst]
 	float64Insts           *cacheWithErr[instID, *float64Inst]
@@ -37,7 +37,7 @@ type meter struct {
 	float64Resolver resolver[float64]
 }
 
-func newMeter(s instrumentation.Scope, p pipelines) *meter {
+func newMeter(s instrumentation.Scope, p *pipeline) *meter {
 	// viewCache ensures instrument conflicts, including number conflicts, this
 	// meter is asked to create are logged to the user.
 	var viewCache cache[string, instID]
@@ -49,7 +49,7 @@ func newMeter(s instrumentation.Scope, p pipelines) *meter {
 
 	return &meter{
 		scope:                  s,
-		pipes:                  p,
+		pipe:                   p,
 		int64Insts:             &int64Insts,
 		float64Insts:           &float64Insts,
 		int64ObservableInsts:   &int64ObservableInsts,
@@ -144,29 +144,28 @@ func (m *meter) int64ObservableInstrument(
 	}
 	return m.int64ObservableInsts.Lookup(key, func() (int64Observable, error) {
 		inst := newInt64Observable(m, id.Kind, id.Name, id.Description, id.Unit)
-		for _, insert := range m.int64Resolver.inserters {
-			// Connect the measure functions for instruments in this pipeline with the
-			// callbacks for this pipeline.
-			in, err := insert.Instrument(id, allowedKeys, insert.readerDefaultAggregation(id.Kind), h)
-			if err != nil {
-				return inst, err
-			}
-			// Drop aggregation
-			if len(in) == 0 {
-				inst.dropAggregation = true
-				continue
-			}
-			inst.appendMeasures(in)
+		insert := m.int64Resolver.inserter
+		// Connect the measure functions for instruments in this pipeline with the
+		// callbacks for this pipeline.
+		in, err := insert.Instrument(id, allowedKeys, insert.readerDefaultAggregation(id.Kind), h)
+		if err != nil {
+			return inst, err
+		}
+		// Drop aggregation
+		if len(in) == 0 {
+			inst.dropAggregation = true
+			return inst, validateInstrumentName(id.Name)
+		}
+		inst.appendMeasures(in)
 
-			// Add the measures to the pipeline. It is required to maintain
-			// measures per pipeline to avoid calling the measure that
-			// is not part of the pipeline.
-			insert.pipeline.addInt64Measure(inst.observableID, in)
-			for _, cback := range callbacks {
-				inst := int64Observer{measures: in}
-				fn := cback
-				insert.addCallback(func(ctx context.Context) error { return fn(ctx, inst) })
-			}
+		// Add the measures to the pipeline. It is required to maintain
+		// measures per pipeline to avoid calling the measure that
+		// is not part of the pipeline.
+		insert.pipeline.addInt64Measure(inst.observableID, in)
+		for _, cback := range callbacks {
+			inst := int64Observer{measures: in}
+			fn := cback
+			insert.addCallback(func(ctx context.Context) error { return fn(ctx, inst) })
 		}
 		return inst, validateInstrumentName(id.Name)
 	})
@@ -333,30 +332,30 @@ func (m *meter) float64ObservableInstrument(
 	}
 	return m.float64ObservableInsts.Lookup(key, func() (float64Observable, error) {
 		inst := newFloat64Observable(m, id.Kind, id.Name, id.Description, id.Unit)
-		for _, insert := range m.float64Resolver.inserters {
-			// Connect the measure functions for instruments in this pipeline with the
-			// callbacks for this pipeline.
-			in, err := insert.Instrument(id, allowedKeys, insert.readerDefaultAggregation(id.Kind), h)
-			if err != nil {
-				return inst, err
-			}
-			// Drop aggregation
-			if len(in) == 0 {
-				inst.dropAggregation = true
-				continue
-			}
-			inst.appendMeasures(in)
-
-			// Add the measures to the pipeline. It is required to maintain
-			// measures per pipeline to avoid calling the measure that
-			// is not part of the pipeline.
-			insert.pipeline.addFloat64Measure(inst.observableID, in)
-			for _, cback := range callbacks {
-				inst := float64Observer{measures: in}
-				fn := cback
-				insert.addCallback(func(ctx context.Context) error { return fn(ctx, inst) })
-			}
+		insert := m.float64Resolver.inserter
+		// Connect the measure functions for instruments in this pipeline with the
+		// callbacks for this pipeline.
+		in, err := insert.Instrument(id, allowedKeys, insert.readerDefaultAggregation(id.Kind), h)
+		if err != nil {
+			return inst, err
 		}
+		// Drop aggregation
+		if len(in) == 0 {
+			inst.dropAggregation = true
+			return inst, validateInstrumentName(id.Name)
+		}
+		inst.appendMeasures(in)
+
+		// Add the measures to the pipeline. It is required to maintain
+		// measures per pipeline to avoid calling the measure that
+		// is not part of the pipeline.
+		insert.pipeline.addFloat64Measure(inst.observableID, in)
+		for _, cback := range callbacks {
+			inst := float64Observer{measures: in}
+			fn := cback
+			insert.addCallback(func(ctx context.Context) error { return fn(ctx, inst) })
+		}
+
 		return inst, validateInstrumentName(id.Name)
 	})
 }
@@ -530,24 +529,21 @@ func (m *meter) RegisterCallback(f metric.Callback, insts ...metric.Observable) 
 		return noopRegister{}, err
 	}
 
-	unregs := make([]func(), len(m.pipes))
-	for ix, pipe := range m.pipes {
-		reg := newObserver(pipe)
-		for _, inst := range validInstruments {
-			switch o := inst.(type) {
-			case int64Observable:
-				reg.registerInt64(o.observableID)
-			case float64Observable:
-				reg.registerFloat64(o.observableID)
-			}
+	pipe := m.pipe
+	reg := newObserver(pipe)
+	for _, inst := range validInstruments {
+		switch o := inst.(type) {
+		case int64Observable:
+			reg.registerInt64(o.observableID)
+		case float64Observable:
+			reg.registerFloat64(o.observableID)
 		}
-
-		// Some or all instruments were valid.
-		cBack := func(ctx context.Context) error { return f(ctx, reg) }
-		unregs[ix] = pipe.addMultiCallback(cBack)
 	}
 
-	return unregisterFuncs{f: unregs}, err
+	// Some or all instruments were valid.
+	cBack := func(ctx context.Context) error { return f(ctx, reg) }
+
+	return unregisterFunc{f: pipe.addMultiCallback(cBack)}, err
 }
 
 type observer struct {

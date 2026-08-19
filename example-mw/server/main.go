@@ -138,7 +138,7 @@ func startOtlp(oh otel.ErrorHandler) (*slog.Logger, *log.LoggerProvider, *trace.
 	)
 	meterProvider := metric.NewMeterProvider(
 		res,
-		[]metric.Reader{perReader},
+		perReader,
 		2000,
 	)
 

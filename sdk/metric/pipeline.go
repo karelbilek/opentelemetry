@@ -44,7 +44,7 @@ func newPipeline(
 	if res == nil {
 		res = resource.Empty()
 	}
-	return &pipeline{
+	p := &pipeline{
 		resource:        res,
 		reader:          reader,
 		int64Measures:   map[observableID[int64]][]aggregate.Measure[int64]{},
@@ -53,6 +53,8 @@ func newPipeline(
 		cardinalityLimit: cardinalityLimit,
 		// aggregations is lazy allocated when needed.
 	}
+	reader.register(p)
+	return p
 }
 
 // pipeline connects all of the instruments created by a meter provider to a Reader.
@@ -583,32 +585,26 @@ func isAggregatorCompatible(kind InstrumentKind, agg Aggregation) error {
 	}
 }
 
-// pipelines is the group of pipelines connecting Readers with instrument
-// measurement.
-type pipelines []*pipeline
+// // pipelines is the group of pipelines connecting Readers with instrument
+// // measurement.
+// type pipelines []*pipeline
 
-func newPipelines(
-	res *resource.Resource,
-	readers []Reader,
-	cardinalityLimit int,
-) pipelines {
-	pipes := make([]*pipeline, 0, len(readers))
-	for _, r := range readers {
-		p := newPipeline(res, r, cardinalityLimit)
-		r.register(p)
-		pipes = append(pipes, p)
-	}
-	return pipes
+// func newPipelines(
+// 	res *resource.Resource,
+// 	reader Reader,
+// 	cardinalityLimit int,
+// ) *pipeline {
+// 	p := newPipeline(res, reader, cardinalityLimit)
+// 	reader.register(p)
+// 	return p
+// }
+
+type unregisterFunc struct {
+	f func()
 }
 
-type unregisterFuncs struct {
-	f []func()
-}
-
-func (u unregisterFuncs) Unregister() error {
-	for _, f := range u.f {
-		f()
-	}
+func (u unregisterFunc) Unregister() error {
+	u.f()
 	return nil
 }
 
@@ -616,31 +612,22 @@ func (u unregisterFuncs) Unregister() error {
 // aggregate measurements with while updating all pipelines that need to pull
 // from those aggregations.
 type resolver[N int64 | float64] struct {
-	inserters []*inserter[N]
+	inserter *inserter[N]
 }
 
-func newResolver[N int64 | float64](p pipelines, vc *cache[string, instID]) resolver[N] {
-	in := make([]*inserter[N], len(p))
-	for i := range in {
-		in[i] = newInserter[N](p[i], vc)
-	}
-	return resolver[N]{in}
+func newResolver[N int64 | float64](p *pipeline, vc *cache[string, instID]) resolver[N] {
+	ins := newInserter[N](p, vc)
+	return resolver[N]{ins}
 }
 
 // Aggregators returns the Aggregators that must be updated by the instrument
 // defined by key.
 func (r resolver[N]) Aggregators(id Instrument, allowedKeys []attribute.Key, h otel.ErrorHandler) ([]aggregate.Measure[N], error) {
-	var measures []aggregate.Measure[N]
-
-	var err error
-	for _, i := range r.inserters {
-		in, e := i.Instrument(id, allowedKeys, i.readerDefaultAggregation(id.Kind), h)
-		if e != nil {
-			err = errors.Join(err, e)
-		}
-		measures = append(measures, in...)
+	in, e := r.inserter.Instrument(id, allowedKeys, r.inserter.readerDefaultAggregation(id.Kind), h)
+	if e != nil {
+		return nil, e
 	}
-	return measures, err
+	return in, nil
 }
 
 // HistogramAggregators returns the histogram Aggregators that must be updated by the instrument
@@ -652,20 +639,17 @@ func (r resolver[N]) HistogramAggregators(
 	boundaries []float64,
 	h otel.ErrorHandler,
 ) ([]aggregate.Measure[N], error) {
-	var measures []aggregate.Measure[N]
-
 	var err error
-	for _, i := range r.inserters {
-		agg := i.readerDefaultAggregation(id.Kind)
-		if histAgg, ok := agg.(AggregationExplicitBucketHistogram); ok && len(boundaries) > 0 {
-			histAgg.Boundaries = boundaries
-			agg = histAgg
-		}
-		in, e := i.Instrument(id, allowedKeys, agg, h)
-		if e != nil {
-			err = errors.Join(err, e)
-		}
-		measures = append(measures, in...)
+	i := r.inserter
+
+	agg := i.readerDefaultAggregation(id.Kind)
+	if histAgg, ok := agg.(AggregationExplicitBucketHistogram); ok && len(boundaries) > 0 {
+		histAgg.Boundaries = boundaries
+		agg = histAgg
 	}
-	return measures, err
+	in, e := i.Instrument(id, allowedKeys, agg, h)
+	if e != nil {
+		err = errors.Join(err, e)
+	}
+	return in, e
 }

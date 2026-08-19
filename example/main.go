@@ -109,7 +109,7 @@ func main() {
 	)
 	meterProvider := metric.NewMeterProvider(
 		res,
-		[]metric.Reader{perReader},
+		perReader,
 		2000,
 	)
 	defer func() {
