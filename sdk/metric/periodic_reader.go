@@ -12,8 +12,10 @@ import (
 	"time"
 
 	otel "github.com/karelbilek/opentelemetry"
+	"github.com/karelbilek/opentelemetry/exporters/otlpmetrichttp"
 	"github.com/karelbilek/opentelemetry/internal/global"
 	"github.com/karelbilek/opentelemetry/sdk/metric/metricdata"
+	"github.com/karelbilek/opentelemetry/sdk/metric/metricinternals"
 )
 
 // Default periodic reader timing.
@@ -26,7 +28,7 @@ const (
 type periodicReaderConfig struct {
 	interval                 time.Duration
 	timeout                  time.Duration
-	cardinalityLimitSelector CardinalityLimitSelector
+	cardinalityLimitSelector metricinternals.CardinalityLimitSelector
 }
 
 // newPeriodicReaderConfig returns a periodicReaderConfig configured with
@@ -34,7 +36,7 @@ type periodicReaderConfig struct {
 func newPeriodicReaderConfig(
 	interval time.Duration,
 	timeout time.Duration,
-	cardinalityLimitSelector CardinalityLimitSelector,
+	cardinalityLimitSelector metricinternals.CardinalityLimitSelector,
 ) periodicReaderConfig {
 	return periodicReaderConfig{
 		interval:                 interval,
@@ -52,10 +54,10 @@ func newPeriodicReaderConfig(
 // The Collect method of the returned Reader continues to gather and return
 // metric data to the user. It will not automatically send that data to the
 // exporter. That is left to the user to accomplish.
-func NewPeriodicReader(exporter Exporter,
+func NewPeriodicReader(exporter *otlpmetrichttp.Exporter,
 	interval time.Duration,
 	timeout time.Duration,
-	cardinalityLimitSelector CardinalityLimitSelector,
+	cardinalityLimitSelector metricinternals.CardinalityLimitSelector,
 	h otel.ErrorHandler) *PeriodicReader {
 	conf := newPeriodicReaderConfig(interval, timeout, cardinalityLimitSelector)
 	ctx, cancel := context.WithCancel( //nolint:gosec  // cancel called during PeriodicReader shutdown.
@@ -95,7 +97,7 @@ type PeriodicReader struct {
 	interval time.Duration
 	timeout  time.Duration
 	batcher  batcher
-	exporter Exporter
+	exporter *otlpmetrichttp.Exporter
 	flushCh  chan chan error
 
 	done         chan struct{}
@@ -104,7 +106,7 @@ type PeriodicReader struct {
 
 	rmPool sync.Pool
 
-	cardinalityLimitSelector CardinalityLimitSelector
+	cardinalityLimitSelector metricinternals.CardinalityLimitSelector
 }
 
 // newTicker allows testing override.
@@ -142,19 +144,19 @@ func (r *PeriodicReader) register(p sdkProducer) {
 }
 
 // temporality reports the Temporality for the instrument kind provided.
-func (r *PeriodicReader) temporality(kind InstrumentKind) metricdata.Temporality {
+func (r *PeriodicReader) temporality(kind metricinternals.InstrumentKind) metricdata.Temporality {
 	return r.exporter.Temporality(kind)
 }
 
 // aggregation returns what Aggregation to use for kind.
 func (r *PeriodicReader) aggregation(
-	kind InstrumentKind,
-) Aggregation { // nolint:revive  // import-shadow for method scoped by type.
+	kind metricinternals.InstrumentKind,
+) metricinternals.Aggregation { // nolint:revive  // import-shadow for method scoped by type.
 	return r.exporter.Aggregation(kind)
 }
 
 // cardinalityLimit returns the cardinality limit for kind.
-func (r *PeriodicReader) cardinalityLimit(kind InstrumentKind) (int, bool) {
+func (r *PeriodicReader) cardinalityLimit(kind metricinternals.InstrumentKind) (int, bool) {
 	return r.cardinalityLimitSelector(kind)
 }
 
@@ -342,7 +344,7 @@ func (r *PeriodicReader) MarshalLog() any {
 	r.mu.Unlock()
 	return struct {
 		Type       string
-		Exporter   Exporter
+		Exporter   *otlpmetrichttp.Exporter
 		Registered bool
 		Shutdown   bool
 		Interval   time.Duration

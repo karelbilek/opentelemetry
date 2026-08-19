@@ -16,8 +16,8 @@ import (
 	"github.com/karelbilek/opentelemetry/exporters/otlpmetrichttp/internal/transform"
 	"github.com/karelbilek/opentelemetry/internal/global"
 	"github.com/karelbilek/opentelemetry/retry"
-	"github.com/karelbilek/opentelemetry/sdk/metric"
 	"github.com/karelbilek/opentelemetry/sdk/metric/metricdata"
+	"github.com/karelbilek/opentelemetry/sdk/metric/metricinternals"
 )
 
 // Exporter is a OpenTelemetry metric Exporter using protobufs over HTTP.
@@ -29,8 +29,8 @@ type Exporter struct {
 		Shutdown(context.Context) error
 	}
 
-	temporalitySelector metric.TemporalitySelector
-	aggregationSelector metric.AggregationSelector
+	temporalitySelector metricinternals.TemporalitySelector
+	aggregationSelector metricinternals.AggregationSelector
 
 	shutdownOnce sync.Once
 }
@@ -38,14 +38,14 @@ type Exporter struct {
 func newExporter(c *client, cfg oconf.Config) (*Exporter, error) {
 	ts := cfg.Metrics.TemporalitySelector
 	if ts == nil {
-		ts = func(metric.InstrumentKind) metricdata.Temporality {
+		ts = func(metricinternals.InstrumentKind) metricdata.Temporality {
 			return metricdata.CumulativeTemporality
 		}
 	}
 
 	as := cfg.Metrics.AggregationSelector
 	if as == nil {
-		as = metric.DefaultAggregationSelector
+		as = metricinternals.DefaultAggregationSelector
 	}
 
 	return &Exporter{
@@ -57,12 +57,12 @@ func newExporter(c *client, cfg oconf.Config) (*Exporter, error) {
 }
 
 // Temporality returns the Temporality to use for an instrument kind.
-func (e *Exporter) Temporality(k metric.InstrumentKind) metricdata.Temporality {
+func (e *Exporter) Temporality(k metricinternals.InstrumentKind) metricdata.Temporality {
 	return e.temporalitySelector(k)
 }
 
 // Aggregation returns the Aggregation to use for an instrument kind.
-func (e *Exporter) Aggregation(k metric.InstrumentKind) metric.Aggregation {
+func (e *Exporter) Aggregation(k metricinternals.InstrumentKind) metricinternals.Aggregation {
 	return e.aggregationSelector(k)
 }
 
@@ -145,7 +145,7 @@ func (*Exporter) MarshalLog() any {
 // New returns an OpenTelemetry metric Exporter. The Exporter can be used with
 // a PeriodicReader to export OpenTelemetry metric data to an OTLP receiving
 // endpoint using protobufs over HTTP.
-func New(_ context.Context, endpoint string, urlPath string, insecure bool, headers map[string]string, maxRequestSize int, timeout time.Duration, temporalitySelector metric.TemporalitySelector, aggregationSelector metric.AggregationSelector, retry retry.Config) (*Exporter, error) {
+func New(_ context.Context, endpoint string, urlPath string, insecure bool, headers map[string]string, maxRequestSize int, timeout time.Duration, temporalitySelector metricinternals.TemporalitySelector, aggregationSelector metricinternals.AggregationSelector, retry retry.Config) (*Exporter, error) {
 	cfg := oconf.NewHTTPConfig(endpoint, urlPath, insecure, headers, maxRequestSize, timeout, temporalitySelector, aggregationSelector, retry)
 	c, err := newClient(cfg)
 	if err != nil {

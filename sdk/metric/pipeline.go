@@ -18,6 +18,7 @@ import (
 	"github.com/karelbilek/opentelemetry/sdk/metric/internal"
 	"github.com/karelbilek/opentelemetry/sdk/metric/internal/aggregate"
 	"github.com/karelbilek/opentelemetry/sdk/metric/metricdata"
+	"github.com/karelbilek/opentelemetry/sdk/metric/metricinternals"
 	"github.com/karelbilek/opentelemetry/sdk/resource"
 )
 
@@ -236,7 +237,7 @@ func newInserter[N int64 | float64](p *pipeline, vc *cache[string, instID]) *ins
 func (i *inserter[N]) Instrument(
 	inst Instrument,
 	allowedKeys []attribute.Key,
-	readerAggregation Aggregation,
+	readerAggregation metricinternals.Aggregation,
 	h otel.ErrorHandler,
 ) ([]aggregate.Measure[N], error) {
 	var (
@@ -291,18 +292,18 @@ type aggVal[N int64 | float64] struct {
 // readerDefaultAggregation returns the default aggregation for the instrument
 // kind based on the reader's aggregation preferences. This is used unless the
 // aggregation is overridden with a view.
-func (i *inserter[N]) readerDefaultAggregation(kind InstrumentKind) Aggregation {
+func (i *inserter[N]) readerDefaultAggregation(kind metricinternals.InstrumentKind) metricinternals.Aggregation {
 	aggregation := i.pipeline.reader.aggregation(kind)
 	switch aggregation.(type) {
-	case nil, AggregationDefault:
+	case nil, metricinternals.AggregationDefault:
 		// If the reader returns default or nil use the default selector.
-		aggregation = DefaultAggregationSelector(kind)
+		aggregation = metricinternals.DefaultAggregationSelector(kind)
 	default:
 		// Deep copy and validate before using.
-		aggregation = aggregation.copy()
-		if err := aggregation.err(); err != nil {
+		aggregation = aggregation.Copy()
+		if err := aggregation.Err(); err != nil {
 			orig := aggregation
-			aggregation = DefaultAggregationSelector(kind)
+			aggregation = metricinternals.DefaultAggregationSelector(kind)
 			global.Error(
 				err, "using default aggregation instead",
 				"aggregation", orig,
@@ -329,9 +330,9 @@ func (i *inserter[N]) readerDefaultAggregation(kind InstrumentKind) Aggregation 
 // is returned.
 func (i *inserter[N]) cachedAggregator(
 	scope instrumentation.Scope,
-	kind InstrumentKind,
+	kind metricinternals.InstrumentKind,
 	stream Stream,
-	readerAggregation Aggregation,
+	readerAggregation metricinternals.Aggregation,
 	h otel.ErrorHandler,
 ) (meas aggregate.Measure[N], aggID uint64, err error) {
 	switch stream.Aggregation.(type) {
@@ -339,9 +340,9 @@ func (i *inserter[N]) cachedAggregator(
 		// The aggregation was not overridden with a view. Use the aggregation
 		// provided by the reader.
 		stream.Aggregation = readerAggregation
-	case AggregationDefault:
+	case metricinternals.AggregationDefault:
 		// The view explicitly requested the default aggregation.
-		stream.Aggregation = DefaultAggregationSelector(kind)
+		stream.Aggregation = metricinternals.DefaultAggregationSelector(kind)
 	}
 	if err := isAggregatorCompatible(kind, stream.Aggregation); err != nil {
 		return nil, 0, fmt.Errorf(
@@ -392,7 +393,7 @@ func (i *inserter[N]) cachedAggregator(
 // When the reader's selector returns fallback = true, the pipeline's global
 // limit is used, then the default if global is unset. When fallback is false,
 // the selector's limit is used (0 or less means unlimited).
-func (i *inserter[N]) getCardinalityLimit(kind InstrumentKind) int {
+func (i *inserter[N]) getCardinalityLimit(kind metricinternals.InstrumentKind) int {
 	limit, fallback := i.pipeline.reader.cardinalityLimit(kind)
 	if fallback {
 		return i.pipeline.cardinalityLimit
@@ -447,7 +448,7 @@ func (i *inserter[N]) logConflict(id instID) {
 	global.Warn(msg, args...)
 }
 
-func (*inserter[N]) instID(kind InstrumentKind, stream Stream) instID {
+func (*inserter[N]) instID(kind metricinternals.InstrumentKind, stream Stream) instID {
 	var zero N
 	return instID{
 		Name:        stream.Name,
@@ -463,55 +464,55 @@ func (*inserter[N]) instID(kind InstrumentKind, stream Stream) instID {
 // returned.
 func (i *inserter[N]) aggregateFunc(
 	b aggregate.Builder[N],
-	agg Aggregation,
-	kind InstrumentKind,
+	agg metricinternals.Aggregation,
+	kind metricinternals.InstrumentKind,
 	h otel.ErrorHandler,
 ) (meas aggregate.Measure[N], comp aggregate.ComputeAggregation, err error) {
 	switch a := agg.(type) {
-	case AggregationDefault:
-		return i.aggregateFunc(b, DefaultAggregationSelector(kind), kind, h)
-	case AggregationDrop:
+	case metricinternals.AggregationDefault:
+		return i.aggregateFunc(b, metricinternals.DefaultAggregationSelector(kind), kind, h)
+	case metricinternals.AggregationDrop:
 		// Return nil in and out to signify the drop aggregator.
-	case AggregationLastValue:
+	case metricinternals.AggregationLastValue:
 		switch kind {
-		case InstrumentKindGauge:
+		case metricinternals.InstrumentKindGauge:
 			meas, comp = b.LastValue(h)
-		case InstrumentKindObservableGauge:
+		case metricinternals.InstrumentKindObservableGauge:
 			meas, comp = b.PrecomputedLastValue(h)
 		}
-	case AggregationSum:
+	case metricinternals.AggregationSum:
 		switch kind {
-		case InstrumentKindObservableCounter:
+		case metricinternals.InstrumentKindObservableCounter:
 			meas, comp = b.PrecomputedSum(true, h)
-		case InstrumentKindObservableUpDownCounter:
+		case metricinternals.InstrumentKindObservableUpDownCounter:
 			meas, comp = b.PrecomputedSum(false, h)
-		case InstrumentKindCounter, InstrumentKindHistogram:
+		case metricinternals.InstrumentKindCounter, metricinternals.InstrumentKindHistogram:
 			meas, comp = b.Sum(true, h)
 		default:
 			// InstrumentKindUpDownCounter, InstrumentKindObservableGauge, and
 			// instrumentKindUndefined or other invalid instrument kinds.
 			meas, comp = b.Sum(false, h)
 		}
-	case AggregationExplicitBucketHistogram:
+	case metricinternals.AggregationExplicitBucketHistogram:
 		var noSum bool
 		switch kind {
-		case InstrumentKindUpDownCounter,
-			InstrumentKindObservableUpDownCounter,
-			InstrumentKindObservableGauge,
-			InstrumentKindGauge:
+		case metricinternals.InstrumentKindUpDownCounter,
+			metricinternals.InstrumentKindObservableUpDownCounter,
+			metricinternals.InstrumentKindObservableGauge,
+			metricinternals.InstrumentKindGauge:
 			// The sum should not be collected for any instrument that can make
 			// negative measurements:
 			// https://github.com/open-telemetry/opentelemetry-specification/blob/v1.21.0/specification/metrics/sdk.md#histogram-aggregations
 			noSum = true
 		}
 		meas, comp = b.ExplicitBucketHistogram(a.Boundaries, a.NoMinMax, noSum, h)
-	case AggregationBase2ExponentialHistogram:
+	case metricinternals.AggregationBase2ExponentialHistogram:
 		var noSum bool
 		switch kind {
-		case InstrumentKindUpDownCounter,
-			InstrumentKindObservableUpDownCounter,
-			InstrumentKindObservableGauge,
-			InstrumentKindGauge:
+		case metricinternals.InstrumentKindUpDownCounter,
+			metricinternals.InstrumentKindObservableUpDownCounter,
+			metricinternals.InstrumentKindObservableGauge,
+			metricinternals.InstrumentKindGauge:
 			// The sum should not be collected for any instrument that can make
 			// negative measurements:
 			// https://github.com/open-telemetry/opentelemetry-specification/blob/v1.21.0/specification/metrics/sdk.md#histogram-aggregations
@@ -538,45 +539,45 @@ func (i *inserter[N]) aggregateFunc(
 // | Observable Counter       | ✓    |           | ✓   | ✓         | ✓                     |
 // | Observable UpDownCounter | ✓    |           | ✓   | ✓         | ✓                     |
 // | Observable Gauge         | ✓    | ✓         |     | ✓         | ✓                     |.
-func isAggregatorCompatible(kind InstrumentKind, agg Aggregation) error {
+func isAggregatorCompatible(kind metricinternals.InstrumentKind, agg metricinternals.Aggregation) error {
 	switch agg.(type) {
-	case AggregationDefault:
+	case metricinternals.AggregationDefault:
 		return nil
-	case AggregationExplicitBucketHistogram, AggregationBase2ExponentialHistogram:
+	case metricinternals.AggregationExplicitBucketHistogram, metricinternals.AggregationBase2ExponentialHistogram:
 		switch kind {
-		case InstrumentKindCounter,
-			InstrumentKindUpDownCounter,
-			InstrumentKindHistogram,
-			InstrumentKindGauge,
-			InstrumentKindObservableCounter,
-			InstrumentKindObservableUpDownCounter,
-			InstrumentKindObservableGauge:
+		case metricinternals.InstrumentKindCounter,
+			metricinternals.InstrumentKindUpDownCounter,
+			metricinternals.InstrumentKindHistogram,
+			metricinternals.InstrumentKindGauge,
+			metricinternals.InstrumentKindObservableCounter,
+			metricinternals.InstrumentKindObservableUpDownCounter,
+			metricinternals.InstrumentKindObservableGauge:
 			return nil
 		default:
 			return errIncompatibleAggregation
 		}
-	case AggregationSum:
+	case metricinternals.AggregationSum:
 		switch kind {
-		case InstrumentKindObservableCounter,
-			InstrumentKindObservableUpDownCounter,
-			InstrumentKindCounter,
-			InstrumentKindHistogram,
-			InstrumentKindUpDownCounter:
+		case metricinternals.InstrumentKindObservableCounter,
+			metricinternals.InstrumentKindObservableUpDownCounter,
+			metricinternals.InstrumentKindCounter,
+			metricinternals.InstrumentKindHistogram,
+			metricinternals.InstrumentKindUpDownCounter:
 			return nil
 		default:
 			// TODO: review need for aggregation check after
 			// https://github.com/open-telemetry/opentelemetry-specification/issues/2710
 			return errIncompatibleAggregation
 		}
-	case AggregationLastValue:
+	case metricinternals.AggregationLastValue:
 		switch kind {
-		case InstrumentKindObservableGauge, InstrumentKindGauge:
+		case metricinternals.InstrumentKindObservableGauge, metricinternals.InstrumentKindGauge:
 			return nil
 		}
 		// TODO: review need for aggregation check after
 		// https://github.com/open-telemetry/opentelemetry-specification/issues/2710
 		return errIncompatibleAggregation
-	case AggregationDrop:
+	case metricinternals.AggregationDrop:
 		return nil
 	default:
 		// This is used passed checking for default, it should be an error at this point.
@@ -642,7 +643,7 @@ func (r resolver[N]) HistogramAggregators(
 	i := r.inserter
 
 	agg := i.readerDefaultAggregation(id.Kind)
-	if histAgg, ok := agg.(AggregationExplicitBucketHistogram); ok && len(boundaries) > 0 {
+	if histAgg, ok := agg.(metricinternals.AggregationExplicitBucketHistogram); ok && len(boundaries) > 0 {
 		histAgg.Boundaries = boundaries
 		agg = histAgg
 	}

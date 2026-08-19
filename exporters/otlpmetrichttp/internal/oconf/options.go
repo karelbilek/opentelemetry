@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/karelbilek/opentelemetry/retry"
-	"github.com/karelbilek/opentelemetry/sdk/metric"
+	"github.com/karelbilek/opentelemetry/sdk/metric/metricinternals"
 )
 
 const (
@@ -48,8 +48,8 @@ type (
 		Timeout        time.Duration
 		URLPath        string
 
-		TemporalitySelector metric.TemporalitySelector
-		AggregationSelector metric.AggregationSelector
+		TemporalitySelector metricinternals.TemporalitySelector
+		AggregationSelector metricinternals.AggregationSelector
 	}
 
 	Config struct {
@@ -73,8 +73,8 @@ func NewHTTPConfig(
 	headers map[string]string,
 	maxRequestSize int,
 	timeout time.Duration,
-	temporalitySelector metric.TemporalitySelector,
-	aggregationSelector metric.AggregationSelector,
+	temporalitySelector metricinternals.TemporalitySelector,
+	aggregationSelector metricinternals.AggregationSelector,
 	retry retry.Config,
 ) Config {
 	return Config{
