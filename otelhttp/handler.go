@@ -30,11 +30,11 @@ type middleware struct {
 // enriches it with metrics.
 func NewHandler(handler http.Handler, eh otel.ErrorHandler,
 	tracerProvider *sdktrace.TracerProvider,
+	meterProvider metric.MeterProvider,
 	publicEndpointFn Filter,
 	filter Filter,
-	meterProvider metric.MeterProvider,
 ) http.Handler {
-	return NewMiddleware(eh, tracerProvider, publicEndpointFn, filter, meterProvider)(handler)
+	return NewMiddleware(eh, tracerProvider, meterProvider, publicEndpointFn, filter)(handler)
 }
 
 // NewMiddleware returns a tracing and metrics instrumentation middleware.
@@ -42,9 +42,9 @@ func NewHandler(handler http.Handler, eh otel.ErrorHandler,
 // in a span named after the operation and enriches it with metrics.
 func NewMiddleware(eh otel.ErrorHandler,
 	tracerProvider *sdktrace.TracerProvider,
+	meterProvider metric.MeterProvider,
 	publicEndpointFn Filter,
 	filter Filter,
-	meterProvider metric.MeterProvider,
 ) func(http.Handler) http.Handler {
 	h := middleware{}
 
