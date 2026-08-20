@@ -29,7 +29,8 @@ type BatchProcessor struct {
 	// q is the active queue of records that have not yet been exported.
 	q *queue
 	// batchSize is the maximum number of records in a scheduled export.
-	batchSize int
+	batchSize  int
+	expTimeout time.Duration
 
 	// exportTrigger is a coalesced signal that records are ready to export.
 	exportTrigger chan struct{}
@@ -71,15 +72,8 @@ func NewBatchProcessor(exporter Exporter, errHandler otel.ErrorHandler, maxQSize
 		flush:         make(chan batchProcessorRequest),
 		shutdown:      make(chan batchProcessorRequest, 1),
 		done:          make(chan struct{}),
+		expTimeout:    cfg.expTimeout,
 	}
-
-	// Order is important here. Wrap the timeoutExporter with the chunkExporter
-	// to ensure each export completes in timeout (instead of all chunked
-	// exports).
-	exporter = newTimeoutExporter(exporter, cfg.expTimeout)
-	// Use a chunkExporter to ensure ForceFlush and Shutdown calls are batched
-	// appropriately on export.
-	exporter = newChunkExporter(exporter, cfg.expMaxBatchSize)
 
 	b.exporter = exporter
 	b.process(cfg.expInterval, errHandler)
@@ -157,6 +151,36 @@ func resetTimer(timer *time.Timer, interval time.Duration) {
 	timer.Reset(interval)
 }
 
+func timeoutExport(ctx context.Context, records []Record, timeout time.Duration, e Exporter) error {
+	if timeout <= 0 {
+		return e.Export(ctx, records)
+	}
+	ctx, cancel := context.WithTimeoutCause(ctx, timeout, errors.New("processor export timeout"))
+	defer cancel()
+	return e.Export(ctx, records)
+}
+
+func (b *BatchProcessor) chunkExport(ctx context.Context, records []Record) error {
+	if b.batchSize <= 0 {
+		return timeoutExport(ctx, records, b.expTimeout, b.exporter)
+	}
+	n := len(records)
+	size := b.batchSize
+	var errs []error
+	for i, j := 0, min(size, n); i < n; i, j = i+size, min(j+size, n) {
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return errors.Join(append(errs, ctxErr)...)
+		}
+		if err := timeoutExport(ctx, records[i:j], b.expTimeout, b.exporter); err != nil {
+			errs = append(errs, err)
+		}
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return errors.Join(append(errs, ctxErr)...)
+		}
+	}
+	return errors.Join(errs...)
+}
+
 func (b *BatchProcessor) exportBatch(buf []Record, errHandler otel.ErrorHandler) {
 	b.logDroppedRecords()
 	n, remaining := b.q.Dequeue(buf)
@@ -164,7 +188,7 @@ func (b *BatchProcessor) exportBatch(buf []Record, errHandler otel.ErrorHandler)
 		return
 	}
 
-	err := b.exporter.Export(context.Background(), buf[:n])
+	err := b.chunkExport(context.Background(), buf[:n])
 	clear(buf[:n])
 	if err != nil {
 		otel.Handle(errHandler, err)
@@ -180,7 +204,7 @@ func (b *BatchProcessor) flushExporter(ctx context.Context) error {
 	}
 	b.logDroppedRecords()
 	records := b.q.Flush()
-	err := b.exporter.Export(ctx, records)
+	err := b.chunkExport(ctx, records)
 	clear(records)
 	if ctxErr := ctx.Err(); ctxErr != nil {
 		return errors.Join(err, ctxErr)
@@ -191,7 +215,7 @@ func (b *BatchProcessor) flushExporter(ctx context.Context) error {
 func (b *BatchProcessor) shutdownExporter(ctx context.Context) error {
 	b.logDroppedRecords()
 	records := b.q.Flush()
-	err := b.exporter.Export(ctx, records)
+	err := b.chunkExport(ctx, records)
 	clear(records)
 	if ctxErr := ctx.Err(); ctxErr != nil {
 		err = errors.Join(err, ctxErr)
