@@ -20,7 +20,6 @@ import (
 	"github.com/karelbilek/opentelemetry/retry"
 	"github.com/karelbilek/opentelemetry/sdk/log"
 	"github.com/karelbilek/opentelemetry/sdk/metric"
-	"github.com/karelbilek/opentelemetry/sdk/metric/metricinternals"
 
 	"github.com/karelbilek/opentelemetry/sdk/resource"
 	"github.com/karelbilek/opentelemetry/sdk/trace"
@@ -132,7 +131,6 @@ func startOtlp(oh otel.ErrorHandler) (*slog.Logger, *log.LoggerProvider, *trace.
 		metricExporter,
 		time.Millisecond*60000,
 		time.Millisecond*30000,
-		metricinternals.DefaultCardinalityLimitSelector,
 		oh,
 	)
 	meterProvider := metric.NewMeterProvider(
