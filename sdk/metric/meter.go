@@ -141,7 +141,7 @@ func (m *Meter) Int64Gauge(name string, h otel.ErrorHandler, options ...metric.I
 func (m *Meter) int64ObservableInstrument(
 	id Instrument,
 	allowedKeys []attribute.Key,
-	callbacks []metric.Int64Callback,
+	callbacks []Int64Callback,
 	h otel.ErrorHandler,
 ) (Int64Observable, error) {
 	key := instID{
@@ -174,13 +174,15 @@ func (m *Meter) int64ObservableInstrument(
 		// is not part of the pipeline.
 		insert.pipeline.addInt64Measure(inst.observableID, in)
 		for _, cback := range callbacks {
-			inst := int64Observer{measures: in}
+			inst := Int64Observer{measures: in}
 			fn := cback
 			insert.addCallback(func(ctx context.Context) error { return fn(ctx, inst) })
 		}
 		return inst, validateInstrumentName(id.Name)
 	})
 }
+
+type Int64Callback func(context.Context, Int64Observer) error
 
 // Int64ObservableCounter returns a new instrument identified by name and
 // configured with options. The instrument is used to asynchronously record
@@ -194,6 +196,7 @@ func (m *Meter) int64ObservableInstrument(
 func (m *Meter) Int64ObservableCounter(
 	name string,
 	h otel.ErrorHandler,
+	callbacks []Int64Callback,
 	options ...metric.Int64ObservableCounterOption,
 ) (Int64Observable, error) {
 	if m.noop {
@@ -207,7 +210,7 @@ func (m *Meter) Int64ObservableCounter(
 		Kind:        InstrumentKindObservableCounter,
 		Scope:       m.scope,
 	}
-	return m.int64ObservableInstrument(id, defaultAttributes(options), cfg.Callbacks(), h)
+	return m.int64ObservableInstrument(id, defaultAttributes(options), callbacks, h)
 }
 
 // Int64ObservableUpDownCounter returns a new instrument identified by name and
@@ -222,6 +225,7 @@ func (m *Meter) Int64ObservableCounter(
 func (m *Meter) Int64ObservableUpDownCounter(
 	name string,
 	h otel.ErrorHandler,
+	callbacks []Int64Callback,
 	options ...metric.Int64ObservableUpDownCounterOption,
 ) (Int64Observable, error) {
 	if m.noop {
@@ -235,7 +239,7 @@ func (m *Meter) Int64ObservableUpDownCounter(
 		Kind:        InstrumentKindObservableUpDownCounter,
 		Scope:       m.scope,
 	}
-	return m.int64ObservableInstrument(id, defaultAttributes(options), cfg.Callbacks(), h)
+	return m.int64ObservableInstrument(id, defaultAttributes(options), callbacks, h)
 }
 
 // Int64ObservableGauge returns a new instrument identified by name and
@@ -250,6 +254,8 @@ func (m *Meter) Int64ObservableUpDownCounter(
 func (m *Meter) Int64ObservableGauge(
 	name string,
 	h otel.ErrorHandler,
+	callbacks []Int64Callback,
+
 	options ...metric.Int64ObservableGaugeOption,
 ) (Int64Observable, error) {
 	if m.noop {
@@ -263,7 +269,7 @@ func (m *Meter) Int64ObservableGauge(
 		Kind:        InstrumentKindObservableGauge,
 		Scope:       m.scope,
 	}
-	return m.int64ObservableInstrument(id, defaultAttributes(options), cfg.Callbacks(), h)
+	return m.int64ObservableInstrument(id, defaultAttributes(options), callbacks, h)
 }
 
 // Float64Counter returns a new instrument identified by name and configured
@@ -345,12 +351,14 @@ func (m *Meter) Float64Gauge(name string, h otel.ErrorHandler, options ...metric
 	return Float64Recorder{i}, validateInstrumentName(name)
 }
 
+type Float64Callback func(context.Context, Float64Observer) error
+
 // float64ObservableInstrument returns a new observable identified by the Instrument.
 // It registers callbacks for each reader's pipeline.
 func (m *Meter) float64ObservableInstrument(
 	id Instrument,
 	allowedKeys []attribute.Key,
-	callbacks []metric.Float64Callback,
+	callbacks []Float64Callback,
 	h otel.ErrorHandler,
 ) (Float64Observable, error) {
 	key := instID{
@@ -383,7 +391,7 @@ func (m *Meter) float64ObservableInstrument(
 		// is not part of the pipeline.
 		insert.pipeline.addFloat64Measure(inst.observableID, in)
 		for _, cback := range callbacks {
-			inst := float64Observer{measures: in}
+			inst := Float64Observer{measures: in}
 			fn := cback
 			insert.addCallback(func(ctx context.Context) error { return fn(ctx, inst) })
 		}
@@ -404,6 +412,7 @@ func (m *Meter) float64ObservableInstrument(
 func (m *Meter) Float64ObservableCounter(
 	name string,
 	h otel.ErrorHandler,
+	callbacks []Float64Callback,
 	options ...metric.Float64ObservableCounterOption,
 ) (Float64Observable, error) {
 	if m.noop {
@@ -417,7 +426,7 @@ func (m *Meter) Float64ObservableCounter(
 		Kind:        InstrumentKindObservableCounter,
 		Scope:       m.scope,
 	}
-	return m.float64ObservableInstrument(id, defaultAttributes(options), cfg.Callbacks(), h)
+	return m.float64ObservableInstrument(id, defaultAttributes(options), callbacks, h)
 }
 
 // Float64ObservableUpDownCounter returns a new instrument identified by name
@@ -432,6 +441,7 @@ func (m *Meter) Float64ObservableCounter(
 func (m *Meter) Float64ObservableUpDownCounter(
 	name string,
 	h otel.ErrorHandler,
+	callbacks []Float64Callback,
 	options ...metric.Float64ObservableUpDownCounterOption,
 ) (Float64Observable, error) {
 	if m.noop {
@@ -445,7 +455,7 @@ func (m *Meter) Float64ObservableUpDownCounter(
 		Kind:        InstrumentKindObservableUpDownCounter,
 		Scope:       m.scope,
 	}
-	return m.float64ObservableInstrument(id, defaultAttributes(options), cfg.Callbacks(), h)
+	return m.float64ObservableInstrument(id, defaultAttributes(options), callbacks, h)
 }
 
 // Float64ObservableGauge returns a new instrument identified by name and
@@ -460,6 +470,7 @@ func (m *Meter) Float64ObservableUpDownCounter(
 func (m *Meter) Float64ObservableGauge(
 	name string,
 	h otel.ErrorHandler,
+	callbacks []Float64Callback,
 	options ...metric.Float64ObservableGaugeOption,
 ) (Float64Observable, error) {
 	if m.noop {
@@ -473,7 +484,7 @@ func (m *Meter) Float64ObservableGauge(
 		Kind:        InstrumentKindObservableGauge,
 		Scope:       m.scope,
 	}
-	return m.float64ObservableInstrument(id, defaultAttributes(options), cfg.Callbacks(), h)
+	return m.float64ObservableInstrument(id, defaultAttributes(options), callbacks, h)
 }
 
 func validateInstrumentName(name string) error {
@@ -841,21 +852,21 @@ func (p float64InstProvider) lookupHistogram(
 	})
 }
 
-type int64Observer struct {
+type Int64Observer struct {
 	measures[int64]
 }
 
-func (o int64Observer) Observe(val int64, opts ...metric.ObserveOption) {
+func (o Int64Observer) Observe(val int64, opts ...metric.ObserveOption) {
 	c := metric.NewObserveConfig(opts)
 	rawKVs := extractRawKVs(opts)
 	o.observe(val, resolveAttributes(c.Attributes(), rawKVs))
 }
 
-type float64Observer struct {
+type Float64Observer struct {
 	measures[float64]
 }
 
-func (o float64Observer) Observe(val float64, opts ...metric.ObserveOption) {
+func (o Float64Observer) Observe(val float64, opts ...metric.ObserveOption) {
 	c := metric.NewObserveConfig(opts)
 	rawKVs := extractRawKVs(opts)
 	o.observe(val, resolveAttributes(c.Attributes(), rawKVs))
