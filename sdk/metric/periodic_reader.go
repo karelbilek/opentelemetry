@@ -143,13 +143,6 @@ func (r *PeriodicReader) register(p sdkProducer) {
 	}
 }
 
-// aggregation returns what Aggregation to use for kind.
-func (r *PeriodicReader) aggregation(
-	kind metricinternals.InstrumentKind,
-) metricinternals.Aggregation { // nolint:revive  // import-shadow for method scoped by type.
-	return r.exporter.Aggregation(kind)
-}
-
 // cardinalityLimit returns the cardinality limit for kind.
 func (r *PeriodicReader) cardinalityLimit(kind metricinternals.InstrumentKind) (int, bool) {
 	return r.cardinalityLimitSelector(kind)

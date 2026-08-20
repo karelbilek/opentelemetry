@@ -1,44 +1,5 @@
 package metricinternals
 
-// AggregationSelector selects the aggregation and the parameters to use for
-// that aggregation based on the InstrumentKind.
-//
-// If the Aggregation returned is nil or DefaultAggregation, the selection from
-// DefaultAggregationSelector will be used.
-type AggregationSelector func(InstrumentKind) Aggregation
-
-// DefaultAggregationSelector returns the default aggregation and parameters
-// that will be used to summarize measurement made from an instrument of
-// InstrumentKind. This AggregationSelector using the following selection
-// mapping: Counter ⇨ Sum, Observable Counter ⇨ Sum, UpDownCounter ⇨ Sum,
-// Observable UpDownCounter ⇨ Sum, Observable Gauge ⇨ LastValue,
-// Histogram ⇨ ExplicitBucketHistogram.
-//
-// The default ExplicitBucketHistogram boundaries are designed for
-// millisecond-scale latency values. Boundaries are interpreted relative to the
-// values recorded for the instrument and are not rescaled when an instrument is
-// created with a different unit (e.g. via
-// [github.com/karelbilek/opentelemetry/metric.WithUnit]). Instrumentation authors should
-// supply appropriate boundaries per instrument via
-// [github.com/karelbilek/opentelemetry/metric.WithExplicitBucketBoundaries]; end users
-// can also override boundaries for a specific instrument with a [View].
-func DefaultAggregationSelector(ik InstrumentKind) Aggregation {
-	switch ik {
-	case InstrumentKindCounter,
-		InstrumentKindUpDownCounter,
-		InstrumentKindObservableCounter,
-		InstrumentKindObservableUpDownCounter:
-		return AggregationSum{}
-	case InstrumentKindObservableGauge, InstrumentKindGauge:
-		return AggregationLastValue{}
-	case InstrumentKindHistogram:
-		return AggregationExplicitBucketHistogram{
-			Boundaries: []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
-			NoMinMax:   false,
-		}
-	}
-	panic("unknown instrument kind")
-}
 
 // CardinalityLimitSelector selects the cardinality limit to use based on the
 // InstrumentKind. The cardinality limit is the maximum number of distinct

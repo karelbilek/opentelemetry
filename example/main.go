@@ -93,7 +93,6 @@ func main() {
 		nil,
 		64*1024*1024,
 		10*time.Second,
-		metricinternals.DefaultAggregationSelector,
 		retry.DefaultConfig,
 	)
 	if err != nil {

@@ -77,7 +77,6 @@ func startOtlp(oh otel.ErrorHandler) (*slog.Logger, *log.LoggerProvider, *trace.
 		nil,
 		64*1024*1024,
 		10*time.Second,
-		metricinternals.DefaultAggregationSelector,
 		retry.DefaultConfig,
 	)
 	if err != nil {

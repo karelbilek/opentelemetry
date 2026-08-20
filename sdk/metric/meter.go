@@ -672,7 +672,7 @@ func (p int64InstProvider) histogramAggs(
 	h otel.ErrorHandler,
 ) ([]aggregate.Measure[int64], error) {
 	boundaries := cfg.ExplicitBucketBoundaries()
-	aggError := metricinternals.AggregationExplicitBucketHistogram{Boundaries: boundaries}.Err()
+	aggError := aggregationExplicitBucketHistogram{Boundaries: boundaries}.Err()
 	if aggError != nil {
 		// If boundaries are invalid, ignore them.
 		boundaries = nil
@@ -750,7 +750,7 @@ func (p float64InstProvider) histogramAggs(
 	h otel.ErrorHandler,
 ) ([]aggregate.Measure[float64], error) {
 	boundaries := cfg.ExplicitBucketBoundaries()
-	aggError := metricinternals.AggregationExplicitBucketHistogram{Boundaries: boundaries}.Err()
+	aggError := aggregationExplicitBucketHistogram{Boundaries: boundaries}.Err()
 	if aggError != nil {
 		// If boundaries are invalid, ignore them.
 		boundaries = nil

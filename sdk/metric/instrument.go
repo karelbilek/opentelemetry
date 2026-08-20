@@ -99,7 +99,7 @@ type Stream struct {
 	// Unit is the unit of measurement recorded.
 	Unit string
 	// Aggregation the stream uses for an instrument.
-	Aggregation metricinternals.Aggregation
+	Aggregation aggregation
 	// AttributeFilter is an attribute Filter applied to the attributes
 	// recorded for an instrument's measurement. If the filter returns false
 	// the attribute will not be recorded, otherwise, if it returns true, it

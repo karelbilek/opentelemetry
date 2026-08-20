@@ -17,7 +17,6 @@ import (
 	"github.com/karelbilek/opentelemetry/internal/global"
 	"github.com/karelbilek/opentelemetry/retry"
 	"github.com/karelbilek/opentelemetry/sdk/metric/metricdata"
-	"github.com/karelbilek/opentelemetry/sdk/metric/metricinternals"
 )
 
 // Exporter is a OpenTelemetry metric Exporter using protobufs over HTTP.
@@ -29,28 +28,13 @@ type Exporter struct {
 		Shutdown(context.Context) error
 	}
 
-	aggregationSelector metricinternals.AggregationSelector
-
 	shutdownOnce sync.Once
 }
 
 func newExporter(c *client, cfg oconf.Config) (*Exporter, error) {
-	as := cfg.Metrics.AggregationSelector
-	if as == nil {
-		as = metricinternals.DefaultAggregationSelector
-	}
-
 	return &Exporter{
 		client: c,
-
-		// temporalitySelector: ts,
-		aggregationSelector: as,
 	}, nil
-}
-
-// Aggregation returns the Aggregation to use for an instrument kind.
-func (e *Exporter) Aggregation(k metricinternals.InstrumentKind) metricinternals.Aggregation {
-	return e.aggregationSelector(k)
 }
 
 // Export transforms and transmits metric data to an OTLP receiver.
@@ -132,8 +116,8 @@ func (*Exporter) MarshalLog() any {
 // New returns an OpenTelemetry metric Exporter. The Exporter can be used with
 // a PeriodicReader to export OpenTelemetry metric data to an OTLP receiving
 // endpoint using protobufs over HTTP.
-func New(_ context.Context, endpoint string, urlPath string, insecure bool, headers map[string]string, maxRequestSize int, timeout time.Duration, aggregationSelector metricinternals.AggregationSelector, retry retry.Config) (*Exporter, error) {
-	cfg := oconf.NewHTTPConfig(endpoint, urlPath, insecure, headers, maxRequestSize, timeout, aggregationSelector, retry)
+func New(_ context.Context, endpoint string, urlPath string, insecure bool, headers map[string]string, maxRequestSize int, timeout time.Duration, retry retry.Config) (*Exporter, error) {
+	cfg := oconf.NewHTTPConfig(endpoint, urlPath, insecure, headers, maxRequestSize, timeout, retry)
 	c, err := newClient(cfg)
 	if err != nil {
 		return nil, err
