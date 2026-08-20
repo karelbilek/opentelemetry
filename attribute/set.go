@@ -193,12 +193,11 @@ func (l *Set) Equals(o *Set) bool {
 }
 
 // Encoded returns the encoded form of this set, according to encoder.
-func (l *Set) Encoded(encoder Encoder) string {
-	if l == nil || encoder == nil {
+func (l *Set) Encoded() string {
+	if l == nil {
 		return ""
 	}
-
-	return encoder.Encode(l.Iter())
+	return EncodeAttributes(l.Iter())
 }
 
 // NewSet returns a new Set. See the documentation for

@@ -90,7 +90,8 @@ func (r *Resource) String() string {
 	if r == nil {
 		return ""
 	}
-	return r.attrs.Encoded(attribute.DefaultEncoder())
+	// return attribute.EncodeAttributes(r.attrs)
+	return r.attrs.Encoded()
 }
 
 // MarshalLog is the marshaling function used by the logging system to represent this Resource.
@@ -240,9 +241,9 @@ func (r *Resource) Len() int {
 }
 
 // Encoded returns an encoded representation of the resource.
-func (r *Resource) Encoded(enc attribute.Encoder) string {
+func (r *Resource) Encoded() string {
 	if r == nil {
 		return ""
 	}
-	return r.attrs.Encoded(enc)
+	return r.attrs.Encoded()
 }

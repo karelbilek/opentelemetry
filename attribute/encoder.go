@@ -10,20 +10,6 @@ import (
 )
 
 type (
-	// Encoder is a mechanism for serializing an attribute set into a specific
-	// string representation that supports caching, to avoid repeated
-	// serialization. An example could be an exporter encoding the attribute
-	// set into a wire representation.
-	Encoder interface {
-		// Encode returns the serialized encoding of the attribute set using
-		// its Iterator. This result may be cached by an attribute.Set.
-		Encode(iterator Iterator) string
-
-		// ID returns a value that is unique for each class of attribute
-		// encoder. Attribute encoders allocate these using `NewEncoderID`.
-		ID() EncoderID
-	}
-
 	// EncoderID is used to identify distinct Encoder
 	// implementations, for caching encoded results.
 	EncoderID struct {
@@ -50,8 +36,6 @@ type (
 const escapeChar = '\\'
 
 var (
-	_ Encoder = &defaultAttrEncoder{}
-
 	// encoderIDCounter is for generating IDs for other attribute encoders.
 	encoderIDCounter atomic.Uint64
 
@@ -74,7 +58,7 @@ func NewEncoderID() EncoderID {
 //
 // Escaping is done by prepending a backslash before either a backslash, equal
 // sign or a comma.
-func DefaultEncoder() Encoder {
+func getDefaultEncoder() *defaultAttrEncoder {
 	defaultEncoderOnce.Do(func() {
 		defaultEncoderInstance = &defaultAttrEncoder{
 			pool: sync.Pool{
@@ -88,7 +72,8 @@ func DefaultEncoder() Encoder {
 }
 
 // Encode is a part of an implementation of the AttributeEncoder interface.
-func (d *defaultAttrEncoder) Encode(iter Iterator) string {
+func EncodeAttributes(iter Iterator) string {
+	d := getDefaultEncoder()
 	buf := d.pool.Get().(*bytes.Buffer)
 	defer d.pool.Put(buf)
 	buf.Reset()
@@ -113,11 +98,6 @@ func (d *defaultAttrEncoder) Encode(iter Iterator) string {
 	return buf.String()
 }
 
-// ID is a part of an implementation of the AttributeEncoder interface.
-func (*defaultAttrEncoder) ID() EncoderID {
-	return defaultEncoderID
-}
-
 // copyAndEscape escapes `=`, `,` and its own escape character (`\`),
 // making the default encoding unique.
 func copyAndEscape(buf *bytes.Buffer, val string) {
@@ -128,10 +108,4 @@ func copyAndEscape(buf *bytes.Buffer, val string) {
 		}
 		_, _ = buf.WriteRune(ch)
 	}
-}
-
-// Valid reports whether this encoder ID was allocated by
-// [NewEncoderID]. Invalid encoder IDs will not be cached.
-func (id EncoderID) Valid() bool {
-	return id.value != 0
 }
