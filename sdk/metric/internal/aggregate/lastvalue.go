@@ -14,11 +14,9 @@ import (
 
 // lastValuePoint is timestamped measurement data.
 type lastValuePoint[N int64 | float64] struct {
-	attrs attribute.Set
-	value atomicN[N]
-	// res           FilteredExemplarReservoir[N]
+	attrs     attribute.Set
+	value     atomicN[N]
 	startTime time.Time
-	// dropExemplars bool
 }
 
 // lastValueMap summarizes a set of measurements as the last one made.
@@ -87,16 +85,6 @@ func (s *deltaLastValue[N]) measure(
 	hotIdx := s.hcwg.start()
 	defer s.hcwg.done(hotIdx)
 	s.hotColdValMap[hotIdx].measure(ctx, value, lazy, eh)
-}
-
-func (s *deltaLastValue[N]) collect(
-	dest *metricdata.Aggregation, //nolint:gocritic // The pointer is needed for the ComputeAggregation interface
-) int {
-	t := now()
-	n := s.copyAndClearDpts(dest, t)
-	// Update start time for delta temporality.
-	s.start = t
-	return n
 }
 
 // copyAndClearDpts copies the lastValuePoints held by s into dest. The number of lastValuePoints
@@ -195,7 +183,6 @@ func (s *cumulativeLastValue[N]) collect(
 // observations as the last one made.
 func newPrecomputedLastValue[N int64 | float64](
 	limit int,
-	// r func(attribute.Set) FilteredExemplarReservoir[N],
 ) *precomputedLastValue[N] {
 	return &precomputedLastValue[N]{deltaLastValue: newDeltaLastValue[N](limit)}
 }
@@ -203,12 +190,6 @@ func newPrecomputedLastValue[N int64 | float64](
 // precomputedLastValue summarizes a set of observations as the last one made.
 type precomputedLastValue[N int64 | float64] struct {
 	*deltaLastValue[N]
-}
-
-func (s *precomputedLastValue[N]) delta(
-	dest *metricdata.Aggregation, //nolint:gocritic // The pointer is needed for the ComputeAggregation interface
-) int {
-	return s.collect(dest)
 }
 
 func (s *precomputedLastValue[N]) cumulative(

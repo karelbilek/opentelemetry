@@ -19,15 +19,11 @@ import (
 const (
 	expoMaxScale = 20
 	expoMinScale = -10
-
-	smallestNonZeroNormalFloat64 = 0x1p-1022
 )
 
 // expoHistogramDataPoint is a single data point in an exponential histogram.
 type expoHistogramDataPoint[N int64 | float64] struct {
 	attrs attribute.Set
-	// res           FilteredExemplarReservoir[N]
-	// dropExemplars bool
 
 	minMax atomicMinMax[N]
 	sum    atomicCounter[N]
@@ -353,87 +349,11 @@ func (e *expoHistogram[N]) measure(
 				fltrAttr = lazy.Set()
 			}
 			v = newExpoHistogramDataPoint[N](fltrAttr, e.maxSize, e.maxScale, e.noMinMax, e.noSum)
-			// r := e.newRes(fltrAttr)
-			// _, isDrop := r.(*dropRes[N])
-			// v.res = r
-			// v.dropExemplars = isDrop
 
 			e.values[fltrAttr.Equivalent()] = v
 		}
 	}
 	v.record(value, h)
-}
-
-func (e *expoHistogram[N]) delta(
-	dest *metricdata.Aggregation, //nolint:gocritic // The pointer is needed for the ComputeAggregation interface
-) int {
-	t := now()
-
-	// If *dest is not a metricdata.ExponentialHistogram, memory reuse is missed.
-	// In that case, use the zero-value h and hope for better alignment next cycle.
-	h, _ := (*dest).(metricdata.ExponentialHistogram[N])
-	h.Temporality = metricdata.DeltaTemporality
-
-	e.valuesMu.Lock()
-	defer e.valuesMu.Unlock()
-
-	n := len(e.values)
-	hDPts := reset(h.DataPoints, n, n)
-
-	var i int
-	for _, val := range e.values {
-		hDPts[i].Attributes = val.attrs
-		hDPts[i].StartTime = e.start
-		hDPts[i].Time = t
-		hDPts[i].Count = val.count()
-		hDPts[i].Scale = val.scale.Load()
-		hDPts[i].ZeroCount = val.zeroCount.Load()
-		hDPts[i].ZeroThreshold = 0.0
-
-		hDPts[i].PositiveBucket.Offset = val.posBuckets.startBin
-		hDPts[i].PositiveBucket.Counts = reset(
-			hDPts[i].PositiveBucket.Counts,
-			len(val.posBuckets.counts),
-			len(val.posBuckets.counts),
-		)
-		for j := range val.posBuckets.counts {
-			hDPts[i].PositiveBucket.Counts[j] = val.posBuckets.counts[j].Load()
-		}
-
-		hDPts[i].NegativeBucket.Offset = val.negBuckets.startBin
-		hDPts[i].NegativeBucket.Counts = reset(
-			hDPts[i].NegativeBucket.Counts,
-			len(val.negBuckets.counts),
-			len(val.negBuckets.counts),
-		)
-		for j := range val.negBuckets.counts {
-			hDPts[i].NegativeBucket.Counts[j] = val.negBuckets.counts[j].Load()
-		}
-
-		if !e.noSum {
-			hDPts[i].Sum = val.sum.load()
-		} else {
-			hDPts[i].Sum = 0
-		}
-		if !e.noMinMax && val.minMax.set.Load() {
-			hDPts[i].Min = metricdata.NewExtrema(val.minMax.minimum.Load())
-			hDPts[i].Max = metricdata.NewExtrema(val.minMax.maximum.Load())
-		} else {
-			hDPts[i].Min = metricdata.Extrema[N]{}
-			hDPts[i].Max = metricdata.Extrema[N]{}
-		}
-
-		// collectExemplars(&hDPts[i].Exemplars, val.res.Collect)
-
-		i++
-	}
-	// Unused attribute sets do not report.
-	clear(e.values)
-
-	e.start = t
-	h.DataPoints = hDPts
-	*dest = h
-	return n
 }
 
 func (e *expoHistogram[N]) cumulative(
@@ -444,7 +364,6 @@ func (e *expoHistogram[N]) cumulative(
 	// If *dest is not a metricdata.ExponentialHistogram, memory reuse is missed.
 	// In that case, use the zero-value h and hope for better alignment next cycle.
 	h, _ := (*dest).(metricdata.ExponentialHistogram[N])
-	h.Temporality = metricdata.CumulativeTemporality
 
 	e.valuesMu.Lock()
 	defer e.valuesMu.Unlock()
@@ -496,8 +415,6 @@ func (e *expoHistogram[N]) cumulative(
 			hDPts[i].Min = metricdata.Extrema[N]{}
 			hDPts[i].Max = metricdata.Extrema[N]{}
 		}
-
-		// collectExemplars(&hDPts[i].Exemplars, val.res.Collect)
 
 		i++
 		// TODO (#3006): This will use an unbounded amount of memory if there

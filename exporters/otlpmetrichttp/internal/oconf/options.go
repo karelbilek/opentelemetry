@@ -48,7 +48,6 @@ type (
 		Timeout        time.Duration
 		URLPath        string
 
-		TemporalitySelector metricinternals.TemporalitySelector
 		AggregationSelector metricinternals.AggregationSelector
 	}
 
@@ -73,7 +72,6 @@ func NewHTTPConfig(
 	headers map[string]string,
 	maxRequestSize int,
 	timeout time.Duration,
-	temporalitySelector metricinternals.TemporalitySelector,
 	aggregationSelector metricinternals.AggregationSelector,
 	retry retry.Config,
 ) Config {
@@ -86,7 +84,6 @@ func NewHTTPConfig(
 			MaxRequestSize: maxRequestSize,
 			Timeout:        timeout,
 
-			TemporalitySelector: temporalitySelector,
 			AggregationSelector: aggregationSelector,
 		},
 		RetryConfig: retry,

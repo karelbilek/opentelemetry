@@ -361,9 +361,7 @@ func (i *inserter[N]) cachedAggregator(
 	// cache lookup to ensure the correct comparison.
 	normID := id.normalize()
 	cv := i.aggregators.Lookup(normID, func() aggVal[N] {
-		b := aggregate.Builder[N]{
-			Temporality: i.pipeline.reader.temporality(kind),
-		}
+		b := aggregate.Builder[N]{}
 		b.Filter = stream.AttributeFilter
 		// A value less than or equal to zero will disable the aggregation
 		// limits for the builder (an all the created aggregates).

@@ -1,49 +1,5 @@
 package metricinternals
 
-import (
-	"github.com/karelbilek/opentelemetry/sdk/metric/metricdata"
-)
-
-// TemporalitySelector selects the temporality to use based on the InstrumentKind.
-type TemporalitySelector func(InstrumentKind) metricdata.Temporality
-
-// DefaultTemporalitySelector is the default TemporalitySelector used if
-// WithTemporalitySelector is not provided. CumulativeTemporality will be used
-// for all instrument kinds if this TemporalitySelector is used.
-func DefaultTemporalitySelector(k InstrumentKind) metricdata.Temporality {
-	return CumulativeTemporalitySelector(k)
-}
-
-// CumulativeTemporalitySelector is the TemporalitySelector that uses
-// a cumulative temporality for all instrument kinds.
-func CumulativeTemporalitySelector(InstrumentKind) metricdata.Temporality {
-	return metricdata.CumulativeTemporality
-}
-
-// DeltaTemporalitySelector is the TemporalitySelector that uses
-// a delta temporality for instrument kinds: counter, histogram, observable counter
-// All other instruments use cumulative temporality.
-func DeltaTemporalitySelector(k InstrumentKind) metricdata.Temporality {
-	switch k {
-	case InstrumentKindCounter, InstrumentKindHistogram, InstrumentKindObservableCounter:
-		return metricdata.DeltaTemporality
-	default:
-		return metricdata.CumulativeTemporality
-	}
-}
-
-// LowMemoryTemporalitySelector is the TemporalitySelector that uses
-// delta temporality for counters and histograms. All other instruments use
-// cumulative temporality.
-func LowMemoryTemporalitySelector(k InstrumentKind) metricdata.Temporality {
-	switch k {
-	case InstrumentKindCounter, InstrumentKindHistogram:
-		return metricdata.DeltaTemporality
-	default:
-		return metricdata.CumulativeTemporality
-	}
-}
-
 // AggregationSelector selects the aggregation and the parameters to use for
 // that aggregation based on the InstrumentKind.
 //

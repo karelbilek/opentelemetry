@@ -25,12 +25,6 @@ type ComputeAggregation func(dest *metricdata.Aggregation) int
 
 // Builder builds an aggregate function.
 type Builder[N int64 | float64] struct {
-	// Temporality is the temporality used for the returned aggregate function.
-	//
-	// If this is not provided a default of cumulative will be used (except for
-	// the last-value aggregate function where delta is the only appropriate
-	// temporality).
-	Temporality metricdata.Temporality
 	// Filter is the attribute filter the aggregate function will use on the
 	// input of measurements.
 	Filter attribute.Filter
@@ -60,14 +54,8 @@ func (b Builder[N]) filter(f fltrMeasure[N], eh otel.ErrorHandler) Measure[N] {
 
 // LastValue returns a last-value aggregate function input and output.
 func (b Builder[N]) LastValue(eh otel.ErrorHandler) (Measure[N], ComputeAggregation) {
-	switch b.Temporality {
-	case metricdata.DeltaTemporality:
-		lv := newDeltaLastValue[N](b.AggregationLimit)
-		return b.filter(lv.measure, eh), lv.collect
-	default:
-		lv := newCumulativeLastValue[N](b.AggregationLimit)
-		return b.filter(lv.measure, eh), lv.collect
-	}
+	lv := newCumulativeLastValue[N](b.AggregationLimit)
+	return b.filter(lv.measure, eh), lv.collect
 }
 
 // PrecomputedLastValue returns a last-value aggregate function input and
@@ -75,36 +63,20 @@ func (b Builder[N]) LastValue(eh otel.ErrorHandler) (Measure[N], ComputeAggregat
 // function will always only return values from the previous collection cycle.
 func (b Builder[N]) PrecomputedLastValue(eh otel.ErrorHandler) (Measure[N], ComputeAggregation) {
 	lv := newPrecomputedLastValue[N](b.AggregationLimit)
-	switch b.Temporality {
-	case metricdata.DeltaTemporality:
-		return b.filter(lv.measure, eh), lv.delta
-	default:
-		return b.filter(lv.measure, eh), lv.cumulative
-	}
+	return b.filter(lv.measure, eh), lv.cumulative
 }
 
 // PrecomputedSum returns a sum aggregate function input and output. The
 // arguments passed to the input are expected to be the precomputed sum values.
 func (b Builder[N]) PrecomputedSum(monotonic bool, eh otel.ErrorHandler) (Measure[N], ComputeAggregation) {
 	s := newPrecomputedSum[N](monotonic, b.AggregationLimit)
-	switch b.Temporality {
-	case metricdata.DeltaTemporality:
-		return b.filter(s.measure, eh), s.delta
-	default:
-		return b.filter(s.measure, eh), s.cumulative
-	}
+	return b.filter(s.measure, eh), s.cumulative
 }
 
 // Sum returns a sum aggregate function input and output.
 func (b Builder[N]) Sum(monotonic bool, eh otel.ErrorHandler) (Measure[N], ComputeAggregation) {
-	switch b.Temporality {
-	case metricdata.DeltaTemporality:
-		s := newDeltaSum[N](monotonic, b.AggregationLimit)
-		return b.filter(s.measure, eh), s.collect
-	default:
-		s := newCumulativeSum[N](monotonic, b.AggregationLimit)
-		return b.filter(s.measure, eh), s.collect
-	}
+	s := newCumulativeSum[N](monotonic, b.AggregationLimit)
+	return b.filter(s.measure, eh), s.collect
 }
 
 // ExplicitBucketHistogram returns a histogram aggregate function input and
@@ -114,14 +86,8 @@ func (b Builder[N]) ExplicitBucketHistogram(
 	noMinMax, noSum bool,
 	eh otel.ErrorHandler,
 ) (Measure[N], ComputeAggregation) {
-	switch b.Temporality {
-	case metricdata.DeltaTemporality:
-		h := newDeltaHistogram[N](boundaries, noMinMax, noSum, b.AggregationLimit)
-		return b.filter(h.measure, eh), h.collect
-	default:
-		h := newCumulativeHistogram[N](boundaries, noMinMax, noSum, b.AggregationLimit)
-		return b.filter(h.measure, eh), h.collect
-	}
+	h := newCumulativeHistogram[N](boundaries, noMinMax, noSum, b.AggregationLimit)
+	return b.filter(h.measure, eh), h.collect
 }
 
 // ExponentialBucketHistogram returns a histogram aggregate function input and
@@ -133,12 +99,7 @@ func (b Builder[N]) ExponentialBucketHistogram(
 
 ) (Measure[N], ComputeAggregation) {
 	h := newExponentialHistogram[N](maxSize, maxScale, noMinMax, noSum, b.AggregationLimit)
-	switch b.Temporality {
-	case metricdata.DeltaTemporality:
-		return b.filter(h.measure, eh), h.delta
-	default:
-		return b.filter(h.measure, eh), h.cumulative
-	}
+	return b.filter(h.measure, eh), h.cumulative
 }
 
 // reset ensures s has capacity and sets it length. If the capacity of s too

@@ -113,16 +113,11 @@ func Gauge[N int64 | float64](g metricdata.Gauge[N]) *mpb.Metric_Gauge {
 	}
 }
 
-// Sum returns an OTLP Metric_Sum generated from s. An error is returned
-// if the temporality of s is unknown.
+// Sum returns an OTLP Metric_Sum generated from s.
 func Sum[N int64 | float64](s metricdata.Sum[N]) (*mpb.Metric_Sum, error) {
-	t, err := Temporality(s.Temporality)
-	if err != nil {
-		return nil, err
-	}
 	return &mpb.Metric_Sum{
 		Sum: &mpb.Sum{
-			AggregationTemporality: t,
+			AggregationTemporality: mpb.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
 			IsMonotonic:            s.IsMonotonic,
 			DataPoints:             DataPoints(s.DataPoints),
 		},
@@ -157,13 +152,9 @@ func DataPoints[N int64 | float64](dPts []metricdata.DataPoint[N]) []*mpb.Number
 // Histogram returns an OTLP Metric_Histogram generated from h. An error is
 // returned if the temporality of h is unknown.
 func Histogram[N int64 | float64](h metricdata.Histogram[N]) (*mpb.Metric_Histogram, error) {
-	t, err := Temporality(h.Temporality)
-	if err != nil {
-		return nil, err
-	}
 	return &mpb.Metric_Histogram{
 		Histogram: &mpb.Histogram{
-			AggregationTemporality: t,
+			AggregationTemporality: mpb.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
 			DataPoints:             HistogramDataPoints(h.DataPoints),
 		},
 	}, nil
@@ -203,13 +194,9 @@ func HistogramDataPoints[N int64 | float64](dPts []metricdata.HistogramDataPoint
 func ExponentialHistogram[N int64 | float64](
 	h metricdata.ExponentialHistogram[N],
 ) (*mpb.Metric_ExponentialHistogram, error) {
-	t, err := Temporality(h.Temporality)
-	if err != nil {
-		return nil, err
-	}
 	return &mpb.Metric_ExponentialHistogram{
 		ExponentialHistogram: &mpb.ExponentialHistogram{
-			AggregationTemporality: t,
+			AggregationTemporality: mpb.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
 			DataPoints:             ExponentialHistogramDataPoints(h.DataPoints),
 		},
 	}, nil
@@ -257,21 +244,6 @@ func ExponentialHistogramDataPointBuckets(
 	return &mpb.ExponentialHistogramDataPoint_Buckets{
 		Offset:       bucket.Offset,
 		BucketCounts: bucket.Counts,
-	}
-}
-
-// Temporality returns an OTLP AggregationTemporality generated from t. If t
-// is unknown, an error is returned along with the invalid
-// AggregationTemporality_AGGREGATION_TEMPORALITY_UNSPECIFIED.
-func Temporality(t metricdata.Temporality) (mpb.AggregationTemporality, error) {
-	switch t {
-	case metricdata.DeltaTemporality:
-		return mpb.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA, nil
-	case metricdata.CumulativeTemporality:
-		return mpb.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE, nil
-	default:
-		err := fmt.Errorf("%w: %s", errUnknownTemporality, t)
-		return mpb.AggregationTemporality_AGGREGATION_TEMPORALITY_UNSPECIFIED, err
 	}
 }
 

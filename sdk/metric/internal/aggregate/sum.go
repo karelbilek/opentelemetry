@@ -13,15 +13,12 @@ import (
 )
 
 type sumValue[N int64 | float64] struct {
-	n atomicCounter[N]
-	// res           FilteredExemplarReservoir[N]
+	n         atomicCounter[N]
 	attrs     attribute.Set
 	startTime time.Time
-	// dropExemplars bool
 }
 
 type sumValueMap[N int64 | float64] struct {
-	// newRes func(attribute.Set) FilteredExemplarReservoir[N]
 	values limitedSyncMap[*sumValue[N]]
 }
 
@@ -32,13 +29,10 @@ func (s *sumValueMap[N]) measure(
 	eh otel.ErrorHandler,
 ) {
 	sv := s.values.LoadOrStoreAttr(lazy, func(attr attribute.Set) *sumValue[N] {
-		// r := s.newRes(attr)
-		// _, isDrop := r.(*dropRes[N])
 		return &sumValue[N]{
 			// res:           r,
 			attrs:     attr,
 			startTime: now(),
-			// dropExemplars: isDrop,
 		}
 	})
 	sv.n.add(value)
@@ -53,7 +47,6 @@ func (s *sumValueMap[N]) measure(
 func newDeltaSum[N int64 | float64](
 	monotonic bool,
 	limit int,
-	// r func(attribute.Set) FilteredExemplarReservoir[N],
 ) *deltaSum[N] {
 	return &deltaSum[N]{
 		monotonic: monotonic,
@@ -86,45 +79,6 @@ func (s *deltaSum[N]) measure(ctx context.Context, value N, lazy lazyFilteredAtt
 	s.hotColdValMap[hotIdx].measure(ctx, value, lazy, eh)
 }
 
-func (s *deltaSum[N]) collect(
-	dest *metricdata.Aggregation, //nolint:gocritic // The pointer is needed for the ComputeAggregation interface
-) int {
-	t := now()
-
-	// If *dest is not a metricdata.Sum, memory reuse is missed. In that case,
-	// use the zero-value sData and hope for better alignment next cycle.
-	sData, _ := (*dest).(metricdata.Sum[N])
-	sData.Temporality = metricdata.DeltaTemporality
-	sData.IsMonotonic = s.monotonic
-
-	// delta always clears values on collection
-	readIdx := s.hcwg.swapHotAndWait()
-	// The len will not change while we iterate over values, since we waited
-	// for all writes to finish to the cold values and len.
-	n := s.hotColdValMap[readIdx].values.Len()
-	dPts := reset(sData.DataPoints, n, n)
-
-	var i int
-	s.hotColdValMap[readIdx].values.Range(func(_, value any) bool {
-		val := value.(*sumValue[N])
-		// collectExemplars(&dPts[i].Exemplars, val.res.Collect)
-		dPts[i].Attributes = val.attrs
-		dPts[i].StartTime = s.start
-		dPts[i].Time = t
-		dPts[i].Value = val.n.load()
-		i++
-		return true
-	})
-	s.hotColdValMap[readIdx].values.Clear()
-	// The delta collection cycle resets.
-	s.start = t
-
-	sData.DataPoints = dPts
-	*dest = sData
-
-	return i
-}
-
 // newCumulativeSum returns an aggregator that summarizes a set of measurements
 // as their arithmetic sum. Each sum is scoped by attributes and the
 // aggregation cycle the measurements were made in.
@@ -143,7 +97,6 @@ func newCumulativeSum[N int64 | float64](
 	}
 }
 
-// deltaSum is the storage for sums which never reset.
 type cumulativeSum[N int64 | float64] struct {
 	monotonic bool
 	start     time.Time
@@ -159,7 +112,6 @@ func (s *cumulativeSum[N]) collect(
 	// If *dest is not a metricdata.Sum, memory reuse is missed. In that case,
 	// use the zero-value sData and hope for better alignment next cycle.
 	sData, _ := (*dest).(metricdata.Sum[N])
-	sData.Temporality = metricdata.CumulativeTemporality
 	sData.IsMonotonic = s.monotonic
 
 	// Values are being concurrently written while we iterate, so only use the
@@ -210,53 +162,6 @@ func newPrecomputedSum[N int64 | float64](
 // precomputedSum summarizes a set of observations as their arithmetic sum.
 type precomputedSum[N int64 | float64] struct {
 	*deltaSum[N]
-
-	reported map[any]N
-}
-
-func (s *precomputedSum[N]) delta(
-	dest *metricdata.Aggregation, //nolint:gocritic // The pointer is needed for the ComputeAggregation interface
-) int {
-	t := now()
-	newReported := make(map[any]N)
-
-	// If *dest is not a metricdata.Sum, memory reuse is missed. In that case,
-	// use the zero-value sData and hope for better alignment next cycle.
-	sData, _ := (*dest).(metricdata.Sum[N])
-	sData.Temporality = metricdata.DeltaTemporality
-	sData.IsMonotonic = s.monotonic
-
-	// delta always clears values on collection
-	readIdx := s.hcwg.swapHotAndWait()
-	// The len will not change while we iterate over values, since we waited
-	// for all writes to finish to the cold values and len.
-	n := s.hotColdValMap[readIdx].values.Len()
-	dPts := reset(sData.DataPoints, n, n)
-
-	var i int
-	s.hotColdValMap[readIdx].values.Range(func(key, value any) bool {
-		val := value.(*sumValue[N])
-		n := val.n.load()
-
-		delta := n - s.reported[key]
-		// collectExemplars(&dPts[i].Exemplars, val.res.Collect)
-		dPts[i].Attributes = val.attrs
-		dPts[i].StartTime = s.start
-		dPts[i].Time = t
-		dPts[i].Value = delta
-		newReported[key] = n
-		i++
-		return true
-	})
-	s.hotColdValMap[readIdx].values.Clear()
-	s.reported = newReported
-	// The delta collection cycle resets.
-	s.start = t
-
-	sData.DataPoints = dPts
-	*dest = sData
-
-	return i
 }
 
 func (s *precomputedSum[N]) cumulative(
@@ -267,7 +172,6 @@ func (s *precomputedSum[N]) cumulative(
 	// If *dest is not a metricdata.Sum, memory reuse is missed. In that case,
 	// use the zero-value sData and hope for better alignment next cycle.
 	sData, _ := (*dest).(metricdata.Sum[N])
-	sData.Temporality = metricdata.CumulativeTemporality
 	sData.IsMonotonic = s.monotonic
 
 	// cumulative precomputed always clears values on collection

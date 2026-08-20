@@ -29,20 +29,12 @@ type Exporter struct {
 		Shutdown(context.Context) error
 	}
 
-	temporalitySelector metricinternals.TemporalitySelector
 	aggregationSelector metricinternals.AggregationSelector
 
 	shutdownOnce sync.Once
 }
 
 func newExporter(c *client, cfg oconf.Config) (*Exporter, error) {
-	ts := cfg.Metrics.TemporalitySelector
-	if ts == nil {
-		ts = func(metricinternals.InstrumentKind) metricdata.Temporality {
-			return metricdata.CumulativeTemporality
-		}
-	}
-
 	as := cfg.Metrics.AggregationSelector
 	if as == nil {
 		as = metricinternals.DefaultAggregationSelector
@@ -51,14 +43,9 @@ func newExporter(c *client, cfg oconf.Config) (*Exporter, error) {
 	return &Exporter{
 		client: c,
 
-		temporalitySelector: ts,
+		// temporalitySelector: ts,
 		aggregationSelector: as,
 	}, nil
-}
-
-// Temporality returns the Temporality to use for an instrument kind.
-func (e *Exporter) Temporality(k metricinternals.InstrumentKind) metricdata.Temporality {
-	return e.temporalitySelector(k)
 }
 
 // Aggregation returns the Aggregation to use for an instrument kind.
@@ -145,8 +132,8 @@ func (*Exporter) MarshalLog() any {
 // New returns an OpenTelemetry metric Exporter. The Exporter can be used with
 // a PeriodicReader to export OpenTelemetry metric data to an OTLP receiving
 // endpoint using protobufs over HTTP.
-func New(_ context.Context, endpoint string, urlPath string, insecure bool, headers map[string]string, maxRequestSize int, timeout time.Duration, temporalitySelector metricinternals.TemporalitySelector, aggregationSelector metricinternals.AggregationSelector, retry retry.Config) (*Exporter, error) {
-	cfg := oconf.NewHTTPConfig(endpoint, urlPath, insecure, headers, maxRequestSize, timeout, temporalitySelector, aggregationSelector, retry)
+func New(_ context.Context, endpoint string, urlPath string, insecure bool, headers map[string]string, maxRequestSize int, timeout time.Duration, aggregationSelector metricinternals.AggregationSelector, retry retry.Config) (*Exporter, error) {
+	cfg := oconf.NewHTTPConfig(endpoint, urlPath, insecure, headers, maxRequestSize, timeout, aggregationSelector, retry)
 	c, err := newClient(cfg)
 	if err != nil {
 		return nil, err

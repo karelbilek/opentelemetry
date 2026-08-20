@@ -120,34 +120,28 @@ func copyMetricData(m metricdata.Metrics, offset, take int) metricdata.Metrics {
 	case metricdata.Sum[int64]:
 		dest.Data = metricdata.Sum[int64]{
 			DataPoints:  a.DataPoints[offset : offset+take],
-			Temporality: a.Temporality,
 			IsMonotonic: a.IsMonotonic,
 		}
 	case metricdata.Sum[float64]:
 		dest.Data = metricdata.Sum[float64]{
 			DataPoints:  a.DataPoints[offset : offset+take],
-			Temporality: a.Temporality,
 			IsMonotonic: a.IsMonotonic,
 		}
 	case metricdata.Histogram[int64]:
 		dest.Data = metricdata.Histogram[int64]{
-			DataPoints:  a.DataPoints[offset : offset+take],
-			Temporality: a.Temporality,
+			DataPoints: a.DataPoints[offset : offset+take],
 		}
 	case metricdata.Histogram[float64]:
 		dest.Data = metricdata.Histogram[float64]{
-			DataPoints:  a.DataPoints[offset : offset+take],
-			Temporality: a.Temporality,
+			DataPoints: a.DataPoints[offset : offset+take],
 		}
 	case metricdata.ExponentialHistogram[int64]:
 		dest.Data = metricdata.ExponentialHistogram[int64]{
-			DataPoints:  a.DataPoints[offset : offset+take],
-			Temporality: a.Temporality,
+			DataPoints: a.DataPoints[offset : offset+take],
 		}
 	case metricdata.ExponentialHistogram[float64]:
 		dest.Data = metricdata.ExponentialHistogram[float64]{
-			DataPoints:  a.DataPoints[offset : offset+take],
-			Temporality: a.Temporality,
+			DataPoints: a.DataPoints[offset : offset+take],
 		}
 	case metricdata.Summary:
 		dest.Data = metricdata.Summary{DataPoints: a.DataPoints[offset : offset+take]}

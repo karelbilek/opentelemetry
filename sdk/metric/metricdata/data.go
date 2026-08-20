@@ -61,11 +61,7 @@ func (Gauge[N]) privateAggregation() {}
 type Sum[N int64 | float64] struct {
 	// DataPoints are the individual aggregated measurements with unique
 	// Attributes.
-	DataPoints []DataPoint[N]
-	// Temporality describes if the aggregation is reported as the change from the
-	// last report time, or the cumulative changes since a fixed start time.
-	Temporality Temporality
-	// IsMonotonic represents if this aggregation only increases or decreases.
+	DataPoints  []DataPoint[N]
 	IsMonotonic bool
 }
 
@@ -92,9 +88,6 @@ type Histogram[N int64 | float64] struct {
 	// DataPoints are the individual aggregated measurements with unique
 	// Attributes.
 	DataPoints []HistogramDataPoint[N]
-	// Temporality describes if the aggregation is reported as the change from the
-	// last report time, or the cumulative changes since a fixed start time.
-	Temporality Temporality
 }
 
 func (Histogram[N]) privateAggregation() {}
@@ -133,9 +126,6 @@ type ExponentialHistogram[N int64 | float64] struct {
 	// DataPoints are the individual aggregated measurements with unique
 	// attributes.
 	DataPoints []ExponentialHistogramDataPoint[N]
-	// Temporality describes if the aggregation is reported as the change from the
-	// last report time, or the cumulative changes since a fixed start time.
-	Temporality Temporality
 }
 
 func (ExponentialHistogram[N]) privateAggregation() {}

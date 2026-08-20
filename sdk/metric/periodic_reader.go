@@ -143,11 +143,6 @@ func (r *PeriodicReader) register(p sdkProducer) {
 	}
 }
 
-// temporality reports the Temporality for the instrument kind provided.
-func (r *PeriodicReader) temporality(kind metricinternals.InstrumentKind) metricdata.Temporality {
-	return r.exporter.Temporality(kind)
-}
-
 // aggregation returns what Aggregation to use for kind.
 func (r *PeriodicReader) aggregation(
 	kind metricinternals.InstrumentKind,
