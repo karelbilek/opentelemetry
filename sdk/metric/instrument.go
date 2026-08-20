@@ -48,47 +48,6 @@ func (i Instrument) IsEmpty() bool {
 		i.Scope == zeroScope
 }
 
-// matches returns whether all the non-zero-value fields of i match the
-// corresponding fields of other. If i is empty it will match all other, and
-// true will always be returned.
-func (i Instrument) matches(other Instrument) bool {
-	return i.matchesName(other) &&
-		i.matchesDescription(other) &&
-		i.matchesKind(other) &&
-		i.matchesUnit(other) &&
-		i.matchesScope(other)
-}
-
-// matchesName returns true if the Name of i is "" or it equals the Name of
-// other, otherwise false.
-func (i Instrument) matchesName(other Instrument) bool {
-	return i.Name == "" || i.Name == other.Name
-}
-
-// matchesDescription returns true if the Description of i is "" or it equals
-// the Description of other, otherwise false.
-func (i Instrument) matchesDescription(other Instrument) bool {
-	return i.Description == "" || i.Description == other.Description
-}
-
-// matchesKind returns true if the Kind of i is its zero-value or it equals the
-// Kind of other, otherwise false.
-func (i Instrument) matchesKind(other Instrument) bool {
-	return i.Kind == InstrumentKindUndefined || i.Kind == other.Kind
-}
-
-// matchesUnit returns true if the Unit of i is its zero-value or it equals the
-// Unit of other, otherwise false.
-func (i Instrument) matchesUnit(other Instrument) bool {
-	return i.Unit == "" || i.Unit == other.Unit
-}
-
-// matchesScope returns true if the Scope of i is its zero-value or it equals
-// the Scope of other, otherwise false.
-func (i Instrument) matchesScope(other Instrument) bool {
-	return (i.Scope.Name == "" || i.Scope.Name == other.Scope.Name)
-}
-
 // Stream describes the stream of data an instrument produces.
 type Stream struct {
 	// Name is the human-readable identifier of the stream.
@@ -357,11 +316,6 @@ func newObservable[N int64 | float64](m *Meter, kind InstrumentKind, name, desc,
 		},
 		meter: m,
 	}
-}
-
-// observe records the val for the set of attrs.
-func (o *observable[N]) observe(val N, s attribute.Set) {
-	o.measures.observe(val, s)
 }
 
 func (o *observable[N]) appendMeasures(meas []aggregate.Measure[N]) {

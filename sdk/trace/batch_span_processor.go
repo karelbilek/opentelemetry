@@ -308,7 +308,7 @@ func (bsp *BatchSpanProcessor) enqueue(sd *SnapshotOrFlush) {
 	if bsp.o.BlockOnQueueFull {
 		bsp.enqueueBlockOnQueueFull(ctx, sd)
 	} else {
-		bsp.enqueueDrop(ctx, sd)
+		bsp.enqueueDrop(sd)
 	}
 }
 
@@ -325,7 +325,7 @@ func (bsp *BatchSpanProcessor) enqueueBlockOnQueueFull(ctx context.Context, sd *
 	}
 }
 
-func (bsp *BatchSpanProcessor) enqueueDrop(ctx context.Context, sd *SnapshotOrFlush) bool {
+func (bsp *BatchSpanProcessor) enqueueDrop(sd *SnapshotOrFlush) bool {
 	if sd.snapshot != nil && !sd.snapshot.SpanContext.IsSampled() {
 		return false
 	}

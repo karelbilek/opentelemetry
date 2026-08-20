@@ -259,9 +259,7 @@ func (i *inserter[N]) Instrument(
 	}
 	in, _, e := i.cachedAggregator(inst.Scope, inst.Kind, stream, readerAggregation, h)
 	if e != nil {
-		if err == nil {
-			err = errCreatingAggregators
-		}
+		err = errCreatingAggregators
 		err = errors.Join(err, e)
 	}
 	if in != nil {
