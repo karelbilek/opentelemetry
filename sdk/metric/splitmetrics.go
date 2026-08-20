@@ -135,14 +135,6 @@ func copyMetricData(m metricdata.Metrics, offset, take int) metricdata.Metrics {
 		dest.Data = metricdata.Histogram[float64]{
 			DataPoints: a.DataPoints[offset : offset+take],
 		}
-	case metricdata.ExponentialHistogram[int64]:
-		dest.Data = metricdata.ExponentialHistogram[int64]{
-			DataPoints: a.DataPoints[offset : offset+take],
-		}
-	case metricdata.ExponentialHistogram[float64]:
-		dest.Data = metricdata.ExponentialHistogram[float64]{
-			DataPoints: a.DataPoints[offset : offset+take],
-		}
 	case metricdata.Summary:
 		dest.Data = metricdata.Summary{DataPoints: a.DataPoints[offset : offset+take]}
 	}
@@ -173,10 +165,6 @@ func metricDPC(m metricdata.Metrics) int {
 	case metricdata.Histogram[int64]:
 		return len(a.DataPoints)
 	case metricdata.Histogram[float64]:
-		return len(a.DataPoints)
-	case metricdata.ExponentialHistogram[int64]:
-		return len(a.DataPoints)
-	case metricdata.ExponentialHistogram[float64]:
 		return len(a.DataPoints)
 	case metricdata.Summary:
 		return len(a.DataPoints)
