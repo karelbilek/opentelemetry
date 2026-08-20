@@ -9,11 +9,12 @@ import (
 
 	"github.com/felixge/httpsnoop"
 	otel "github.com/karelbilek/opentelemetry"
-	"github.com/karelbilek/opentelemetry/metric"
 	"github.com/karelbilek/opentelemetry/otelhttp/internal/request"
 	"github.com/karelbilek/opentelemetry/otelhttp/internal/semconv"
 	"github.com/karelbilek/opentelemetry/propagation"
+	sdkmetric "github.com/karelbilek/opentelemetry/sdk/metric"
 	sdktrace "github.com/karelbilek/opentelemetry/sdk/trace"
+
 	"github.com/karelbilek/opentelemetry/trace"
 )
 
@@ -30,7 +31,7 @@ type middleware struct {
 // enriches it with metrics.
 func NewHandler(handler http.Handler, eh otel.ErrorHandler,
 	tracerProvider *sdktrace.TracerProvider,
-	meterProvider metric.MeterProvider,
+	meterProvider *sdkmetric.MeterProvider,
 	publicEndpointFn Filter,
 	filter Filter,
 ) http.Handler {
@@ -42,7 +43,7 @@ func NewHandler(handler http.Handler, eh otel.ErrorHandler,
 // in a span named after the operation and enriches it with metrics.
 func NewMiddleware(eh otel.ErrorHandler,
 	tracerProvider *sdktrace.TracerProvider,
-	meterProvider metric.MeterProvider,
+	meterProvider *sdkmetric.MeterProvider,
 	publicEndpointFn Filter,
 	filter Filter,
 ) func(http.Handler) http.Handler {

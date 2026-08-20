@@ -273,7 +273,7 @@ var (
 	_ metric.Float64ObservableGauge         = float64Observable{}
 )
 
-func newFloat64Observable(m *meter, kind InstrumentKind, name, desc, u string) float64Observable {
+func newFloat64Observable(m *Meter, kind InstrumentKind, name, desc, u string) float64Observable {
 	return float64Observable{
 		observable: newObservable[float64](m, kind, name, desc, u),
 	}
@@ -290,7 +290,7 @@ var (
 	_ metric.Int64ObservableGauge         = int64Observable{}
 )
 
-func newInt64Observable(m *meter, kind InstrumentKind, name, desc, u string) int64Observable {
+func newInt64Observable(m *Meter, kind InstrumentKind, name, desc, u string) int64Observable {
 	return int64Observable{
 		observable: newObservable[int64](m, kind, name, desc, u),
 	}
@@ -300,12 +300,12 @@ type observable[N int64 | float64] struct {
 	metric.Observable
 	observableID[N]
 
-	meter           *meter
+	meter           *Meter
 	measures        measures[N]
 	dropAggregation bool
 }
 
-func newObservable[N int64 | float64](m *meter, kind InstrumentKind, name, desc, u string) *observable[N] {
+func newObservable[N int64 | float64](m *Meter, kind InstrumentKind, name, desc, u string) *observable[N] {
 	return &observable[N]{
 		observableID: observableID[N]{
 			name:        name,
@@ -342,7 +342,7 @@ var errEmptyAgg = errors.New("no aggregators for observable instrument")
 // and nil if it should. An errEmptyAgg error is returned if o is effectively a
 // no-op because it does not have any aggregators. Also, an error is returned
 // if scope defines a Meter other than the one o was created by.
-func (o *observable[N]) registerable(m *meter) error {
+func (o *observable[N]) registerable(m *Meter) error {
 	if len(o.measures) == 0 {
 		return errEmptyAgg
 	}

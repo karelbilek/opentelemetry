@@ -15,15 +15,12 @@ package noop
 import (
 	"context"
 
-	otel "github.com/karelbilek/opentelemetry"
 	"github.com/karelbilek/opentelemetry/metric"
 )
 
 var (
 	// Compile-time check this implements the OpenTelemetry API.
 
-	_ metric.MeterProvider                  = MeterProvider{}
-	_ metric.Meter                          = Meter{}
 	_ metric.Observer                       = Observer{}
 	_ metric.Registration                   = Registration{}
 	_ metric.Int64Counter                   = Int64Counter{}
@@ -43,131 +40,6 @@ var (
 	_ metric.Int64Observer                  = Int64Observer{}
 	_ metric.Float64Observer                = Float64Observer{}
 )
-
-// MeterProvider is an OpenTelemetry No-Op MeterProvider.
-type MeterProvider struct{}
-
-// NewMeterProvider returns a MeterProvider that does not record any telemetry.
-func NewMeterProvider() MeterProvider {
-	return MeterProvider{}
-}
-
-// Meter returns an OpenTelemetry Meter that does not record any telemetry.
-func (MeterProvider) Meter(string) metric.Meter {
-	return Meter{}
-}
-
-// Meter is an OpenTelemetry No-Op Meter.
-type Meter struct{}
-
-// Int64Counter returns a Counter used to record int64 measurements that
-// produces no telemetry.
-func (Meter) Int64Counter(string, otel.ErrorHandler, ...metric.Int64CounterOption) (metric.Int64Counter, error) {
-	return Int64Counter{}, nil
-}
-
-// Int64UpDownCounter returns an UpDownCounter used to record int64
-// measurements that produces no telemetry.
-func (Meter) Int64UpDownCounter(string, otel.ErrorHandler, ...metric.Int64UpDownCounterOption) (metric.Int64UpDownCounter, error) {
-	return Int64UpDownCounter{}, nil
-}
-
-// Int64Histogram returns a Histogram used to record int64 measurements that
-// produces no telemetry.
-func (Meter) Int64Histogram(string, otel.ErrorHandler, ...metric.Int64HistogramOption) (metric.Int64Histogram, error) {
-	return Int64Histogram{}, nil
-}
-
-// Int64Gauge returns a Gauge used to record int64 measurements that
-// produces no telemetry.
-func (Meter) Int64Gauge(string, otel.ErrorHandler, ...metric.Int64GaugeOption) (metric.Int64Gauge, error) {
-	return Int64Gauge{}, nil
-}
-
-// Int64ObservableCounter returns an ObservableCounter used to record int64
-// measurements that produces no telemetry.
-func (Meter) Int64ObservableCounter(
-	string,
-	otel.ErrorHandler,
-	...metric.Int64ObservableCounterOption,
-) (metric.Int64ObservableCounter, error) {
-	return Int64ObservableCounter{}, nil
-}
-
-// Int64ObservableUpDownCounter returns an ObservableUpDownCounter used to
-// record int64 measurements that produces no telemetry.
-func (Meter) Int64ObservableUpDownCounter(
-	string,
-	otel.ErrorHandler,
-	...metric.Int64ObservableUpDownCounterOption,
-) (metric.Int64ObservableUpDownCounter, error) {
-	return Int64ObservableUpDownCounter{}, nil
-}
-
-// Int64ObservableGauge returns an ObservableGauge used to record int64
-// measurements that produces no telemetry.
-func (Meter) Int64ObservableGauge(string, otel.ErrorHandler, ...metric.Int64ObservableGaugeOption) (metric.Int64ObservableGauge, error) {
-	return Int64ObservableGauge{}, nil
-}
-
-// Float64Counter returns a Counter used to record int64 measurements that
-// produces no telemetry.
-func (Meter) Float64Counter(string, otel.ErrorHandler, ...metric.Float64CounterOption) (metric.Float64Counter, error) {
-	return Float64Counter{}, nil
-}
-
-// Float64UpDownCounter returns an UpDownCounter used to record int64
-// measurements that produces no telemetry.
-func (Meter) Float64UpDownCounter(string, otel.ErrorHandler, ...metric.Float64UpDownCounterOption) (metric.Float64UpDownCounter, error) {
-	return Float64UpDownCounter{}, nil
-}
-
-// Float64Histogram returns a Histogram used to record int64 measurements that
-// produces no telemetry.
-func (Meter) Float64Histogram(string, otel.ErrorHandler, ...metric.Float64HistogramOption) (metric.Float64Histogram, error) {
-	return Float64Histogram{}, nil
-}
-
-// Float64Gauge returns a Gauge used to record float64 measurements that
-// produces no telemetry.
-func (Meter) Float64Gauge(string, otel.ErrorHandler, ...metric.Float64GaugeOption) (metric.Float64Gauge, error) {
-	return Float64Gauge{}, nil
-}
-
-// Float64ObservableCounter returns an ObservableCounter used to record int64
-// measurements that produces no telemetry.
-func (Meter) Float64ObservableCounter(
-	string,
-	otel.ErrorHandler,
-	...metric.Float64ObservableCounterOption,
-) (metric.Float64ObservableCounter, error) {
-	return Float64ObservableCounter{}, nil
-}
-
-// Float64ObservableUpDownCounter returns an ObservableUpDownCounter used to
-// record int64 measurements that produces no telemetry.
-func (Meter) Float64ObservableUpDownCounter(
-	string,
-	otel.ErrorHandler,
-	...metric.Float64ObservableUpDownCounterOption,
-) (metric.Float64ObservableUpDownCounter, error) {
-	return Float64ObservableUpDownCounter{}, nil
-}
-
-// Float64ObservableGauge returns an ObservableGauge used to record int64
-// measurements that produces no telemetry.
-func (Meter) Float64ObservableGauge(
-	string,
-	otel.ErrorHandler,
-	...metric.Float64ObservableGaugeOption,
-) (metric.Float64ObservableGauge, error) {
-	return Float64ObservableGauge{}, nil
-}
-
-// RegisterCallback performs no operation.
-func (Meter) RegisterCallback(metric.Callback, ...metric.Observable) (metric.Registration, error) {
-	return Registration{}, nil
-}
 
 // Observer acts as a recorder of measurements for multiple instruments in a
 // Callback, it performing no operation.

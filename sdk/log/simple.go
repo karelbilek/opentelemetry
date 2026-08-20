@@ -8,7 +8,7 @@ import (
 	"sync"
 
 	otel "github.com/karelbilek/opentelemetry"
-	"github.com/karelbilek/opentelemetry/metric"
+	sdkmetric "github.com/karelbilek/opentelemetry/sdk/metric"
 )
 
 // Compile-time check SimpleProcessor implements Processor.
@@ -31,7 +31,7 @@ type SimpleProcessor struct {
 // overhead. For production environments, it is recommended to use
 // [NewBatchProcessor] instead. However, there may be exceptions where certain
 // [Exporter] implementations perform better with this Processor.
-func NewSimpleProcessor(exporter Exporter, metrics metric.MeterProvider, errHandler otel.ErrorHandler, _ ...SimpleProcessorOption) *SimpleProcessor {
+func NewSimpleProcessor(exporter Exporter, metrics *sdkmetric.MeterProvider, errHandler otel.ErrorHandler, _ ...SimpleProcessorOption) *SimpleProcessor {
 	slp := &SimpleProcessor{
 		exporter: exporter,
 	}

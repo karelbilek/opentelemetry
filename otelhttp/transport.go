@@ -12,8 +12,8 @@ import (
 
 	otel "github.com/karelbilek/opentelemetry"
 	"github.com/karelbilek/opentelemetry/codes"
-	"github.com/karelbilek/opentelemetry/metric"
 	"github.com/karelbilek/opentelemetry/propagation"
+	sdkmetric "github.com/karelbilek/opentelemetry/sdk/metric"
 	sdktrace "github.com/karelbilek/opentelemetry/sdk/trace"
 	otelsemconv "github.com/karelbilek/opentelemetry/semconv"
 	"github.com/karelbilek/opentelemetry/trace"
@@ -43,7 +43,7 @@ var _ http.RoundTripper = &Transport{}
 func NewTransport(base http.RoundTripper,
 	eh otel.ErrorHandler,
 	tracerProvider *sdktrace.TracerProvider,
-	meterProvider metric.MeterProvider,
+	meterProvider *sdkmetric.MeterProvider,
 ) *Transport {
 	if base == nil {
 		base = http.DefaultTransport

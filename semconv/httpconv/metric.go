@@ -1,5 +1,3 @@
-// Code generated from semantic convention specification. DO NOT EDIT.
-
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
@@ -10,6 +8,8 @@ package httpconv
 import (
 	otel "github.com/karelbilek/opentelemetry"
 	"github.com/karelbilek/opentelemetry/metric"
+	sdkmetric "github.com/karelbilek/opentelemetry/sdk/metric"
+
 	"github.com/karelbilek/opentelemetry/metric/noop"
 )
 
@@ -27,7 +27,7 @@ var newClientRequestBodySizeOpts = []metric.Int64HistogramOption{
 
 // NewClientRequestBodySize returns a new ClientRequestBodySize instrument.
 func NewClientRequestBodySize(
-	m metric.Meter,
+	m *sdkmetric.Meter,
 	h otel.ErrorHandler,
 	opt ...metric.Int64HistogramOption,
 ) (ClientRequestBodySize, error) {
@@ -73,7 +73,7 @@ var newClientRequestDurationOpts = []metric.Float64HistogramOption{
 
 // NewClientRequestDuration returns a new ClientRequestDuration instrument.
 func NewClientRequestDuration(
-	m metric.Meter,
+	m *sdkmetric.Meter,
 	h otel.ErrorHandler,
 	opt ...metric.Float64HistogramOption,
 ) (ClientRequestDuration, error) {
@@ -118,7 +118,7 @@ var newServerRequestBodySizeOpts = []metric.Int64HistogramOption{
 
 // NewServerRequestBodySize returns a new ServerRequestBodySize instrument.
 func NewServerRequestBodySize(
-	m metric.Meter,
+	m *sdkmetric.Meter,
 	h otel.ErrorHandler,
 
 	opt ...metric.Int64HistogramOption,
@@ -165,7 +165,7 @@ var newServerRequestDurationOpts = []metric.Float64HistogramOption{
 
 // NewServerRequestDuration returns a new ServerRequestDuration instrument.
 func NewServerRequestDuration(
-	m metric.Meter,
+	m *sdkmetric.Meter,
 	h otel.ErrorHandler,
 	opt ...metric.Float64HistogramOption,
 ) (ServerRequestDuration, error) {
@@ -210,7 +210,7 @@ var newServerResponseBodySizeOpts = []metric.Int64HistogramOption{
 
 // NewServerResponseBodySize returns a new ServerResponseBodySize instrument.
 func NewServerResponseBodySize(
-	m metric.Meter,
+	m *sdkmetric.Meter,
 	h otel.ErrorHandler,
 	opt ...metric.Int64HistogramOption,
 ) (ServerResponseBodySize, error) {

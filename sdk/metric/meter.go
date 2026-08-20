@@ -12,6 +12,7 @@ import (
 	"github.com/karelbilek/opentelemetry/attribute"
 	"github.com/karelbilek/opentelemetry/internal/global"
 	"github.com/karelbilek/opentelemetry/metric"
+	"github.com/karelbilek/opentelemetry/metric/noop"
 	"github.com/karelbilek/opentelemetry/sdk/instrumentation"
 	"github.com/karelbilek/opentelemetry/sdk/metric/internal/aggregate"
 )
@@ -20,11 +21,13 @@ import (
 // Valid names must consist of 255 or fewer characters including alphanumeric, _, ., -, / and start with a letter.
 var ErrInstrumentName = errors.New("invalid instrument name")
 
-// meter handles the creation and coordination of all metric instruments. A
-// meter represents a single instrumentation scope; all metric telemetry
+// Meter handles the creation and coordination of all metric instruments. A
+// Meter represents a single instrumentation scope; all metric telemetry
 // produced by an instrumentation scope will use metric instruments from a
-// single meter.
-type meter struct {
+// single Meter.
+type Meter struct {
+	noop bool
+
 	scope instrumentation.Scope
 	pipe  *pipeline
 
@@ -37,7 +40,7 @@ type meter struct {
 	float64Resolver resolver[float64]
 }
 
-func newMeter(s instrumentation.Scope, p *pipeline) *meter {
+func newMeter(s instrumentation.Scope, p *pipeline) *Meter {
 	// viewCache ensures instrument conflicts, including number conflicts, this
 	// meter is asked to create are logged to the user.
 	var viewCache cache[string, instID]
@@ -47,7 +50,7 @@ func newMeter(s instrumentation.Scope, p *pipeline) *meter {
 	var int64ObservableInsts cacheWithErr[instID, int64Observable]
 	var float64ObservableInsts cacheWithErr[instID, float64Observable]
 
-	return &meter{
+	return &Meter{
 		scope:                  s,
 		pipe:                   p,
 		int64Insts:             &int64Insts,
@@ -59,13 +62,13 @@ func newMeter(s instrumentation.Scope, p *pipeline) *meter {
 	}
 }
 
-// Compile-time check meter implements metric.Meter.
-var _ metric.Meter = (*meter)(nil)
-
 // Int64Counter returns a new instrument identified by name and configured with
 // options. The instrument is used to synchronously record increasing int64
 // measurements during a computational operation.
-func (m *meter) Int64Counter(name string, h otel.ErrorHandler, options ...metric.Int64CounterOption) (metric.Int64Counter, error) {
+func (m *Meter) Int64Counter(name string, h otel.ErrorHandler, options ...metric.Int64CounterOption) (metric.Int64Counter, error) {
+	if m.noop {
+		return noop.Int64Counter{}, nil
+	}
 	cfg := metric.NewInt64CounterConfig(options...)
 	const kind = InstrumentKindCounter
 	p := int64InstProvider{m}
@@ -80,11 +83,14 @@ func (m *meter) Int64Counter(name string, h otel.ErrorHandler, options ...metric
 // Int64UpDownCounter returns a new instrument identified by name and
 // configured with options. The instrument is used to synchronously record
 // int64 measurements during a computational operation.
-func (m *meter) Int64UpDownCounter(
+func (m *Meter) Int64UpDownCounter(
 	name string,
 	h otel.ErrorHandler,
 	options ...metric.Int64UpDownCounterOption,
 ) (metric.Int64UpDownCounter, error) {
+	if m.noop {
+		return noop.Int64UpDownCounter{}, nil
+	}
 	cfg := metric.NewInt64UpDownCounterConfig(options...)
 	const kind = InstrumentKindUpDownCounter
 	p := int64InstProvider{m}
@@ -99,7 +105,10 @@ func (m *meter) Int64UpDownCounter(
 // Int64Histogram returns a new instrument identified by name and configured
 // with options. The instrument is used to synchronously record the
 // distribution of int64 measurements during a computational operation.
-func (m *meter) Int64Histogram(name string, h otel.ErrorHandler, options ...metric.Int64HistogramOption) (metric.Int64Histogram, error) {
+func (m *Meter) Int64Histogram(name string, h otel.ErrorHandler, options ...metric.Int64HistogramOption) (metric.Int64Histogram, error) {
+	if m.noop {
+		return noop.Int64Histogram{}, nil
+	}
 	cfg := metric.NewInt64HistogramConfig(options...)
 	p := int64InstProvider{m}
 	i, err := p.lookupHistogram(name, cfg, defaultAttributes(options), h)
@@ -113,7 +122,10 @@ func (m *meter) Int64Histogram(name string, h otel.ErrorHandler, options ...metr
 // Int64Gauge returns a new instrument identified by name and configured
 // with options. The instrument is used to synchronously record the
 // distribution of int64 measurements during a computational operation.
-func (m *meter) Int64Gauge(name string, h otel.ErrorHandler, options ...metric.Int64GaugeOption) (metric.Int64Gauge, error) {
+func (m *Meter) Int64Gauge(name string, h otel.ErrorHandler, options ...metric.Int64GaugeOption) (metric.Int64Gauge, error) {
+	if m.noop {
+		return noop.Int64Gauge{}, nil
+	}
 	cfg := metric.NewInt64GaugeConfig(options...)
 	const kind = InstrumentKindGauge
 	p := int64InstProvider{m}
@@ -127,7 +139,7 @@ func (m *meter) Int64Gauge(name string, h otel.ErrorHandler, options ...metric.I
 
 // int64ObservableInstrument returns a new observable identified by the Instrument.
 // It registers callbacks for each reader's pipeline.
-func (m *meter) int64ObservableInstrument(
+func (m *Meter) int64ObservableInstrument(
 	id Instrument,
 	allowedKeys []attribute.Key,
 	callbacks []metric.Int64Callback,
@@ -180,11 +192,14 @@ func (m *meter) int64ObservableInstrument(
 // Description, and Unit, only the first set of callbacks provided are used.
 // Use meter.RegisterCallback and Registration.Unregister to manage callbacks
 // if instrumentation can be created multiple times with different callbacks.
-func (m *meter) Int64ObservableCounter(
+func (m *Meter) Int64ObservableCounter(
 	name string,
 	h otel.ErrorHandler,
 	options ...metric.Int64ObservableCounterOption,
 ) (metric.Int64ObservableCounter, error) {
+	if m.noop {
+		return noop.Int64ObservableCounter{}, nil
+	}
 	cfg := metric.NewInt64ObservableCounterConfig(options...)
 	id := Instrument{
 		Name:        name,
@@ -205,11 +220,14 @@ func (m *meter) Int64ObservableCounter(
 // Description, and Unit, only the first set of callbacks provided are used.
 // Use meter.RegisterCallback and Registration.Unregister to manage callbacks
 // if instrumentation can be created multiple times with different callbacks.
-func (m *meter) Int64ObservableUpDownCounter(
+func (m *Meter) Int64ObservableUpDownCounter(
 	name string,
 	h otel.ErrorHandler,
 	options ...metric.Int64ObservableUpDownCounterOption,
 ) (metric.Int64ObservableUpDownCounter, error) {
+	if m.noop {
+		return noop.Int64ObservableUpDownCounter{}, nil
+	}
 	cfg := metric.NewInt64ObservableUpDownCounterConfig(options...)
 	id := Instrument{
 		Name:        name,
@@ -230,11 +248,14 @@ func (m *meter) Int64ObservableUpDownCounter(
 // Description, and Unit, only the first set of callbacks provided are used.
 // Use meter.RegisterCallback and Registration.Unregister to manage callbacks
 // if instrumentation can be created multiple times with different callbacks.
-func (m *meter) Int64ObservableGauge(
+func (m *Meter) Int64ObservableGauge(
 	name string,
 	h otel.ErrorHandler,
 	options ...metric.Int64ObservableGaugeOption,
 ) (metric.Int64ObservableGauge, error) {
+	if m.noop {
+		return noop.Int64ObservableGauge{}, nil
+	}
 	cfg := metric.NewInt64ObservableGaugeConfig(options...)
 	id := Instrument{
 		Name:        name,
@@ -249,7 +270,10 @@ func (m *meter) Int64ObservableGauge(
 // Float64Counter returns a new instrument identified by name and configured
 // with options. The instrument is used to synchronously record increasing
 // float64 measurements during a computational operation.
-func (m *meter) Float64Counter(name string, h otel.ErrorHandler, options ...metric.Float64CounterOption) (metric.Float64Counter, error) {
+func (m *Meter) Float64Counter(name string, h otel.ErrorHandler, options ...metric.Float64CounterOption) (metric.Float64Counter, error) {
+	if m.noop {
+		return noop.Float64Counter{}, nil
+	}
 	cfg := metric.NewFloat64CounterConfig(options...)
 	const kind = InstrumentKindCounter
 	p := float64InstProvider{m}
@@ -264,11 +288,14 @@ func (m *meter) Float64Counter(name string, h otel.ErrorHandler, options ...metr
 // Float64UpDownCounter returns a new instrument identified by name and
 // configured with options. The instrument is used to synchronously record
 // float64 measurements during a computational operation.
-func (m *meter) Float64UpDownCounter(
+func (m *Meter) Float64UpDownCounter(
 	name string,
 	h otel.ErrorHandler,
 	options ...metric.Float64UpDownCounterOption,
 ) (metric.Float64UpDownCounter, error) {
+	if m.noop {
+		return noop.Float64UpDownCounter{}, nil
+	}
 	cfg := metric.NewFloat64UpDownCounterConfig(options...)
 	const kind = InstrumentKindUpDownCounter
 	p := float64InstProvider{m}
@@ -283,11 +310,14 @@ func (m *meter) Float64UpDownCounter(
 // Float64Histogram returns a new instrument identified by name and configured
 // with options. The instrument is used to synchronously record the
 // distribution of float64 measurements during a computational operation.
-func (m *meter) Float64Histogram(
+func (m *Meter) Float64Histogram(
 	name string,
 	h otel.ErrorHandler,
 	options ...metric.Float64HistogramOption,
 ) (metric.Float64Histogram, error) {
+	if m.noop {
+		return noop.Float64Histogram{}, nil
+	}
 	cfg := metric.NewFloat64HistogramConfig(options...)
 	p := float64InstProvider{m}
 	i, err := p.lookupHistogram(name, cfg, defaultAttributes(options), h)
@@ -301,7 +331,10 @@ func (m *meter) Float64Histogram(
 // Float64Gauge returns a new instrument identified by name and configured
 // with options. The instrument is used to synchronously record the
 // distribution of float64 measurements during a computational operation.
-func (m *meter) Float64Gauge(name string, h otel.ErrorHandler, options ...metric.Float64GaugeOption) (metric.Float64Gauge, error) {
+func (m *Meter) Float64Gauge(name string, h otel.ErrorHandler, options ...metric.Float64GaugeOption) (metric.Float64Gauge, error) {
+	if m.noop {
+		return noop.Float64Gauge{}, nil
+	}
 	cfg := metric.NewFloat64GaugeConfig(options...)
 	const kind = InstrumentKindGauge
 	p := float64InstProvider{m}
@@ -315,7 +348,7 @@ func (m *meter) Float64Gauge(name string, h otel.ErrorHandler, options ...metric
 
 // float64ObservableInstrument returns a new observable identified by the Instrument.
 // It registers callbacks for each reader's pipeline.
-func (m *meter) float64ObservableInstrument(
+func (m *Meter) float64ObservableInstrument(
 	id Instrument,
 	allowedKeys []attribute.Key,
 	callbacks []metric.Float64Callback,
@@ -369,11 +402,14 @@ func (m *meter) float64ObservableInstrument(
 // Description, and Unit, only the first set of callbacks provided are used.
 // Use meter.RegisterCallback and Registration.Unregister to manage callbacks
 // if instrumentation can be created multiple times with different callbacks.
-func (m *meter) Float64ObservableCounter(
+func (m *Meter) Float64ObservableCounter(
 	name string,
 	h otel.ErrorHandler,
 	options ...metric.Float64ObservableCounterOption,
 ) (metric.Float64ObservableCounter, error) {
+	if m.noop {
+		return noop.Float64ObservableCounter{}, nil
+	}
 	cfg := metric.NewFloat64ObservableCounterConfig(options...)
 	id := Instrument{
 		Name:        name,
@@ -394,11 +430,14 @@ func (m *meter) Float64ObservableCounter(
 // Description, and Unit, only the first set of callbacks provided are used.
 // Use meter.RegisterCallback and Registration.Unregister to manage callbacks
 // if instrumentation can be created multiple times with different callbacks.
-func (m *meter) Float64ObservableUpDownCounter(
+func (m *Meter) Float64ObservableUpDownCounter(
 	name string,
 	h otel.ErrorHandler,
 	options ...metric.Float64ObservableUpDownCounterOption,
 ) (metric.Float64ObservableUpDownCounter, error) {
+	if m.noop {
+		return noop.Float64ObservableUpDownCounter{}, nil
+	}
 	cfg := metric.NewFloat64ObservableUpDownCounterConfig(options...)
 	id := Instrument{
 		Name:        name,
@@ -419,11 +458,14 @@ func (m *meter) Float64ObservableUpDownCounter(
 // Description, and Unit, only the first set of callbacks provided are used.
 // Use meter.RegisterCallback and Registration.Unregister to manage callbacks
 // if instrumentation can be created multiple times with different callbacks.
-func (m *meter) Float64ObservableGauge(
+func (m *Meter) Float64ObservableGauge(
 	name string,
 	h otel.ErrorHandler,
 	options ...metric.Float64ObservableGaugeOption,
 ) (metric.Float64ObservableGauge, error) {
+	if m.noop {
+		return noop.Float64ObservableGauge{}, nil
+	}
 	cfg := metric.NewFloat64ObservableGaugeConfig(options...)
 	id := Instrument{
 		Name:        name,
@@ -490,7 +532,11 @@ func warnRepeatedObservableCallbacks(id Instrument) {
 // longer relevant by omitting the observation during the callback.
 //
 // The returned Registration can be used to unregister f.
-func (m *meter) RegisterCallback(f metric.Callback, insts ...metric.Observable) (metric.Registration, error) {
+func (m *Meter) RegisterCallback(f metric.Callback, insts ...metric.Observable) (metric.Registration, error) {
+	if m.noop {
+		return noopRegister{}, nil
+	}
+
 	if len(insts) == 0 {
 		// Don't allocate a observer if not needed.
 		return noopRegister{}, nil
@@ -646,7 +692,7 @@ func (noopRegister) Unregister() error {
 }
 
 // int64InstProvider provides int64 OpenTelemetry instruments.
-type int64InstProvider struct{ *meter }
+type int64InstProvider struct{ *Meter }
 
 func (p int64InstProvider) aggs(
 	kind InstrumentKind,
@@ -724,7 +770,7 @@ func (p int64InstProvider) lookupHistogram(
 }
 
 // float64InstProvider provides float64 OpenTelemetry instruments.
-type float64InstProvider struct{ *meter }
+type float64InstProvider struct{ *Meter }
 
 func (p float64InstProvider) aggs(
 	kind InstrumentKind,

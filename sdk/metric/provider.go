@@ -8,8 +8,6 @@ import (
 	"sync/atomic"
 
 	"github.com/karelbilek/opentelemetry/internal/global"
-	"github.com/karelbilek/opentelemetry/metric"
-	"github.com/karelbilek/opentelemetry/metric/noop"
 	"github.com/karelbilek/opentelemetry/sdk/instrumentation"
 	"github.com/karelbilek/opentelemetry/sdk/resource"
 )
@@ -20,14 +18,11 @@ import (
 // passed to the configured Readers.
 type MeterProvider struct {
 	pipe   *pipeline
-	meters cache[instrumentation.Scope, *meter]
+	meters cache[instrumentation.Scope, *Meter]
 
 	reader  *PeriodicReader
 	stopped atomic.Bool
 }
-
-// Compile-time check MeterProvider implements metric.MeterProvider.
-var _ metric.MeterProvider = (*MeterProvider)(nil)
 
 // NewMeterProvider returns a new and configured MeterProvider.
 //
@@ -65,13 +60,13 @@ func NewMeterProvider(res *resource.Resource,
 // that perform no operations.
 //
 // This method is safe to call concurrently.
-func (mp *MeterProvider) Meter(name string) metric.Meter {
+func (mp *MeterProvider) Meter(name string) *Meter {
 	if name == "" {
 		global.Warn("Invalid Meter name.", "name", name)
 	}
 
 	if mp.stopped.Load() {
-		return noop.Meter{}
+		return &Meter{noop: true}
 	}
 
 	s := instrumentation.Scope{
@@ -83,7 +78,7 @@ func (mp *MeterProvider) Meter(name string) metric.Meter {
 		"Name", s.Name,
 	)
 
-	return mp.meters.Lookup(s, func() *meter {
+	return mp.meters.Lookup(s, func() *Meter {
 		return newMeter(s, mp.pipe)
 	})
 }

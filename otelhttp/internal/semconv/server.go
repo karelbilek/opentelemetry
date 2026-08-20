@@ -20,6 +20,7 @@ import (
 	"github.com/karelbilek/opentelemetry/attribute"
 	"github.com/karelbilek/opentelemetry/codes"
 	"github.com/karelbilek/opentelemetry/metric"
+	sdkmetric "github.com/karelbilek/opentelemetry/sdk/metric"
 	"github.com/karelbilek/opentelemetry/semconv"
 	"github.com/karelbilek/opentelemetry/semconv/httpconv"
 )
@@ -43,7 +44,7 @@ type HTTPServer struct {
 	requestDurationHistogram  httpconv.ServerRequestDuration
 }
 
-func NewHTTPServer(meter metric.Meter, h otel.ErrorHandler) HTTPServer {
+func NewHTTPServer(meter *sdkmetric.Meter, h otel.ErrorHandler) HTTPServer {
 	server := HTTPServer{}
 
 	var err error
