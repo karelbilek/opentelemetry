@@ -9,8 +9,6 @@ import (
 	otel "github.com/karelbilek/opentelemetry"
 	"github.com/karelbilek/opentelemetry/metric"
 	sdkmetric "github.com/karelbilek/opentelemetry/sdk/metric"
-
-	"github.com/karelbilek/opentelemetry/metric/noop"
 )
 
 // ClientRequestBodySize is an instrument used to record metric values conforming
@@ -62,7 +60,7 @@ func (m ClientRequestBodySize) Inst() sdkmetric.Int64Recorder {
 // to the "http.client.request.duration" semantic conventions. It represents the
 // duration of HTTP client requests.
 type ClientRequestDuration struct {
-	metric.Float64Histogram
+	sdkmetric.Float64Recorder
 }
 
 var newClientRequestDurationOpts = []metric.Float64HistogramOption{
@@ -79,7 +77,7 @@ func NewClientRequestDuration(
 ) (ClientRequestDuration, error) {
 	// Check if the meter is nil.
 	if m == nil {
-		return ClientRequestDuration{noop.Float64Histogram{}}, nil
+		return ClientRequestDuration{}, nil
 	}
 
 	if len(opt) == 0 {
@@ -94,14 +92,14 @@ func NewClientRequestDuration(
 		opt...,
 	)
 	if err != nil {
-		return ClientRequestDuration{noop.Float64Histogram{}}, err
+		return ClientRequestDuration{}, err
 	}
 	return ClientRequestDuration{i}, nil
 }
 
 // Inst returns the underlying metric instrument.
-func (m ClientRequestDuration) Inst() metric.Float64Histogram {
-	return m.Float64Histogram
+func (m ClientRequestDuration) Inst() sdkmetric.Float64Recorder {
+	return m.Float64Recorder
 }
 
 // ServerRequestBodySize is an instrument used to record metric values conforming
@@ -154,7 +152,7 @@ func (m ServerRequestBodySize) Inst() sdkmetric.Int64Recorder {
 // to the "http.server.request.duration" semantic conventions. It represents the
 // duration of HTTP server requests.
 type ServerRequestDuration struct {
-	metric.Float64Histogram
+	sdkmetric.Float64Recorder
 }
 
 var newServerRequestDurationOpts = []metric.Float64HistogramOption{
@@ -171,7 +169,7 @@ func NewServerRequestDuration(
 ) (ServerRequestDuration, error) {
 	// Check if the meter is nil.
 	if m == nil {
-		return ServerRequestDuration{noop.Float64Histogram{}}, nil
+		return ServerRequestDuration{}, nil
 	}
 
 	if len(opt) == 0 {
@@ -186,14 +184,14 @@ func NewServerRequestDuration(
 		opt...,
 	)
 	if err != nil {
-		return ServerRequestDuration{noop.Float64Histogram{}}, err
+		return ServerRequestDuration{}, err
 	}
 	return ServerRequestDuration{i}, nil
 }
 
 // Inst returns the underlying metric instrument.
-func (m ServerRequestDuration) Inst() metric.Float64Histogram {
-	return m.Float64Histogram
+func (m ServerRequestDuration) Inst() sdkmetric.Float64Recorder {
+	return m.Float64Recorder
 }
 
 // ServerResponseBodySize is an instrument used to record metric values

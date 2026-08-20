@@ -270,19 +270,19 @@ func (m *Meter) Int64ObservableGauge(
 // Float64Counter returns a new instrument identified by name and configured
 // with options. The instrument is used to synchronously record increasing
 // float64 measurements during a computational operation.
-func (m *Meter) Float64Counter(name string, h otel.ErrorHandler, options ...metric.Float64CounterOption) (metric.Float64Counter, error) {
+func (m *Meter) Float64Counter(name string, h otel.ErrorHandler, options ...metric.Float64CounterOption) (Float64Adder, error) {
 	if m.noop {
-		return noop.Float64Counter{}, nil
+		return Float64Adder{}, nil
 	}
 	cfg := metric.NewFloat64CounterConfig(options...)
 	const kind = InstrumentKindCounter
 	p := float64InstProvider{m}
 	i, err := p.lookup(kind, name, cfg.Description(), cfg.Unit(), defaultAttributes(options), h)
 	if err != nil {
-		return i, err
+		return Float64Adder{i}, err
 	}
 
-	return i, validateInstrumentName(name)
+	return Float64Adder{i}, validateInstrumentName(name)
 }
 
 // Float64UpDownCounter returns a new instrument identified by name and
@@ -292,19 +292,19 @@ func (m *Meter) Float64UpDownCounter(
 	name string,
 	h otel.ErrorHandler,
 	options ...metric.Float64UpDownCounterOption,
-) (metric.Float64UpDownCounter, error) {
+) (Float64Adder, error) {
 	if m.noop {
-		return noop.Float64UpDownCounter{}, nil
+		return Float64Adder{}, nil
 	}
 	cfg := metric.NewFloat64UpDownCounterConfig(options...)
 	const kind = InstrumentKindUpDownCounter
 	p := float64InstProvider{m}
 	i, err := p.lookup(kind, name, cfg.Description(), cfg.Unit(), defaultAttributes(options), h)
 	if err != nil {
-		return i, err
+		return Float64Adder{i}, err
 	}
 
-	return i, validateInstrumentName(name)
+	return Float64Adder{i}, validateInstrumentName(name)
 }
 
 // Float64Histogram returns a new instrument identified by name and configured
@@ -314,36 +314,36 @@ func (m *Meter) Float64Histogram(
 	name string,
 	h otel.ErrorHandler,
 	options ...metric.Float64HistogramOption,
-) (metric.Float64Histogram, error) {
+) (Float64Recorder, error) {
 	if m.noop {
-		return noop.Float64Histogram{}, nil
+		return Float64Recorder{}, nil
 	}
 	cfg := metric.NewFloat64HistogramConfig(options...)
 	p := float64InstProvider{m}
 	i, err := p.lookupHistogram(name, cfg, defaultAttributes(options), h)
 	if err != nil {
-		return i, err
+		return Float64Recorder{i}, err
 	}
 
-	return i, validateInstrumentName(name)
+	return Float64Recorder{i}, validateInstrumentName(name)
 }
 
 // Float64Gauge returns a new instrument identified by name and configured
 // with options. The instrument is used to synchronously record the
 // distribution of float64 measurements during a computational operation.
-func (m *Meter) Float64Gauge(name string, h otel.ErrorHandler, options ...metric.Float64GaugeOption) (metric.Float64Gauge, error) {
+func (m *Meter) Float64Gauge(name string, h otel.ErrorHandler, options ...metric.Float64GaugeOption) (Float64Recorder, error) {
 	if m.noop {
-		return noop.Float64Gauge{}, nil
+		return Float64Recorder{}, nil
 	}
 	cfg := metric.NewFloat64GaugeConfig(options...)
 	const kind = InstrumentKindGauge
 	p := float64InstProvider{m}
 	i, err := p.lookup(kind, name, cfg.Description(), cfg.Unit(), defaultAttributes(options), h)
 	if err != nil {
-		return i, err
+		return Float64Recorder{i}, err
 	}
 
-	return i, validateInstrumentName(name)
+	return Float64Recorder{i}, validateInstrumentName(name)
 }
 
 // float64ObservableInstrument returns a new observable identified by the Instrument.

@@ -3,35 +3,6 @@
 
 package metric
 
-import (
-	"context"
-)
-
-// Float64Counter is an instrument that records increasing float64 values.
-//
-// Warning: Methods may be added to this interface in minor releases. See
-// package documentation on API implementation for information on how to set
-// default behavior for unimplemented methods.
-type Float64Counter interface {
-	// Add records a change to the counter.
-	//
-	// Use the WithAttributeSet (or, if performance is not a concern,
-	// the WithAttributes) option to include measurement attributes.
-	//
-	// Implementations of this method need to be safe for a user to call
-	// concurrently.
-	Add(ctx context.Context, incr float64, options ...AddOption)
-
-	// Enabled reports whether the instrument will process measurements for the given context.
-	//
-	// This function can be used in places where measuring an instrument
-	// would result in computationally expensive operations.
-	//
-	// Implementations of this method need to be safe for a user to call
-	// concurrently.
-	Enabled(context.Context) bool
-}
-
 // Float64CounterConfig contains options for synchronous counter instruments that
 // record float64 values.
 type Float64CounterConfig struct {
@@ -66,32 +37,6 @@ type Float64CounterOption interface {
 	applyFloat64Counter(Float64CounterConfig) Float64CounterConfig
 }
 
-// Float64UpDownCounter is an instrument that records increasing or decreasing
-// float64 values.
-//
-// Warning: Methods may be added to this interface in minor releases. See
-// package documentation on API implementation for information on how to set
-// default behavior for unimplemented methods.
-type Float64UpDownCounter interface {
-	// Add records a change to the counter.
-	//
-	// Use the WithAttributeSet (or, if performance is not a concern,
-	// the WithAttributes) option to include measurement attributes.
-	//
-	// Implementations of this method need to be safe for a user to call
-	// concurrently.
-	Add(ctx context.Context, incr float64, options ...AddOption)
-
-	// Enabled reports whether the instrument will process measurements for the given context.
-	//
-	// This function can be used in places where measuring an instrument
-	// would result in computationally expensive operations.
-	//
-	// Implementations of this method need to be safe for a user to call
-	// concurrently.
-	Enabled(context.Context) bool
-}
-
 // Float64UpDownCounterConfig contains options for synchronous counter
 // instruments that record float64 values.
 type Float64UpDownCounterConfig struct {
@@ -124,34 +69,6 @@ func (c Float64UpDownCounterConfig) Unit() string {
 // can be used as a Float64UpDownCounterOption.
 type Float64UpDownCounterOption interface {
 	applyFloat64UpDownCounter(Float64UpDownCounterConfig) Float64UpDownCounterConfig
-}
-
-// Float64Histogram is an instrument that records a distribution of float64
-// values.
-//
-// Warning: Methods may be added to this interface in minor releases. See
-// package documentation on API implementation for information on how to set
-// default behavior for unimplemented methods.
-type Float64Histogram interface {
-	// Record adds an additional value to the distribution.
-	//
-	// The incr value is expected to be non-negative.
-	//
-	// Use the WithAttributeSet (or, if performance is not a concern,
-	// the WithAttributes) option to include measurement attributes.
-	//
-	// Implementations of this method need to be safe for a user to call
-	// concurrently.
-	Record(ctx context.Context, incr float64, options ...RecordOption)
-
-	// Enabled reports whether the instrument will process measurements for the given context.
-	//
-	// This function can be used in places where measuring an instrument
-	// would result in computationally expensive operations.
-	//
-	// Implementations of this method need to be safe for a user to call
-	// concurrently.
-	Enabled(context.Context) bool
 }
 
 // Float64HistogramConfig contains options for synchronous histogram
@@ -192,31 +109,6 @@ func (c Float64HistogramConfig) ExplicitBucketBoundaries() []float64 {
 // Float64HistogramOption.
 type Float64HistogramOption interface {
 	applyFloat64Histogram(Float64HistogramConfig) Float64HistogramConfig
-}
-
-// Float64Gauge is an instrument that records instantaneous float64 values.
-//
-// Warning: Methods may be added to this interface in minor releases. See
-// package documentation on API implementation for information on how to set
-// default behavior for unimplemented methods.
-type Float64Gauge interface {
-	// Record records the instantaneous value.
-	//
-	// Use the WithAttributeSet (or, if performance is not a concern,
-	// the WithAttributes) option to include measurement attributes.
-	//
-	// Implementations of this method need to be safe for a user to call
-	// concurrently.
-	Record(ctx context.Context, value float64, options ...RecordOption)
-
-	// Enabled reports whether the instrument will process measurements for the given context.
-	//
-	// This function can be used in places where measuring an instrument
-	// would result in computationally expensive operations.
-	//
-	// Implementations of this method need to be safe for a user to call
-	// concurrently.
-	Enabled(context.Context) bool
 }
 
 // Float64GaugeConfig contains options for synchronous gauge instruments that

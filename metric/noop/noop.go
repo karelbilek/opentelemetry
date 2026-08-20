@@ -13,8 +13,6 @@
 package noop
 
 import (
-	"context"
-
 	"github.com/karelbilek/opentelemetry/metric"
 )
 
@@ -23,10 +21,6 @@ var (
 
 	_ metric.Observer                       = Observer{}
 	_ metric.Registration                   = Registration{}
-	_ metric.Float64Counter                 = Float64Counter{}
-	_ metric.Float64UpDownCounter           = Float64UpDownCounter{}
-	_ metric.Float64Histogram               = Float64Histogram{}
-	_ metric.Float64Gauge                   = Float64Gauge{}
 	_ metric.Int64ObservableCounter         = Int64ObservableCounter{}
 	_ metric.Float64ObservableCounter       = Float64ObservableCounter{}
 	_ metric.Int64ObservableGauge           = Int64ObservableGauge{}
@@ -56,46 +50,6 @@ type Registration struct{}
 // No-Op Meter. This will always return nil because the No-Op Meter performs no
 // operation, including hold any record of registrations.
 func (Registration) Unregister() error { return nil }
-
-// Float64Counter is an OpenTelemetry Counter used to record float64
-// measurements. It produces no telemetry.
-type Float64Counter struct{}
-
-// Add performs no operation.
-func (Float64Counter) Add(context.Context, float64, ...metric.AddOption) {}
-
-// Enabled performs no operation.
-func (Float64Counter) Enabled(context.Context) bool { return false }
-
-// Float64UpDownCounter is an OpenTelemetry UpDownCounter used to record
-// float64 measurements. It produces no telemetry.
-type Float64UpDownCounter struct{}
-
-// Add performs no operation.
-func (Float64UpDownCounter) Add(context.Context, float64, ...metric.AddOption) {}
-
-// Enabled performs no operation.
-func (Float64UpDownCounter) Enabled(context.Context) bool { return false }
-
-// Float64Histogram is an OpenTelemetry Histogram used to record float64
-// measurements. It produces no telemetry.
-type Float64Histogram struct{}
-
-// Record performs no operation.
-func (Float64Histogram) Record(context.Context, float64, ...metric.RecordOption) {}
-
-// Enabled performs no operation.
-func (Float64Histogram) Enabled(context.Context) bool { return false }
-
-// Float64Gauge is an OpenTelemetry Gauge used to record instantaneous float64
-// measurements. It produces no telemetry.
-type Float64Gauge struct{}
-
-// Record performs no operation.
-func (Float64Gauge) Record(context.Context, float64, ...metric.RecordOption) {}
-
-// Enabled performs no operation.
-func (Float64Gauge) Enabled(context.Context) bool { return false }
 
 // Int64ObservableCounter is an OpenTelemetry ObservableCounter used to record
 // int64 measurements. It produces no telemetry.
