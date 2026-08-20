@@ -314,42 +314,31 @@ type observableID[N int64 | float64] struct {
 	scope       instrumentation.Scope
 }
 
-type float64Observable struct {
-	metric.Float64Observable
+type Float64Observable struct {
 	*observable[float64]
 }
 
-var (
-	_ metric.Float64ObservableCounter       = float64Observable{}
-	_ metric.Float64ObservableUpDownCounter = float64Observable{}
-	_ metric.Float64ObservableGauge         = float64Observable{}
-)
+func (Float64Observable) observableMarker() {}
 
-func newFloat64Observable(m *Meter, kind InstrumentKind, name, desc, u string) float64Observable {
-	return float64Observable{
+func newFloat64Observable(m *Meter, kind InstrumentKind, name, desc, u string) Float64Observable {
+	return Float64Observable{
 		observable: newObservable[float64](m, kind, name, desc, u),
 	}
 }
 
-type int64Observable struct {
-	metric.Int64Observable
+type Int64Observable struct {
 	*observable[int64]
 }
 
-var (
-	_ metric.Int64ObservableCounter       = int64Observable{}
-	_ metric.Int64ObservableUpDownCounter = int64Observable{}
-	_ metric.Int64ObservableGauge         = int64Observable{}
-)
+func (Int64Observable) observableMarker() {}
 
-func newInt64Observable(m *Meter, kind InstrumentKind, name, desc, u string) int64Observable {
-	return int64Observable{
+func newInt64Observable(m *Meter, kind InstrumentKind, name, desc, u string) Int64Observable {
+	return Int64Observable{
 		observable: newObservable[int64](m, kind, name, desc, u),
 	}
 }
 
 type observable[N int64 | float64] struct {
-	metric.Observable
 	observableID[N]
 
 	meter           *Meter
@@ -395,6 +384,9 @@ var errEmptyAgg = errors.New("no aggregators for observable instrument")
 // no-op because it does not have any aggregators. Also, an error is returned
 // if scope defines a Meter other than the one o was created by.
 func (o *observable[N]) registerable(m *Meter) error {
+	if o == nil {
+		return errEmptyAgg
+	}
 	if len(o.measures) == 0 {
 		return errEmptyAgg
 	}

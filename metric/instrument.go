@@ -7,12 +7,6 @@ import (
 	"github.com/karelbilek/opentelemetry/attribute"
 )
 
-// Observable is used as a grouping mechanism for all instruments that are
-// updated within a Callback.
-type Observable interface {
-	observable()
-}
-
 // InstrumentOption applies options to all instruments.
 type InstrumentOption interface {
 	Int64CounterOption

@@ -7,29 +7,6 @@ import (
 	"context"
 )
 
-// Int64Observable describes a set of instruments used asynchronously to record
-// int64 measurements once per collection cycle. Observations of these
-// instruments are only made within a callback.
-//
-// Warning: Methods may be added to this interface in minor releases.
-type Int64Observable interface {
-	Observable
-
-	int64Observable()
-}
-
-// Int64ObservableCounter is an instrument used to asynchronously record
-// increasing int64 measurements once per collection cycle. Observations are
-// only made within a callback for this instrument. The value observed is
-// assumed the to be the cumulative sum of the count.
-//
-// Warning: Methods may be added to this interface in minor releases. See
-// package documentation on API implementation for information on how to set
-// default behavior for unimplemented methods.
-type Int64ObservableCounter interface {
-	Int64Observable
-}
-
 // Int64ObservableCounterConfig contains options for asynchronous counter
 // instruments that record int64 values.
 type Int64ObservableCounterConfig struct {
@@ -69,18 +46,6 @@ func (c Int64ObservableCounterConfig) Callbacks() []Int64Callback {
 // Int64ObservableCounterOption.
 type Int64ObservableCounterOption interface {
 	applyInt64ObservableCounter(Int64ObservableCounterConfig) Int64ObservableCounterConfig
-}
-
-// Int64ObservableUpDownCounter is an instrument used to asynchronously record
-// int64 measurements once per collection cycle. Observations are only made
-// within a callback for this instrument. The value observed is assumed the to
-// be the cumulative sum of the count.
-//
-// Warning: Methods may be added to this interface in minor releases. See
-// package documentation on API implementation for information on how to set
-// default behavior for unimplemented methods.
-type Int64ObservableUpDownCounter interface {
-	Int64Observable
 }
 
 // Int64ObservableUpDownCounterConfig contains options for asynchronous counter
@@ -124,17 +89,6 @@ func (c Int64ObservableUpDownCounterConfig) Callbacks() []Int64Callback {
 // Int64ObservableUpDownCounterOption.
 type Int64ObservableUpDownCounterOption interface {
 	applyInt64ObservableUpDownCounter(Int64ObservableUpDownCounterConfig) Int64ObservableUpDownCounterConfig
-}
-
-// Int64ObservableGauge is an instrument used to asynchronously record
-// instantaneous int64 measurements once per collection cycle. Observations are
-// only made within a callback for this instrument.
-//
-// Warning: Methods may be added to this interface in minor releases. See
-// package documentation on API implementation for information on how to set
-// default behavior for unimplemented methods.
-type Int64ObservableGauge interface {
-	Int64Observable
 }
 
 // Int64ObservableGaugeConfig contains options for asynchronous counter

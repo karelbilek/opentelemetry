@@ -7,30 +7,6 @@ import (
 	"context"
 )
 
-// Float64Observable describes a set of instruments used asynchronously to
-// record float64 measurements once per collection cycle. Observations of
-// these instruments are only made within a callback.
-//
-// Warning: Methods may be added to this interface in minor releases.
-type Float64Observable interface {
-	Observable
-
-	float64Observable()
-}
-
-// Float64ObservableCounter is an instrument used to asynchronously record
-// increasing float64 measurements once per collection cycle. Observations are
-// only made within a callback for this instrument. The value observed is
-// assumed the to be the cumulative sum of the count.
-//
-// Warning: Methods may be added to this interface in minor releases. See
-// package documentation on API implementation for information on how to set
-// default behavior for
-// unimplemented methods.
-type Float64ObservableCounter interface {
-	Float64Observable
-}
-
 // Float64ObservableCounterConfig contains options for asynchronous counter
 // instruments that record float64 values.
 type Float64ObservableCounterConfig struct {
@@ -70,18 +46,6 @@ func (c Float64ObservableCounterConfig) Callbacks() []Float64Callback {
 // Float64ObservableCounterOption.
 type Float64ObservableCounterOption interface {
 	applyFloat64ObservableCounter(Float64ObservableCounterConfig) Float64ObservableCounterConfig
-}
-
-// Float64ObservableUpDownCounter is an instrument used to asynchronously
-// record float64 measurements once per collection cycle. Observations are only
-// made within a callback for this instrument. The value observed is assumed
-// the to be the cumulative sum of the count.
-//
-// Warning: Methods may be added to this interface in minor releases. See
-// package documentation on API implementation for information on how to set
-// default behavior for unimplemented methods.
-type Float64ObservableUpDownCounter interface {
-	Float64Observable
 }
 
 // Float64ObservableUpDownCounterConfig contains options for asynchronous
@@ -125,17 +89,6 @@ func (c Float64ObservableUpDownCounterConfig) Callbacks() []Float64Callback {
 // Float64ObservableUpDownCounterOption.
 type Float64ObservableUpDownCounterOption interface {
 	applyFloat64ObservableUpDownCounter(Float64ObservableUpDownCounterConfig) Float64ObservableUpDownCounterConfig
-}
-
-// Float64ObservableGauge is an instrument used to asynchronously record
-// instantaneous float64 measurements once per collection cycle. Observations
-// are only made within a callback for this instrument.
-//
-// Warning: Methods may be added to this interface in minor releases. See
-// package documentation on API implementation for information on how to set
-// default behavior for unimplemented methods.
-type Float64ObservableGauge interface {
-	Float64Observable
 }
 
 // Float64ObservableGaugeConfig contains options for asynchronous counter

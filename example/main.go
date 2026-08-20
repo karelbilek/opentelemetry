@@ -155,7 +155,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	_, err = meter.RegisterCallback(func(_ context.Context, o ametric.Observer) error {
+	_, err = meter.RegisterCallback(func(_ context.Context, o metric.Observer) error {
 		var ms runtime.MemStats
 		runtime.ReadMemStats(&ms)                          // one read...
 		o.ObserveInt64(heapAlloc, int64(ms.HeapAlloc))     // ...feeds
