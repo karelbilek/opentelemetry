@@ -19,18 +19,9 @@ import (
 var (
 	// Compile-time check this implements the OpenTelemetry API.
 
-	_ metric.Registration    = Registration{}
 	_ metric.Int64Observer   = Int64Observer{}
 	_ metric.Float64Observer = Float64Observer{}
 )
-
-// Registration is the registration of a Callback with a No-Op Meter.
-type Registration struct{}
-
-// Unregister unregisters the Callback the Registration represents with the
-// No-Op Meter. This will always return nil because the No-Op Meter performs no
-// operation, including hold any record of registrations.
-func (Registration) Unregister() error { return nil }
 
 // Int64Observer is a recorder of int64 measurements that performs no operation.
 type Int64Observer struct{}

@@ -521,25 +521,14 @@ func isAggregatorCompatible(kind InstrumentKind, agg aggregation) error {
 	}
 }
 
-// // pipelines is the group of pipelines connecting Readers with instrument
-// // measurement.
-// type pipelines []*pipeline
-
-// func newPipelines(
-// 	res *resource.Resource,
-// 	reader Reader,
-// 	cardinalityLimit int,
-// ) *pipeline {
-// 	p := newPipeline(res, reader, cardinalityLimit)
-// 	reader.register(p)
-// 	return p
-// }
-
-type unregisterFunc struct {
+type UnregisterFunc struct {
 	f func()
 }
 
-func (u unregisterFunc) Unregister() error {
+func (u UnregisterFunc) Unregister() error {
+	if u.f == nil {
+		return nil
+	}
 	u.f()
 	return nil
 }

@@ -537,14 +537,14 @@ type Callback func(context.Context, Observer) error
 // longer relevant by omitting the observation during the callback.
 //
 // The returned Registration can be used to unregister f.
-func (m *Meter) RegisterCallback(f Callback, insts ...Observable) (metric.Registration, error) {
+func (m *Meter) RegisterCallback(f Callback, insts ...Observable) (UnregisterFunc, error) {
 	if m.noop {
-		return noopRegister{}, nil
+		return UnregisterFunc{}, nil
 	}
 
 	if len(insts) == 0 {
 		// Don't allocate a observer if not needed.
-		return noopRegister{}, nil
+		return UnregisterFunc{}, nil
 	}
 
 	var err error
@@ -571,13 +571,13 @@ func (m *Meter) RegisterCallback(f Callback, insts ...Observable) (metric.Regist
 			validInstruments = append(validInstruments, inst)
 		default:
 			// Instrument external to the SDK.
-			return nil, errors.New("invalid observable: from different implementation")
+			return UnregisterFunc{}, errors.New("invalid observable: from different implementation")
 		}
 	}
 
 	if len(validInstruments) == 0 {
 		// All insts use drop aggregation or are invalid.
-		return noopRegister{}, err
+		return UnregisterFunc{}, err
 	}
 
 	pipe := m.pipe
@@ -594,7 +594,7 @@ func (m *Meter) RegisterCallback(f Callback, insts ...Observable) (metric.Regist
 	// Some or all instruments were valid.
 	cBack := func(ctx context.Context) error { return f(ctx, reg) }
 
-	return unregisterFunc{f: pipe.addMultiCallback(cBack)}, err
+	return UnregisterFunc{f: pipe.addMultiCallback(cBack)}, err
 }
 
 type Observer struct {
