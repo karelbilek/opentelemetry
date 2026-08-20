@@ -119,7 +119,12 @@ func main() {
 	}()
 
 	meter := meterProvider.Meter("metroo")
-	gaug, err := meter.Int64Gauge("gaugoo", oh, ametric.WithDescription("popokatepetl"))
+	count, err := meter.Int64Counter("count", oh, ametric.WithDescription("counter"))
+	if err != nil {
+		panic(err)
+	}
+
+	gaug, err := meter.Int64Gauge("gauge", oh, ametric.WithDescription("popokatepetl"))
 
 	if err != nil {
 		panic(err)
@@ -131,9 +136,12 @@ func main() {
 	newCpan.AddEvent("olold2")
 	slogger.With("foo", "bar").InfoContext(newCtx, "HELLO")
 
-	gaug.Record(newCtx, 500)
+	count.Add(newCtx, 4)
 
+	gaug.Record(newCtx, 500)
 	time.Sleep(1 * time.Second)
+	count.Add(newCtx, 4)
+
 	gaug.Record(newCtx, 600)
 
 	newCpan.End()
