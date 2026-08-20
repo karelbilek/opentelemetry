@@ -65,19 +65,19 @@ func newMeter(s instrumentation.Scope, p *pipeline) *Meter {
 // Int64Counter returns a new instrument identified by name and configured with
 // options. The instrument is used to synchronously record increasing int64
 // measurements during a computational operation.
-func (m *Meter) Int64Counter(name string, h otel.ErrorHandler, options ...metric.Int64CounterOption) (metric.Int64Counter, error) {
+func (m *Meter) Int64Counter(name string, h otel.ErrorHandler, options ...metric.Int64CounterOption) (Int64Adder, error) {
 	if m.noop {
-		return noop.Int64Counter{}, nil
+		return Int64Adder{nil}, nil
 	}
 	cfg := metric.NewInt64CounterConfig(options...)
 	const kind = InstrumentKindCounter
 	p := int64InstProvider{m}
 	i, err := p.lookup(kind, name, cfg.Description(), cfg.Unit(), defaultAttributes(options), h)
 	if err != nil {
-		return i, err
+		return Int64Adder{i}, err
 	}
 
-	return i, validateInstrumentName(name)
+	return Int64Adder{i}, validateInstrumentName(name)
 }
 
 // Int64UpDownCounter returns a new instrument identified by name and
@@ -87,54 +87,54 @@ func (m *Meter) Int64UpDownCounter(
 	name string,
 	h otel.ErrorHandler,
 	options ...metric.Int64UpDownCounterOption,
-) (metric.Int64UpDownCounter, error) {
+) (Int64Adder, error) {
 	if m.noop {
-		return noop.Int64UpDownCounter{}, nil
+		return Int64Adder{nil}, nil
 	}
 	cfg := metric.NewInt64UpDownCounterConfig(options...)
 	const kind = InstrumentKindUpDownCounter
 	p := int64InstProvider{m}
 	i, err := p.lookup(kind, name, cfg.Description(), cfg.Unit(), defaultAttributes(options), h)
 	if err != nil {
-		return i, err
+		return Int64Adder{i}, err
 	}
 
-	return i, validateInstrumentName(name)
+	return Int64Adder{i}, validateInstrumentName(name)
 }
 
 // Int64Histogram returns a new instrument identified by name and configured
 // with options. The instrument is used to synchronously record the
 // distribution of int64 measurements during a computational operation.
-func (m *Meter) Int64Histogram(name string, h otel.ErrorHandler, options ...metric.Int64HistogramOption) (metric.Int64Histogram, error) {
+func (m *Meter) Int64Histogram(name string, h otel.ErrorHandler, options ...metric.Int64HistogramOption) (Int64Recorder, error) {
 	if m.noop {
-		return noop.Int64Histogram{}, nil
+		return Int64Recorder{nil}, nil
 	}
 	cfg := metric.NewInt64HistogramConfig(options...)
 	p := int64InstProvider{m}
 	i, err := p.lookupHistogram(name, cfg, defaultAttributes(options), h)
 	if err != nil {
-		return i, err
+		return Int64Recorder{i}, err
 	}
 
-	return i, validateInstrumentName(name)
+	return Int64Recorder{i}, validateInstrumentName(name)
 }
 
 // Int64Gauge returns a new instrument identified by name and configured
 // with options. The instrument is used to synchronously record the
 // distribution of int64 measurements during a computational operation.
-func (m *Meter) Int64Gauge(name string, h otel.ErrorHandler, options ...metric.Int64GaugeOption) (metric.Int64Gauge, error) {
+func (m *Meter) Int64Gauge(name string, h otel.ErrorHandler, options ...metric.Int64GaugeOption) (Int64Recorder, error) {
 	if m.noop {
-		return noop.Int64Gauge{}, nil
+		return Int64Recorder{}, nil
 	}
 	cfg := metric.NewInt64GaugeConfig(options...)
 	const kind = InstrumentKindGauge
 	p := int64InstProvider{m}
 	i, err := p.lookup(kind, name, cfg.Description(), cfg.Unit(), defaultAttributes(options), h)
 	if err != nil {
-		return i, err
+		return Int64Recorder{i}, err
 	}
 
-	return i, validateInstrumentName(name)
+	return Int64Recorder{i}, validateInstrumentName(name)
 }
 
 // int64ObservableInstrument returns a new observable identified by the Instrument.

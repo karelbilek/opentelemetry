@@ -17,7 +17,7 @@ import (
 // to the "http.client.request.body.size" semantic conventions. It represents the
 // size of HTTP client request bodies.
 type ClientRequestBodySize struct {
-	metric.Int64Histogram
+	sdkmetric.Int64Recorder
 }
 
 var newClientRequestBodySizeOpts = []metric.Int64HistogramOption{
@@ -33,7 +33,7 @@ func NewClientRequestBodySize(
 ) (ClientRequestBodySize, error) {
 	// Check if the meter is nil.
 	if m == nil {
-		return ClientRequestBodySize{noop.Int64Histogram{}}, nil
+		return ClientRequestBodySize{}, nil
 	}
 
 	if len(opt) == 0 {
@@ -48,14 +48,14 @@ func NewClientRequestBodySize(
 		opt...,
 	)
 	if err != nil {
-		return ClientRequestBodySize{noop.Int64Histogram{}}, err
+		return ClientRequestBodySize{}, err
 	}
 	return ClientRequestBodySize{i}, nil
 }
 
 // Inst returns the underlying metric instrument.
-func (m ClientRequestBodySize) Inst() metric.Int64Histogram {
-	return m.Int64Histogram
+func (m ClientRequestBodySize) Inst() sdkmetric.Int64Recorder {
+	return m.Int64Recorder
 }
 
 // ClientRequestDuration is an instrument used to record metric values conforming
@@ -108,7 +108,7 @@ func (m ClientRequestDuration) Inst() metric.Float64Histogram {
 // to the "http.server.request.body.size" semantic conventions. It represents the
 // size of HTTP server request bodies.
 type ServerRequestBodySize struct {
-	metric.Int64Histogram
+	sdkmetric.Int64Recorder
 }
 
 var newServerRequestBodySizeOpts = []metric.Int64HistogramOption{
@@ -125,7 +125,7 @@ func NewServerRequestBodySize(
 ) (ServerRequestBodySize, error) {
 	// Check if the meter is nil.
 	if m == nil {
-		return ServerRequestBodySize{noop.Int64Histogram{}}, nil
+		return ServerRequestBodySize{}, nil
 	}
 
 	if len(opt) == 0 {
@@ -140,14 +140,14 @@ func NewServerRequestBodySize(
 		opt...,
 	)
 	if err != nil {
-		return ServerRequestBodySize{noop.Int64Histogram{}}, err
+		return ServerRequestBodySize{}, err
 	}
 	return ServerRequestBodySize{i}, nil
 }
 
 // Inst returns the underlying metric instrument.
-func (m ServerRequestBodySize) Inst() metric.Int64Histogram {
-	return m.Int64Histogram
+func (m ServerRequestBodySize) Inst() sdkmetric.Int64Recorder {
+	return m.Int64Recorder
 }
 
 // ServerRequestDuration is an instrument used to record metric values conforming
@@ -200,7 +200,7 @@ func (m ServerRequestDuration) Inst() metric.Float64Histogram {
 // conforming to the "http.server.response.body.size" semantic conventions. It
 // represents the size of HTTP server response bodies.
 type ServerResponseBodySize struct {
-	metric.Int64Histogram
+	sdkmetric.Int64Recorder
 }
 
 var newServerResponseBodySizeOpts = []metric.Int64HistogramOption{
@@ -216,7 +216,7 @@ func NewServerResponseBodySize(
 ) (ServerResponseBodySize, error) {
 	// Check if the meter is nil.
 	if m == nil {
-		return ServerResponseBodySize{noop.Int64Histogram{}}, nil
+		return ServerResponseBodySize{}, nil
 	}
 
 	if len(opt) == 0 {
@@ -231,12 +231,12 @@ func NewServerResponseBodySize(
 		opt...,
 	)
 	if err != nil {
-		return ServerResponseBodySize{noop.Int64Histogram{}}, err
+		return ServerResponseBodySize{}, err
 	}
 	return ServerResponseBodySize{i}, nil
 }
 
 // Inst returns the underlying metric instrument.
-func (m ServerResponseBodySize) Inst() metric.Int64Histogram {
-	return m.Int64Histogram
+func (m ServerResponseBodySize) Inst() sdkmetric.Int64Recorder {
+	return m.Int64Recorder
 }

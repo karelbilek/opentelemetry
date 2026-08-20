@@ -3,35 +3,6 @@
 
 package metric
 
-import (
-	"context"
-)
-
-// Int64Counter is an instrument that records increasing int64 values.
-//
-// Warning: Methods may be added to this interface in minor releases. See
-// package documentation on API implementation for information on how to set
-// default behavior for unimplemented methods.
-type Int64Counter interface {
-	// Add records a change to the counter.
-	//
-	// Use the WithAttributeSet (or, if performance is not a concern,
-	// the WithAttributes) option to include measurement attributes.
-	//
-	// Implementations of this method need to be safe for a user to call
-	// concurrently.
-	Add(ctx context.Context, incr int64, options ...AddOption)
-
-	// Enabled reports whether the instrument will process measurements for the given context.
-	//
-	// This function can be used in places where measuring an instrument
-	// would result in computationally expensive operations.
-	//
-	// Implementations of this method need to be safe for a user to call
-	// concurrently.
-	Enabled(context.Context) bool
-}
-
 // Int64CounterConfig contains options for synchronous counter instruments that
 // record int64 values.
 type Int64CounterConfig struct {
@@ -66,32 +37,6 @@ type Int64CounterOption interface {
 	applyInt64Counter(Int64CounterConfig) Int64CounterConfig
 }
 
-// Int64UpDownCounter is an instrument that records increasing or decreasing
-// int64 values.
-//
-// Warning: Methods may be added to this interface in minor releases. See
-// package documentation on API implementation for information on how to set
-// default behavior for unimplemented methods.
-type Int64UpDownCounter interface {
-	// Add records a change to the counter.
-	//
-	// Use the WithAttributeSet (or, if performance is not a concern,
-	// the WithAttributes) option to include measurement attributes.
-	//
-	// Implementations of this method need to be safe for a user to call
-	// concurrently.
-	Add(ctx context.Context, incr int64, options ...AddOption)
-
-	// Enabled reports whether the instrument will process measurements for the given context.
-	//
-	// This function can be used in places where measuring an instrument
-	// would result in computationally expensive operations.
-	//
-	// Implementations of this method need to be safe for a user to call
-	// concurrently.
-	Enabled(context.Context) bool
-}
-
 // Int64UpDownCounterConfig contains options for synchronous counter
 // instruments that record int64 values.
 type Int64UpDownCounterConfig struct {
@@ -124,34 +69,6 @@ func (c Int64UpDownCounterConfig) Unit() string {
 // Int64UpDownCounterOption.
 type Int64UpDownCounterOption interface {
 	applyInt64UpDownCounter(Int64UpDownCounterConfig) Int64UpDownCounterConfig
-}
-
-// Int64Histogram is an instrument that records a distribution of int64
-// values.
-//
-// Warning: Methods may be added to this interface in minor releases. See
-// package documentation on API implementation for information on how to set
-// default behavior for unimplemented methods.
-type Int64Histogram interface {
-	// Record adds an additional value to the distribution.
-	//
-	// The incr value is expected to be non-negative.
-	//
-	// Use the WithAttributeSet (or, if performance is not a concern,
-	// the WithAttributes) option to include measurement attributes.
-	//
-	// Implementations of this method need to be safe for a user to call
-	// concurrently.
-	Record(ctx context.Context, incr int64, options ...RecordOption)
-
-	// Enabled reports whether the instrument will process measurements for the given context.
-	//
-	// This function can be used in places where measuring an instrument
-	// would result in computationally expensive operations.
-	//
-	// Implementations of this method need to be safe for a user to call
-	// concurrently.
-	Enabled(context.Context) bool
 }
 
 // Int64HistogramConfig contains options for synchronous histogram instruments
@@ -192,31 +109,6 @@ func (c Int64HistogramConfig) ExplicitBucketBoundaries() []float64 {
 // Int64HistogramOption.
 type Int64HistogramOption interface {
 	applyInt64Histogram(Int64HistogramConfig) Int64HistogramConfig
-}
-
-// Int64Gauge is an instrument that records instantaneous int64 values.
-//
-// Warning: Methods may be added to this interface in minor releases. See
-// package documentation on API implementation for information on how to set
-// default behavior for unimplemented methods.
-type Int64Gauge interface {
-	// Record records the instantaneous value.
-	//
-	// Use the WithAttributeSet (or, if performance is not a concern,
-	// the WithAttributes) option to include measurement attributes.
-	//
-	// Implementations of this method need to be safe for a user to call
-	// concurrently.
-	Record(ctx context.Context, value int64, options ...RecordOption)
-
-	// Enabled reports whether the instrument will process measurements for the given context.
-	//
-	// This function can be used in places where measuring an instrument
-	// would result in computationally expensive operations.
-	//
-	// Implementations of this method need to be safe for a user to call
-	// concurrently.
-	Enabled(context.Context) bool
 }
 
 // Int64GaugeConfig contains options for synchronous gauge instruments that

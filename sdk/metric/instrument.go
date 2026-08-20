@@ -187,26 +187,52 @@ type int64Inst struct {
 	measures []aggregate.Measure[int64]
 }
 
-var (
-	_ metric.Int64Counter       = (*int64Inst)(nil)
-	_ metric.Int64UpDownCounter = (*int64Inst)(nil)
-	_ metric.Int64Histogram     = (*int64Inst)(nil)
-	_ metric.Int64Gauge         = (*int64Inst)(nil)
-)
+type Int64Adder struct {
+	inst *int64Inst
+}
+
+type Int64Recorder struct {
+	inst *int64Inst
+}
+
+func (i Int64Adder) Add(ctx context.Context, val int64, opts ...metric.AddOption) {
+	i.inst.Add(ctx, val, opts...)
+}
+
+func (i Int64Adder) Enabled(ctx context.Context) bool {
+	return i.inst.Enabled(ctx)
+}
+
+func (i Int64Recorder) Record(ctx context.Context, val int64, opts ...metric.RecordOption) {
+	i.inst.Record(ctx, val, opts...)
+}
+
+func (i Int64Recorder) Enabled(ctx context.Context) bool {
+	return i.inst.Enabled(ctx)
+}
 
 func (i *int64Inst) Add(ctx context.Context, val int64, opts ...metric.AddOption) {
+	if i == nil {
+		return
+	}
 	c := metric.NewAddConfig(opts)
 	rawKVs := extractRawKVs(opts)
 	i.aggregate(ctx, val, resolveAttributes(c.Attributes(), rawKVs))
 }
 
 func (i *int64Inst) Record(ctx context.Context, val int64, opts ...metric.RecordOption) {
+	if i == nil {
+		return
+	}
 	c := metric.NewRecordConfig(opts)
 	rawKVs := extractRawKVs(opts)
 	i.aggregate(ctx, val, resolveAttributes(c.Attributes(), rawKVs))
 }
 
 func (i *int64Inst) Enabled(context.Context) bool {
+	if i == nil {
+		return false
+	}
 	return len(i.measures) != 0
 }
 
