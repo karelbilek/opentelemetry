@@ -148,7 +148,7 @@ func (m *meter) int64ObservableInstrument(
 		insert := m.int64Resolver.inserter
 		// Connect the measure functions for instruments in this pipeline with the
 		// callbacks for this pipeline.
-		in, err := insert.Instrument(id, allowedKeys, insert.readerDefaultAggregation(id.Kind), h)
+		in, err := insert.Instrument(id, allowedKeys, selectAggregation(id.Kind), h)
 		if err != nil {
 			return inst, err
 		}
@@ -336,7 +336,7 @@ func (m *meter) float64ObservableInstrument(
 		insert := m.float64Resolver.inserter
 		// Connect the measure functions for instruments in this pipeline with the
 		// callbacks for this pipeline.
-		in, err := insert.Instrument(id, allowedKeys, insert.readerDefaultAggregation(id.Kind), h)
+		in, err := insert.Instrument(id, allowedKeys, selectAggregation(id.Kind), h)
 		if err != nil {
 			return inst, err
 		}

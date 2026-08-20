@@ -289,18 +289,6 @@ type aggVal[N int64 | float64] struct {
 	Err     error
 }
 
-// readerDefaultAggregation returns the default aggregation for the instrument
-// kind based on the reader's aggregation preferences. This is used unless the
-// aggregation is overridden with a view.
-func (i *inserter[N]) readerDefaultAggregation(kind metricinternals.InstrumentKind) aggregation {
-	aggregation := selectAggregation(kind)
-
-	// Deep copy before using.
-	aggregation = aggregation.Copy()
-
-	return aggregation
-}
-
 // cachedAggregator returns the appropriate aggregate input and output
 // functions for an instrument configuration. If the exact instrument has been
 // created within the inst.Scope, those aggregate function instances will be
@@ -584,7 +572,7 @@ func newResolver[N int64 | float64](p *pipeline, vc *cache[string, instID]) reso
 // Aggregators returns the Aggregators that must be updated by the instrument
 // defined by key.
 func (r resolver[N]) Aggregators(id Instrument, allowedKeys []attribute.Key, h otel.ErrorHandler) ([]aggregate.Measure[N], error) {
-	in, e := r.inserter.Instrument(id, allowedKeys, r.inserter.readerDefaultAggregation(id.Kind), h)
+	in, e := r.inserter.Instrument(id, allowedKeys, selectAggregation(id.Kind), h)
 	if e != nil {
 		return nil, e
 	}
@@ -603,7 +591,7 @@ func (r resolver[N]) HistogramAggregators(
 	var err error
 	i := r.inserter
 
-	agg := i.readerDefaultAggregation(id.Kind)
+	agg := selectAggregation(id.Kind)
 	if histAgg, ok := agg.(aggregationExplicitBucketHistogram); ok && len(boundaries) > 0 {
 		histAgg.Boundaries = boundaries
 		agg = histAgg

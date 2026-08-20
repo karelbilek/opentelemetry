@@ -1,6 +1,5 @@
 package metricinternals
 
-
 // CardinalityLimitSelector selects the cardinality limit to use based on the
 // InstrumentKind. The cardinality limit is the maximum number of distinct
 // attribute sets that can be recorded for a single instrument.
