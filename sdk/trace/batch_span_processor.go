@@ -93,6 +93,7 @@ func NewBatchSpanProcessor(exporter *otlptracehttp.Exporter, h otel.ErrorHandler
 		ExportTimeout:      exportTimeout,
 		MaxQueueSize:       maxQueueSize,
 		MaxExportBatchSize: maxExportBatchSize,
+		BlockOnQueueFull:   blockOnQueueFull,
 	}
 
 	bsp := &BatchSpanProcessor{
