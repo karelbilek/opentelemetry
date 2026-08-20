@@ -132,23 +132,3 @@ func (e *timeoutExporter) Export(ctx context.Context, records []Record) error {
 	defer cancel()
 	return e.Exporter.Export(ctx, records)
 }
-
-// metricsExporter wraps an Exporter to record log processing metrics
-// just before calling the wrapped exporter.
-type metricsExporter struct {
-	Exporter
-}
-
-// newMetricsExporter creates a metricsExporter that wraps the given exporter.
-func newMetricsExporter(exporter Exporter) Exporter {
-	return &metricsExporter{
-		Exporter: exporter,
-	}
-}
-
-// Export records the number of log records as a metric then forwards
-// them to the wrapped Exporter. Error returned from wrapped exporter
-// is not considered as per specification (to be measured by exporter).
-func (e *metricsExporter) Export(ctx context.Context, records []Record) error {
-	return e.Exporter.Export(ctx, records)
-}
