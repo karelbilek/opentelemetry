@@ -7,7 +7,7 @@ import (
 
 	"github.com/karelbilek/opentelemetry/exporters/otlploghttp/internal/transform"
 	"github.com/karelbilek/opentelemetry/retry"
-	"github.com/karelbilek/opentelemetry/sdk/log"
+	"github.com/karelbilek/opentelemetry/sdk/log/logdata"
 )
 
 // Exporter is a OpenTelemetry log Exporter. It transports log data encoded as
@@ -17,9 +17,6 @@ type Exporter struct {
 	client  atomic.Pointer[client]
 	stopped atomic.Bool
 }
-
-// Compile-time check Exporter implements [log.Exporter].
-var _ log.Exporter = (*Exporter)(nil)
 
 // New returns a new [Exporter].
 //
@@ -50,7 +47,7 @@ func newExporter(c *client, _ config) (*Exporter, error) {
 var transformResourceLogs = transform.ResourceLogs
 
 // Export transforms and transmits log records to an OTLP receiver.
-func (e *Exporter) Export(ctx context.Context, records []log.Record) error {
+func (e *Exporter) Export(ctx context.Context, records []logdata.Record) error {
 	if e.stopped.Load() {
 		return nil
 	}

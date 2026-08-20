@@ -14,6 +14,7 @@ import (
 	"github.com/karelbilek/opentelemetry/attribute"
 	"github.com/karelbilek/opentelemetry/log"
 	"github.com/karelbilek/opentelemetry/sdk/instrumentation"
+	"github.com/karelbilek/opentelemetry/sdk/log/logdata"
 	sdktrace "github.com/karelbilek/opentelemetry/sdk/trace"
 	semconv "github.com/karelbilek/opentelemetry/semconv"
 )
@@ -94,32 +95,31 @@ func (l *Logger) Enabled(ctx context.Context, param log.EnabledParameters) bool 
 	return l.provider.processor.Enabled(ctx, p)
 }
 
-func (l *Logger) newRecord(ctx context.Context, r log.Record) Record {
+func (l *Logger) newRecord(ctx context.Context, r log.Record) logdata.Record {
 	sc := sdktrace.SpanContextFromContext(ctx)
 
-	newRecord := Record{
-		eventName:         r.EventName(),
-		timestamp:         r.Timestamp(),
-		observedTimestamp: r.ObservedTimestamp(),
-		severity:          r.Severity(),
-		severityText:      r.SeverityText(),
+	newRecord := logdata.NewRecord(
+		r.EventName(),
+		r.Timestamp(),
+		r.ObservedTimestamp(),
+		r.Severity(),
+		r.SeverityText(),
+		sc.TraceID(),
+		sc.SpanID(),
+		sc.TraceFlags(),
+		l.provider.resource,
+		&l.instrumentationScope,
+		l.provider.attributeValueLengthLimit,
+		l.provider.attributeCountLimit,
+		l.provider.allowDupKeys,
+	)
 
-		traceID:    sc.TraceID(),
-		spanID:     sc.SpanID(),
-		traceFlags: sc.TraceFlags(),
-
-		resource:                  l.provider.resource,
-		scope:                     &l.instrumentationScope,
-		attributeValueLengthLimit: l.provider.attributeValueLengthLimit,
-		attributeCountLimit:       l.provider.attributeCountLimit,
-		allowDupKeys:              l.provider.allowDupKeys,
-	}
 	// This ensures we deduplicate key-value collections in the log body
 	newRecord.SetBody(r.Body())
 
 	// This field SHOULD be set once the event is observed by OpenTelemetry.
-	if newRecord.observedTimestamp.IsZero() {
-		newRecord.observedTimestamp = now()
+	if newRecord.ObservedTimestamp().IsZero() {
+		newRecord.SetObservedTimestamp(now())
 	}
 
 	// User-provided exception attributes MUST take precedence. Track message
@@ -148,10 +148,10 @@ func (l *Logger) newRecord(ctx context.Context, r log.Record) Record {
 
 		// Derived attributes are buffered until flush, so the current attribute
 		// count stays unchanged while missing values are prepared.
-		hasLimit := newRecord.hasAttributeCountLimit()
+		hasLimit := newRecord.HasAttributeCountLimit()
 		var remaining int
 		if hasLimit {
-			remaining = newRecord.attributeCountLimit - newRecord.AttributesLen()
+			remaining = newRecord.AttributeCountLimit() - newRecord.AttributesLen()
 		}
 		if !hasExceptionMessage {
 			if msg := err.Error(); msg != "" {
@@ -174,7 +174,7 @@ func (l *Logger) newRecord(ctx context.Context, r log.Record) Record {
 
 	flush:
 		if n > 0 {
-			newRecord.addAttrs(attrs[:n])
+			newRecord.AddAttrs(attrs[:n])
 		}
 	}
 

@@ -12,7 +12,9 @@ import (
 	"time"
 
 	otel "github.com/karelbilek/opentelemetry"
+	"github.com/karelbilek/opentelemetry/exporters/otlploghttp"
 	"github.com/karelbilek/opentelemetry/internal/global"
+	"github.com/karelbilek/opentelemetry/sdk/log/logdata"
 )
 
 // BatchProcessor is a processor that exports batches of log records.
@@ -24,7 +26,7 @@ type BatchProcessor struct {
 	// writes to the bounded queue and signals that goroutine. Consequently,
 	// exporter backpressure blocks the exporter goroutine instead of causing
 	// another goroutine to retry without making progress.
-	exporter Exporter
+	exporter *otlploghttp.Exporter
 
 	// q is the active queue of records that have not yet been exported.
 	q *queue
@@ -62,7 +64,7 @@ func (r batchProcessorRequest) respond(err error) {
 //
 // Calls to the exporter's Export, ForceFlush, and Shutdown methods are
 // synchronized and never invoked concurrently.
-func NewBatchProcessor(exporter Exporter, errHandler otel.ErrorHandler, maxQSize int, expInterval time.Duration, expTimeout time.Duration, expMaxBatchSize int) *BatchProcessor {
+func NewBatchProcessor(exporter *otlploghttp.Exporter, errHandler otel.ErrorHandler, maxQSize int, expInterval time.Duration, expTimeout time.Duration, expMaxBatchSize int) *BatchProcessor {
 	cfg := newBatchConfig(maxQSize, expInterval, expTimeout, expMaxBatchSize)
 
 	b := &BatchProcessor{
@@ -87,7 +89,7 @@ func (b *BatchProcessor) process(interval time.Duration, errHandler otel.ErrorHa
 		defer timer.Stop()
 		// The worker owns and reuses buf. Exporters must not retain the slice
 		// passed to them, so it is safe to refill after Export returns.
-		buf := make([]Record, b.batchSize)
+		buf := make([]logdata.Record, b.batchSize)
 
 		for {
 			// Probe shutdown by itself first. This makes an already queued terminal
@@ -151,7 +153,7 @@ func resetTimer(timer *time.Timer, interval time.Duration) {
 	timer.Reset(interval)
 }
 
-func timeoutExport(ctx context.Context, records []Record, timeout time.Duration, e Exporter) error {
+func timeoutExport(ctx context.Context, records []logdata.Record, timeout time.Duration, e *otlploghttp.Exporter) error {
 	if timeout <= 0 {
 		return e.Export(ctx, records)
 	}
@@ -160,7 +162,7 @@ func timeoutExport(ctx context.Context, records []Record, timeout time.Duration,
 	return e.Export(ctx, records)
 }
 
-func (b *BatchProcessor) chunkExport(ctx context.Context, records []Record) error {
+func (b *BatchProcessor) chunkExport(ctx context.Context, records []logdata.Record) error {
 	if b.batchSize <= 0 {
 		return timeoutExport(ctx, records, b.expTimeout, b.exporter)
 	}
@@ -181,7 +183,7 @@ func (b *BatchProcessor) chunkExport(ctx context.Context, records []Record) erro
 	return errors.Join(errs...)
 }
 
-func (b *BatchProcessor) exportBatch(buf []Record, errHandler otel.ErrorHandler) {
+func (b *BatchProcessor) exportBatch(buf []logdata.Record, errHandler otel.ErrorHandler) {
 	b.logDroppedRecords()
 	n, remaining := b.q.Dequeue(buf)
 	if n == 0 {
@@ -245,7 +247,7 @@ func (*BatchProcessor) Enabled(context.Context, EnabledParameters) bool {
 }
 
 // OnEmit batches provided log record.
-func (b *BatchProcessor) OnEmit(_ context.Context, r *Record) error {
+func (b *BatchProcessor) OnEmit(_ context.Context, r *logdata.Record) error {
 	if b.stopped.Load() || b.q == nil {
 		return nil
 	}
@@ -345,7 +347,7 @@ func (q *queue) Dropped() uint64 {
 //
 // If enqueueing r will exceed the capacity of q, the oldest Record held in q
 // will be dropped and r retained.
-func (q *queue) Enqueue(r Record) (int, bool) {
+func (q *queue) Enqueue(r logdata.Record) (int, bool) {
 	q.Lock()
 	defer q.Unlock()
 
@@ -368,14 +370,14 @@ func (q *queue) Enqueue(r Record) (int, bool) {
 
 // Dequeue removes up to len(buf) records from the queue and copies them into
 // buf. The number copied and the number remaining are returned.
-func (q *queue) Dequeue(buf []Record) (int, int) {
+func (q *queue) Dequeue(buf []logdata.Record) (int, int) {
 	q.Lock()
 	defer q.Unlock()
 
 	n := min(len(buf), q.len)
 	for i := range n {
 		buf[i] = q.read.Value // nolint:gosec // n is bounded by len(buf)
-		q.read.Value = Record{}
+		q.read.Value = logdata.Record{}
 		q.read = q.read.Next()
 	}
 	q.len -= n
@@ -384,7 +386,7 @@ func (q *queue) Dequeue(buf []Record) (int, int) {
 
 // Flush returns all the Records held in the queue and resets it to be
 // empty.
-func (q *queue) Flush() []Record {
+func (q *queue) Flush() []logdata.Record {
 	q.Lock()
 	defer q.Unlock()
 
@@ -399,11 +401,11 @@ func (q *queue) Close() {
 	q.closed = true
 }
 
-func (q *queue) flush() []Record {
-	out := make([]Record, q.len)
+func (q *queue) flush() []logdata.Record {
+	out := make([]logdata.Record, q.len)
 	for i := range out {
 		out[i] = q.read.Value
-		q.read.Value = Record{}
+		q.read.Value = logdata.Record{}
 		q.read = q.read.Next()
 	}
 	q.len = 0

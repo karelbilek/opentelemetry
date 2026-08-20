@@ -7,6 +7,8 @@
 
 package log
 
+import "github.com/karelbilek/opentelemetry/sdk/log/logdata"
+
 // A ring is an element of a circular list, or ring. Rings do not have a
 // beginning or end; a pointer to any ring element serves as reference to the
 // entire ring. Empty rings are represented as nil ring pointers. The zero
@@ -16,7 +18,7 @@ package log
 // Value instead of any to avoid allocations.
 type ring struct {
 	next, prev *ring
-	Value      Record
+	Value      logdata.Record
 }
 
 func (r *ring) init() *ring {
@@ -72,7 +74,7 @@ func (r *ring) Len() int {
 
 // Do calls function f on each element of the ring, in forward order. The
 // behavior of Do is undefined if f changes *r.
-func (r *ring) Do(f func(Record)) {
+func (r *ring) Do(f func(logdata.Record)) {
 	if r != nil {
 		f(r.Value)
 		for p := r.Next(); p != r; p = p.next {
