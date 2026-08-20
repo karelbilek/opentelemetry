@@ -90,18 +90,6 @@ func (b Builder[N]) ExplicitBucketHistogram(
 	return b.filter(h.measure, eh), h.collect
 }
 
-// ExponentialBucketHistogram returns a histogram aggregate function input and
-// output.
-func (b Builder[N]) ExponentialBucketHistogram(
-	maxSize, maxScale int32,
-	noMinMax, noSum bool,
-	eh otel.ErrorHandler,
-
-) (Measure[N], ComputeAggregation) {
-	h := newExponentialHistogram[N](maxSize, maxScale, noMinMax, noSum, b.AggregationLimit)
-	return b.filter(h.measure, eh), h.cumulative
-}
-
 // reset ensures s has capacity and sets it length. If the capacity of s too
 // small, a new slice is returned with the specified capacity and length.
 func reset[T any](s []T, length, capacity int) []T {
