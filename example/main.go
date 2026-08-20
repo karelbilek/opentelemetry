@@ -36,6 +36,7 @@ func main() {
 
 	processor := log.NewBatchProcessor(logExporter, oh, 2048, time.Second, 30*time.Second, 512)
 	provider := log.NewLoggerProvider(
+		oh,
 		res,
 		processor,
 		128,

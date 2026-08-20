@@ -37,6 +37,8 @@ func newLogger(p *LoggerProvider, scope instrumentation.Scope) *Logger {
 	l := &Logger{
 		provider:             p,
 		instrumentationScope: scope,
+
+		errorHandler: p.eh,
 	}
 
 	return l

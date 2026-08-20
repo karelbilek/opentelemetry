@@ -90,6 +90,7 @@ func startOtlp(oh otel.ErrorHandler) (*slog.Logger, *log.LoggerProvider, *trace.
 
 	logProcessor := log.NewBatchProcessor(logExporter, oh, 2048, time.Second, 30*time.Second, 512)
 	logProvider := log.NewLoggerProvider(
+		oh,
 		res,
 		logProcessor,
 		128,

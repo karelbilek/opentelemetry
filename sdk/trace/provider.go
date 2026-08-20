@@ -93,7 +93,13 @@ func NewTracerProvider(
 	resource *resource.Resource,
 	panicRecordingDisabled bool) *TracerProvider {
 	o := tracerProviderConfig{
-		spanLimits:             NewSpanLimits(attributeValueLengthLimit, attributeCountLimit, eventCountLimit, linkCountLimit, attributePerEventCountLimit, attributePerEventCountLimit),
+		spanLimits: NewSpanLimits(
+			attributeValueLengthLimit,
+			attributeCountLimit,
+			eventCountLimit,
+			linkCountLimit, attributePerEventCountLimit,
+			attributePerLinkCountLimit,
+		),
 		processor:              processor,
 		resource:               resource,
 		panicRecordingDisabled: panicRecordingDisabled,

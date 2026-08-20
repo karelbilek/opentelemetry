@@ -8,6 +8,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	otel "github.com/karelbilek/opentelemetry"
 	"github.com/karelbilek/opentelemetry/internal/global"
 	"github.com/karelbilek/opentelemetry/sdk/instrumentation"
 	"github.com/karelbilek/opentelemetry/sdk/resource"
@@ -20,6 +21,8 @@ import (
 // Loggers created by the LoggerProvider return false, and calls to
 // [log.Logger.Emit] perform no operation.
 type LoggerProvider struct {
+	eh otel.ErrorHandler
+
 	resource                  *resource.Resource
 	processor                 *BatchProcessor
 	attributeCountLimit       int
@@ -43,8 +46,9 @@ type LoggerProvider struct {
 // Resource and no Processors. Processors cannot be added after a LoggerProvider is
 // created. This means the returned LoggerProvider, one created with no
 // Processors, will perform no operations.
-func NewLoggerProvider(resource *resource.Resource, processor *BatchProcessor, attrCntLim int, attrValLenLim int, allowDupKeys bool) *LoggerProvider {
+func NewLoggerProvider(eh otel.ErrorHandler, resource *resource.Resource, processor *BatchProcessor, attrCntLim int, attrValLenLim int, allowDupKeys bool) *LoggerProvider {
 	return &LoggerProvider{
+		eh:                        eh,
 		resource:                  resource,
 		processor:                 processor,
 		attributeCountLimit:       attrCntLim,
