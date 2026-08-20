@@ -1,4 +1,4 @@
-package metricinternals
+package metric
 
 // InstrumentKind is the identifier of a group of instruments that all
 // performing the same function.

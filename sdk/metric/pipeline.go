@@ -18,7 +18,6 @@ import (
 	"github.com/karelbilek/opentelemetry/sdk/metric/internal"
 	"github.com/karelbilek/opentelemetry/sdk/metric/internal/aggregate"
 	"github.com/karelbilek/opentelemetry/sdk/metric/metricdata"
-	"github.com/karelbilek/opentelemetry/sdk/metric/metricinternals"
 	"github.com/karelbilek/opentelemetry/sdk/resource"
 )
 
@@ -305,7 +304,7 @@ type aggVal[N int64 | float64] struct {
 // is returned.
 func (i *inserter[N]) cachedAggregator(
 	scope instrumentation.Scope,
-	kind metricinternals.InstrumentKind,
+	kind InstrumentKind,
 	stream Stream,
 	readerAggregation aggregation,
 	h otel.ErrorHandler,
@@ -406,7 +405,7 @@ func (i *inserter[N]) logConflict(id instID) {
 	global.Warn(msg, args...)
 }
 
-func (*inserter[N]) instID(kind metricinternals.InstrumentKind, stream Stream) instID {
+func (*inserter[N]) instID(kind InstrumentKind, stream Stream) instID {
 	var zero N
 	return instID{
 		Name:        stream.Name,
@@ -423,24 +422,24 @@ func (*inserter[N]) instID(kind metricinternals.InstrumentKind, stream Stream) i
 func (i *inserter[N]) aggregateFunc(
 	b aggregate.Builder[N],
 	agg aggregation,
-	kind metricinternals.InstrumentKind,
+	kind InstrumentKind,
 	h otel.ErrorHandler,
 ) (meas aggregate.Measure[N], comp aggregate.ComputeAggregation, err error) {
 	switch a := agg.(type) {
 	case aggregationLastValue:
 		switch kind {
-		case metricinternals.InstrumentKindGauge:
+		case InstrumentKindGauge:
 			meas, comp = b.LastValue(h)
-		case metricinternals.InstrumentKindObservableGauge:
+		case InstrumentKindObservableGauge:
 			meas, comp = b.PrecomputedLastValue(h)
 		}
 	case aggregationSum:
 		switch kind {
-		case metricinternals.InstrumentKindObservableCounter:
+		case InstrumentKindObservableCounter:
 			meas, comp = b.PrecomputedSum(true, h)
-		case metricinternals.InstrumentKindObservableUpDownCounter:
+		case InstrumentKindObservableUpDownCounter:
 			meas, comp = b.PrecomputedSum(false, h)
-		case metricinternals.InstrumentKindCounter, metricinternals.InstrumentKindHistogram:
+		case InstrumentKindCounter, InstrumentKindHistogram:
 			meas, comp = b.Sum(true, h)
 		default:
 			// InstrumentKindUpDownCounter, InstrumentKindObservableGauge, and
@@ -450,10 +449,10 @@ func (i *inserter[N]) aggregateFunc(
 	case aggregationExplicitBucketHistogram:
 		var noSum bool
 		switch kind {
-		case metricinternals.InstrumentKindUpDownCounter,
-			metricinternals.InstrumentKindObservableUpDownCounter,
-			metricinternals.InstrumentKindObservableGauge,
-			metricinternals.InstrumentKindGauge:
+		case InstrumentKindUpDownCounter,
+			InstrumentKindObservableUpDownCounter,
+			InstrumentKindObservableGauge,
+			InstrumentKindGauge:
 			// The sum should not be collected for any instrument that can make
 			// negative measurements:
 			// https://github.com/open-telemetry/opentelemetry-specification/blob/v1.21.0/specification/metrics/sdk.md#histogram-aggregations
@@ -480,28 +479,28 @@ func (i *inserter[N]) aggregateFunc(
 // | Observable Counter       | ✓    |           | ✓   | ✓         | ✓                     |
 // | Observable UpDownCounter | ✓    |           | ✓   | ✓         | ✓                     |
 // | Observable Gauge         | ✓    | ✓         |     | ✓         | ✓                     |.
-func isAggregatorCompatible(kind metricinternals.InstrumentKind, agg aggregation) error {
+func isAggregatorCompatible(kind InstrumentKind, agg aggregation) error {
 	switch agg.(type) {
 	case aggregationExplicitBucketHistogram:
 		switch kind {
-		case metricinternals.InstrumentKindCounter,
-			metricinternals.InstrumentKindUpDownCounter,
-			metricinternals.InstrumentKindHistogram,
-			metricinternals.InstrumentKindGauge,
-			metricinternals.InstrumentKindObservableCounter,
-			metricinternals.InstrumentKindObservableUpDownCounter,
-			metricinternals.InstrumentKindObservableGauge:
+		case InstrumentKindCounter,
+			InstrumentKindUpDownCounter,
+			InstrumentKindHistogram,
+			InstrumentKindGauge,
+			InstrumentKindObservableCounter,
+			InstrumentKindObservableUpDownCounter,
+			InstrumentKindObservableGauge:
 			return nil
 		default:
 			return errIncompatibleAggregation
 		}
 	case aggregationSum:
 		switch kind {
-		case metricinternals.InstrumentKindObservableCounter,
-			metricinternals.InstrumentKindObservableUpDownCounter,
-			metricinternals.InstrumentKindCounter,
-			metricinternals.InstrumentKindHistogram,
-			metricinternals.InstrumentKindUpDownCounter:
+		case InstrumentKindObservableCounter,
+			InstrumentKindObservableUpDownCounter,
+			InstrumentKindCounter,
+			InstrumentKindHistogram,
+			InstrumentKindUpDownCounter:
 			return nil
 		default:
 			// TODO: review need for aggregation check after
@@ -510,7 +509,7 @@ func isAggregatorCompatible(kind metricinternals.InstrumentKind, agg aggregation
 		}
 	case aggregationLastValue:
 		switch kind {
-		case metricinternals.InstrumentKindObservableGauge, metricinternals.InstrumentKindGauge:
+		case InstrumentKindObservableGauge, InstrumentKindGauge:
 			return nil
 		}
 		// TODO: review need for aggregation check after

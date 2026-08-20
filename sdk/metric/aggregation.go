@@ -7,8 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"slices"
-
-	"github.com/karelbilek/opentelemetry/sdk/metric/metricinternals"
 )
 
 var errAgg = errors.New("aggregation")
@@ -108,16 +106,16 @@ func (h aggregationExplicitBucketHistogram) Copy() aggregation {
 	}
 }
 
-func selectAggregation(ik metricinternals.InstrumentKind) aggregation {
+func selectAggregation(ik InstrumentKind) aggregation {
 	switch ik {
-	case metricinternals.InstrumentKindCounter,
-		metricinternals.InstrumentKindUpDownCounter,
-		metricinternals.InstrumentKindObservableCounter,
-		metricinternals.InstrumentKindObservableUpDownCounter:
+	case InstrumentKindCounter,
+		InstrumentKindUpDownCounter,
+		InstrumentKindObservableCounter,
+		InstrumentKindObservableUpDownCounter:
 		return aggregationSum{}
-	case metricinternals.InstrumentKindObservableGauge, metricinternals.InstrumentKindGauge:
+	case InstrumentKindObservableGauge, InstrumentKindGauge:
 		return aggregationLastValue{}
-	case metricinternals.InstrumentKindHistogram:
+	case InstrumentKindHistogram:
 		return aggregationExplicitBucketHistogram{
 			Boundaries: []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
 			NoMinMax:   false,

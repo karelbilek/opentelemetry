@@ -16,7 +16,6 @@ import (
 	"github.com/karelbilek/opentelemetry/sdk/instrumentation"
 	"github.com/karelbilek/opentelemetry/sdk/metric/internal/aggregate"
 	"github.com/karelbilek/opentelemetry/sdk/metric/internal/attrnorm"
-	"github.com/karelbilek/opentelemetry/sdk/metric/metricinternals"
 )
 
 var zeroScope instrumentation.Scope
@@ -30,7 +29,7 @@ type Instrument struct {
 	// Description describes the purpose of the instrument.
 	Description string
 	// Kind defines the functional group of the instrument.
-	Kind metricinternals.InstrumentKind
+	Kind InstrumentKind
 	// Unit is the unit of measurement recorded by the instrument.
 	Unit string
 	// Scope identifies the instrumentation that created the instrument.
@@ -44,7 +43,7 @@ type Instrument struct {
 func (i Instrument) IsEmpty() bool {
 	return i.Name == "" &&
 		i.Description == "" &&
-		i.Kind == metricinternals.InstrumentKindUndefined &&
+		i.Kind == InstrumentKindUndefined &&
 		i.Unit == "" &&
 		i.Scope == zeroScope
 }
@@ -75,7 +74,7 @@ func (i Instrument) matchesDescription(other Instrument) bool {
 // matchesKind returns true if the Kind of i is its zero-value or it equals the
 // Kind of other, otherwise false.
 func (i Instrument) matchesKind(other Instrument) bool {
-	return i.Kind == metricinternals.InstrumentKindUndefined || i.Kind == other.Kind
+	return i.Kind == InstrumentKindUndefined || i.Kind == other.Kind
 }
 
 // matchesUnit returns true if the Unit of i is its zero-value or it equals the
@@ -127,7 +126,7 @@ type instID struct {
 	// Description is the description of the stream.
 	Description string
 	// Kind defines the functional group of the instrument.
-	Kind metricinternals.InstrumentKind
+	Kind InstrumentKind
 	// Unit is the unit of the stream.
 	Unit string
 	// Number is the number type of the stream.
@@ -258,7 +257,7 @@ func (i *float64Inst) aggregate(ctx context.Context, val float64, s attribute.Se
 type observableID[N int64 | float64] struct {
 	name        string
 	description string
-	kind        metricinternals.InstrumentKind
+	kind        InstrumentKind
 	unit        string
 	scope       instrumentation.Scope
 }
@@ -274,7 +273,7 @@ var (
 	_ metric.Float64ObservableGauge         = float64Observable{}
 )
 
-func newFloat64Observable(m *meter, kind metricinternals.InstrumentKind, name, desc, u string) float64Observable {
+func newFloat64Observable(m *meter, kind InstrumentKind, name, desc, u string) float64Observable {
 	return float64Observable{
 		observable: newObservable[float64](m, kind, name, desc, u),
 	}
@@ -291,7 +290,7 @@ var (
 	_ metric.Int64ObservableGauge         = int64Observable{}
 )
 
-func newInt64Observable(m *meter, kind metricinternals.InstrumentKind, name, desc, u string) int64Observable {
+func newInt64Observable(m *meter, kind InstrumentKind, name, desc, u string) int64Observable {
 	return int64Observable{
 		observable: newObservable[int64](m, kind, name, desc, u),
 	}
@@ -306,7 +305,7 @@ type observable[N int64 | float64] struct {
 	dropAggregation bool
 }
 
-func newObservable[N int64 | float64](m *meter, kind metricinternals.InstrumentKind, name, desc, u string) *observable[N] {
+func newObservable[N int64 | float64](m *meter, kind InstrumentKind, name, desc, u string) *observable[N] {
 	return &observable[N]{
 		observableID: observableID[N]{
 			name:        name,
