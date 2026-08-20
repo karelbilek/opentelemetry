@@ -45,33 +45,24 @@ func (l *Logger) Emit(ctx context.Context, r log.Record) {
 	if l == nil {
 		return // noop
 	}
-	processors := l.provider.processors
-	if len(processors) == 0 {
-		if l.provider.stopped.Load() {
-			return
-		}
-		return
+	processor := l.provider.processor
+	if processor == nil {
+		return // logging disabled
 	}
 
-	for _, err := range l.emit(ctx, r, processors) {
+	if err := l.emit(ctx, r, processor); err != nil {
 		otel.Handle(l.errorHandler, err)
 	}
 }
 
-func (l *Logger) emit(ctx context.Context, r log.Record, processors []Processor) []error {
+func (l *Logger) emit(ctx context.Context, r log.Record, processor *BatchProcessor) error {
 	if !l.provider.beginProcessorOperation() {
 		return nil
 	}
 	defer l.provider.endProcessorOperation()
 
 	newRecord := l.newRecord(ctx, r)
-	var errs []error
-	for _, processor := range processors {
-		if err := processor.OnEmit(ctx, &newRecord); err != nil {
-			errs = append(errs, err)
-		}
-	}
-	return errs
+	return processor.OnEmit(ctx, &newRecord)
 }
 
 // Enabled returns true if at least one Processor held by the LoggerProvider
@@ -86,26 +77,21 @@ func (l *Logger) Enabled(ctx context.Context, param log.EnabledParameters) bool 
 	if l == nil {
 		return false // noop
 	}
+	if l.provider.processor == nil {
+		return false // logging disabled
+	}
 	p := EnabledParameters{
 		InstrumentationScope: l.instrumentationScope,
 		Severity:             param.Severity,
 		EventName:            param.EventName,
 	}
 
-	processors := l.provider.processors
-	if len(processors) == 0 || !l.provider.beginProcessorOperation() {
+	if !l.provider.beginProcessorOperation() {
 		return false
 	}
 	defer l.provider.endProcessorOperation()
 
-	for _, processor := range processors {
-		if processor.Enabled(ctx, p) {
-			// At least one Processor will process the Record.
-			return true
-		}
-	}
-	// No Processor will process the record.
-	return false
+	return l.provider.processor.Enabled(ctx, p)
 }
 
 func (l *Logger) newRecord(ctx context.Context, r log.Record) Record {

@@ -15,9 +15,6 @@ import (
 	"github.com/karelbilek/opentelemetry/internal/global"
 )
 
-// Compile-time check BatchProcessor implements Processor.
-var _ Processor = (*BatchProcessor)(nil)
-
 // BatchProcessor is a processor that exports batches of log records.
 //
 // Use [NewBatchProcessor] to create a BatchProcessor. An empty BatchProcessor

@@ -5,7 +5,6 @@ package log
 
 import (
 	"context"
-	"errors"
 	"sync"
 	"sync/atomic"
 
@@ -13,24 +12,6 @@ import (
 	"github.com/karelbilek/opentelemetry/sdk/instrumentation"
 	"github.com/karelbilek/opentelemetry/sdk/resource"
 )
-
-type providerConfig struct {
-	resource      *resource.Resource
-	processors    []Processor
-	attrCntLim    int
-	attrValLenLim int
-	allowDupKeys  bool
-}
-
-func newProviderConfig(resource *resource.Resource, processors []Processor, attrCntLim int, attrValLenLim int, allowDupKeys bool) providerConfig {
-	return providerConfig{
-		resource:      resource,
-		processors:    processors,
-		attrCntLim:    attrCntLim,
-		attrValLenLim: attrValLenLim,
-		allowDupKeys:  allowDupKeys,
-	}
-}
 
 // LoggerProvider handles the creation and coordination of Loggers. All Loggers
 // it creates are associated with the same Resource.
@@ -40,7 +21,7 @@ func newProviderConfig(resource *resource.Resource, processors []Processor, attr
 // [log.Logger.Emit] perform no operation.
 type LoggerProvider struct {
 	resource                  *resource.Resource
-	processors                []Processor
+	processor                 *BatchProcessor
 	attributeCountLimit       int
 	attributeValueLengthLimit int
 	allowDupKeys              bool
@@ -62,14 +43,13 @@ type LoggerProvider struct {
 // Resource and no Processors. Processors cannot be added after a LoggerProvider is
 // created. This means the returned LoggerProvider, one created with no
 // Processors, will perform no operations.
-func NewLoggerProvider(resource *resource.Resource, processors []Processor, attrCntLim int, attrValLenLim int, allowDupKeys bool) *LoggerProvider {
-	cfg := newProviderConfig(resource, processors, attrCntLim, attrValLenLim, allowDupKeys)
+func NewLoggerProvider(resource *resource.Resource, processor *BatchProcessor, attrCntLim int, attrValLenLim int, allowDupKeys bool) *LoggerProvider {
 	return &LoggerProvider{
-		resource:                  cfg.resource,
-		processors:                cfg.processors,
-		attributeCountLimit:       cfg.attrCntLim,
-		attributeValueLengthLimit: cfg.attrValLenLim,
-		allowDupKeys:              cfg.allowDupKeys,
+		resource:                  resource,
+		processor:                 processor,
+		attributeCountLimit:       attrCntLim,
+		attributeValueLengthLimit: attrValLenLim,
+		allowDupKeys:              allowDupKeys,
 	}
 }
 
@@ -147,10 +127,10 @@ func (p *LoggerProvider) Shutdown(ctx context.Context) error {
 		return err
 	}
 
-	var err error
-	for _, p := range p.processors {
-		err = errors.Join(err, p.Shutdown(ctx))
+	if p.processor == nil {
+		return nil
 	}
+	err := p.processor.Shutdown(ctx)
 	return err
 }
 
@@ -160,15 +140,15 @@ func (p *LoggerProvider) Shutdown(ctx context.Context) error {
 //
 // This method can be called concurrently.
 func (p *LoggerProvider) ForceFlush(ctx context.Context) error {
-	if len(p.processors) == 0 || !p.beginProcessorOperation() {
+	if p.processor == nil {
+		return nil
+	}
+	if !p.beginProcessorOperation() {
 		return nil
 	}
 	defer p.endProcessorOperation()
 
-	var err error
-	for _, p := range p.processors {
-		err = errors.Join(err, p.ForceFlush(ctx))
-	}
+	err := p.processor.ForceFlush(ctx)
 	return err
 }
 
