@@ -30,9 +30,7 @@ type RequestTraceAttrsOpts struct {
 type ResponseTelemetry struct {
 	StatusCode int
 	ReadBytes  int64
-	ReadError  error
 	WriteBytes int64
-	WriteError error
 }
 
 type HTTPServer struct {

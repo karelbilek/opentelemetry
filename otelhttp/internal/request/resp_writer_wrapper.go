@@ -21,7 +21,6 @@ type RespWriterWrapper struct {
 	mu          sync.RWMutex
 	written     int64
 	statusCode  int
-	err         error
 	wroteHeader bool
 }
 
@@ -49,7 +48,6 @@ func (w *RespWriterWrapper) Write(p []byte) (int, error) {
 	n, err := w.ResponseWriter.Write(p)
 	n1 := int64(n)
 	w.written += n1
-	w.err = err
 	return n, err
 }
 
@@ -112,12 +110,4 @@ func (w *RespWriterWrapper) StatusCode() int {
 	defer w.mu.RUnlock()
 
 	return w.statusCode
-}
-
-// Error returns the last error.
-func (w *RespWriterWrapper) Error() error {
-	w.mu.RLock()
-	defer w.mu.RUnlock()
-
-	return w.err
 }

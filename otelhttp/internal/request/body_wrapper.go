@@ -19,7 +19,6 @@ type BodyWrapper struct {
 
 	mu   sync.Mutex
 	read int64
-	err  error
 }
 
 // NewBodyWrapper creates a new BodyWrapper.
@@ -47,9 +46,6 @@ func (w *BodyWrapper) updateReadData(n int64, err error) {
 	defer w.mu.Unlock()
 
 	w.read += n
-	if err != nil {
-		w.err = err
-	}
 }
 
 // Close closes the io.ReadCloser.
@@ -63,12 +59,4 @@ func (w *BodyWrapper) BytesRead() int64 {
 	defer w.mu.Unlock()
 
 	return w.read
-}
-
-// Error returns the last error.
-func (w *BodyWrapper) Error() error {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-
-	return w.err
 }

@@ -145,9 +145,7 @@ func (h *middleware) serveHTTP(w http.ResponseWriter, r *http.Request, next http
 	span.SetAttributes(h.semconv.ResponseTraceAttrs(semconv.ResponseTelemetry{
 		StatusCode: statusCode,
 		ReadBytes:  bytesRead,
-		ReadError:  bw.Error(),
 		WriteBytes: bytesWritten,
-		WriteError: rww.Error(),
 	})...)
 
 	h.semconv.RecordMetrics(ctx, semconv.ServerMetricData{
