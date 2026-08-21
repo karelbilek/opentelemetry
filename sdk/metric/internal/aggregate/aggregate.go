@@ -35,11 +35,11 @@ type Builder[N int64 | float64] struct {
 	AggregationLimit int
 }
 
-type fltrMeasure[N int64 | float64] func(ctx context.Context, value N, lazy lazyFilteredAttributes, eh otel.ErrorHandler)
+type fltrMeasure[N int64 | float64] func(ctx context.Context, value N, at attribute.Set, eh otel.ErrorHandler)
 
 func (b Builder[N]) filter(f fltrMeasure[N], eh otel.ErrorHandler) Measure[N] {
 	return func(ctx context.Context, n N, a attribute.Set) {
-		f(ctx, n, newLazyFilteredAttributes(a), eh)
+		f(ctx, n, a, eh)
 	}
 }
 

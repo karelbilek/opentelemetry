@@ -25,10 +25,10 @@ type sumValueMap[N int64 | float64] struct {
 func (s *sumValueMap[N]) measure(
 	ctx context.Context,
 	value N,
-	lazy lazyFilteredAttributes,
+	a attribute.Set,
 	eh otel.ErrorHandler,
 ) {
-	sv := s.values.LoadOrStoreAttr(lazy, func(attr attribute.Set) *sumValue[N] {
+	sv := s.values.LoadOrStoreAttr(a, func(attr attribute.Set) *sumValue[N] {
 		return &sumValue[N]{
 			// res:           r,
 			attrs:     attr,
@@ -73,10 +73,10 @@ type deltaSum[N int64 | float64] struct {
 	hotColdValMap [2]sumValueMap[N]
 }
 
-func (s *deltaSum[N]) measure(ctx context.Context, value N, lazy lazyFilteredAttributes, eh otel.ErrorHandler) {
+func (s *deltaSum[N]) measure(ctx context.Context, value N, a attribute.Set, eh otel.ErrorHandler) {
 	hotIdx := s.hcwg.start()
 	defer s.hcwg.done(hotIdx)
-	s.hotColdValMap[hotIdx].measure(ctx, value, lazy, eh)
+	s.hotColdValMap[hotIdx].measure(ctx, value, a, eh)
 }
 
 // newCumulativeSum returns an aggregator that summarizes a set of measurements

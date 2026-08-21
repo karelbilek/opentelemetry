@@ -28,10 +28,10 @@ type lastValueMap[N int64 | float64] struct {
 func (s *lastValueMap[N]) measure(
 	ctx context.Context,
 	value N,
-	lazy lazyFilteredAttributes,
+	a attribute.Set,
 	eh otel.ErrorHandler,
 ) {
-	lv := s.values.LoadOrStoreAttr(lazy, func(attr attribute.Set) *lastValuePoint[N] {
+	lv := s.values.LoadOrStoreAttr(a, func(attr attribute.Set) *lastValuePoint[N] {
 		// r := s.newRes(attr)
 		// _, isDrop := r.(*dropRes[N])
 		p := &lastValuePoint[N]{
@@ -79,12 +79,12 @@ type deltaLastValue[N int64 | float64] struct {
 func (s *deltaLastValue[N]) measure(
 	ctx context.Context,
 	value N,
-	lazy lazyFilteredAttributes,
+	a attribute.Set,
 	eh otel.ErrorHandler,
 ) {
 	hotIdx := s.hcwg.start()
 	defer s.hcwg.done(hotIdx)
-	s.hotColdValMap[hotIdx].measure(ctx, value, lazy, eh)
+	s.hotColdValMap[hotIdx].measure(ctx, value, a, eh)
 }
 
 // copyAndClearDpts copies the lastValuePoints held by s into dest. The number of lastValuePoints

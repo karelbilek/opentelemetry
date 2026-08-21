@@ -44,20 +44,17 @@ func newWithAttributes(attrs ...attribute.KeyValue) *Resource {
 
 	attrs, _ = attrnorm.KeyValues(attrs)
 
-	valids := false
+	valid := make([]attribute.KeyValue, 0, len(attrs))
 	for _, kv := range attrs {
 		if kv.Valid() {
-			valids = true
+			valid = append(valid, kv)
 		}
 	}
-	s, _ := attribute.NewSetWithFiltered(attrs)
-
-	// If attrs only contains invalid entries do not allocate a new resource.
-	if !valids {
+	if len(valid) == 0 {
 		return &Resource{}
 	}
+	return &Resource{attrs: attribute.NewSet(valid...)}
 
-	return &Resource{attrs: s} //nolint
 }
 
 // String implements the Stringer interface and provides a

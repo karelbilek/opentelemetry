@@ -121,10 +121,10 @@ func newCumulativeHistogram[N int64 | float64](
 func (s *cumulativeHistogram[N]) measure(
 	ctx context.Context,
 	value N,
-	lazy lazyFilteredAttributes,
+	a attribute.Set,
 	eh otel.ErrorHandler,
 ) {
-	h := s.values.LoadOrStoreAttr(lazy, func(attr attribute.Set) *hotColdHistogramPoint[N] {
+	h := s.values.LoadOrStoreAttr(a, func(attr attribute.Set) *hotColdHistogramPoint[N] {
 		// r := s.newRes(attr)
 		// _, isDrop := r.(*dropRes[N])
 		hPt := &hotColdHistogramPoint[N]{

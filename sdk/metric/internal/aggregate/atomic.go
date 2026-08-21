@@ -232,8 +232,8 @@ type limitedSyncMap[V any] struct {
 // constructing a Set. If the entry is not found and the aggregation limit has not
 // been exceeded, lazy.Set() is called to construct the attribute.Set for storage.
 // If the aggregation limit is exceeded, overflowSet is used instead without calling lazy.Set().
-func (m *limitedSyncMap[V]) LoadOrStoreAttr(lazy lazyFilteredAttributes, newValue func(attribute.Set) V) V {
-	distinct := lazy.Distinct()
+func (m *limitedSyncMap[V]) LoadOrStoreAttr(a attribute.Set, newValue func(attribute.Set) V) V {
+	distinct := a.Equivalent()
 	actual, loaded := m.Load(distinct)
 	if loaded {
 		return actual.(V)
@@ -261,7 +261,7 @@ func (m *limitedSyncMap[V]) LoadOrStoreAttr(lazy lazyFilteredAttributes, newValu
 		fltrAttr = overflowSet
 		distinct = overflowSet.Equivalent()
 	} else {
-		fltrAttr = lazy.Set()
+		fltrAttr = a
 	}
 	actual, loaded = m.LoadOrStore(distinct, newValue(fltrAttr))
 	if !loaded {
