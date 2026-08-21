@@ -47,6 +47,9 @@ type LoggerProvider struct {
 // created. This means the returned LoggerProvider, one created with no
 // Processors, will perform no operations.
 func NewLoggerProvider(eh otel.ErrorHandler, resource *resource.Resource, processor *BatchProcessor, attrCntLim int, attrValLenLim int, allowDupKeys bool) *LoggerProvider {
+	if resource == nil {
+		panic("nil resource")
+	}
 	return &LoggerProvider{
 		eh:                        eh,
 		resource:                  resource,

@@ -32,11 +32,13 @@ type MeterProvider struct {
 // Readers, will perform no operations.
 func NewMeterProvider(res *resource.Resource,
 	reader *PeriodicReader,
-	// exemplarFilter exemplar.Filter,
 	cardinalityLimit int) *MeterProvider {
 	conf := newConfig(res, reader, cardinalityLimit)
 	// flush, sdown := conf.readerSignals()
 
+	if conf.res == nil {
+		panic("nil resource")
+	}
 	mp := &MeterProvider{
 		pipe:   newPipeline(conf.res, conf.reader, conf.cardinalityLimit),
 		reader: conf.reader,
@@ -47,6 +49,7 @@ func NewMeterProvider(res *resource.Resource,
 		"Resource", conf.res,
 		"Reader", conf.reader,
 	)
+
 	return mp
 }
 

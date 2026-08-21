@@ -113,14 +113,14 @@ type (
 // Detect returns a *Resource that describes the process identifier (PID) of the
 // executing process.
 func (processPIDDetector) Detect(context.Context) (*Resource, error) {
-	return NewWithAttributes(semconv.ProcessPID(pid())), nil
+	return newWithAttributes(semconv.ProcessPID(pid())), nil
 }
 
 // Detect returns a *Resource that describes the name of the process executable.
 func (processExecutableNameDetector) Detect(context.Context) (*Resource, error) {
 	executableName := filepath.Base(commandArgs()[0])
 
-	return NewWithAttributes(semconv.ProcessExecutableName(executableName)), nil
+	return newWithAttributes(semconv.ProcessExecutableName(executableName)), nil
 }
 
 // Detect returns a *Resource that describes the full path of the process executable.
@@ -130,13 +130,13 @@ func (processExecutablePathDetector) Detect(context.Context) (*Resource, error) 
 		return nil, err
 	}
 
-	return NewWithAttributes(semconv.ProcessExecutablePath(executablePath)), nil
+	return newWithAttributes(semconv.ProcessExecutablePath(executablePath)), nil
 }
 
 // Detect returns a *Resource that describes all the command arguments as received
 // by the process.
 func (processCommandArgsDetector) Detect(context.Context) (*Resource, error) {
-	return NewWithAttributes(semconv.ProcessCommandArgs(commandArgs()...)), nil
+	return newWithAttributes(semconv.ProcessCommandArgs(commandArgs()...)), nil
 }
 
 // Detect returns a *Resource that describes the username of the user that owns the
@@ -147,18 +147,18 @@ func (processOwnerDetector) Detect(context.Context) (*Resource, error) {
 		return nil, err
 	}
 
-	return NewWithAttributes(semconv.ProcessOwner(owner.Username)), nil
+	return newWithAttributes(semconv.ProcessOwner(owner.Username)), nil
 }
 
 // Detect returns a *Resource that describes the name of the compiler used to compile
 // this process image.
 func (processRuntimeNameDetector) Detect(context.Context) (*Resource, error) {
-	return NewWithAttributes(semconv.ProcessRuntimeName(runtimeName())), nil
+	return newWithAttributes(semconv.ProcessRuntimeName(runtimeName())), nil
 }
 
 // Detect returns a *Resource that describes the version of the runtime of this process.
 func (processRuntimeVersionDetector) Detect(context.Context) (*Resource, error) {
-	return NewWithAttributes(semconv.ProcessRuntimeVersion(runtimeVersion())), nil
+	return newWithAttributes(semconv.ProcessRuntimeVersion(runtimeVersion())), nil
 }
 
 // Detect returns a *Resource that describes the runtime of this process.
@@ -167,7 +167,7 @@ func (processRuntimeDescriptionDetector) Detect(context.Context) (*Resource, err
 		"go version %s %s/%s", runtimeVersion(), runtimeOS(), runtimeArch(),
 	)
 
-	return NewWithAttributes(
+	return newWithAttributes(
 		semconv.ProcessRuntimeDescription(runtimeDescription),
 	), nil
 }

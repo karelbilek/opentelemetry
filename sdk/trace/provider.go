@@ -209,12 +209,9 @@ func (p *TracerProvider) Shutdown(ctx context.Context) error {
 	return p.processor.Shutdown(ctx)
 }
 
-// 		cfg.sampler = ParentBased(AlwaysSample())
-
-// ensureValidTracerProviderConfig ensures that given TracerProviderConfig is valid.
 func ensureValidTracerProviderConfig(cfg tracerProviderConfig, errorHandler otel.ErrorHandler) tracerProviderConfig {
 	if cfg.resource == nil {
-		cfg.resource = resource.Default(errorHandler, "")
+		panic("nil resource")
 	}
 	return cfg
 }

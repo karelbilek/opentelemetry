@@ -41,9 +41,6 @@ func newPipeline(
 	reader *PeriodicReader,
 	cardinalityLimit int,
 ) *pipeline {
-	if res == nil {
-		res = resource.Empty()
-	}
 	p := &pipeline{
 		resource:        res,
 		reader:          reader,

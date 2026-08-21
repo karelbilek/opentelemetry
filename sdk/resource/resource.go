@@ -5,7 +5,6 @@ package resource
 
 import (
 	"context"
-	"sync"
 
 	otel "github.com/karelbilek/opentelemetry"
 	"github.com/karelbilek/opentelemetry/attribute"
@@ -34,33 +33,11 @@ type Resource struct {
 // Compile-time check that the Resource remains comparable.
 var _ map[Resource]struct{} = nil
 
-var (
-	defaultResource     *Resource
-	defaultResourceOnce sync.Once
-)
-
-// New returns a [Resource] built using opts.
-// Duplicate top-level attribute keys and duplicate keys inside map
-// values are resolved using last-value-wins semantics.
-//
-// This may return a partial Resource along with an error containing
-// [ErrPartialResource] if options that provide a [Detector] are used and that
-// error is returned from one or more of the Detectors.
-func New(ctx context.Context, opts ...Option) (*Resource, error) {
-	cfg := config{}
-	for _, opt := range opts {
-		cfg = opt.apply(cfg)
-	}
-
-	r := &Resource{}
-	return r, detect(ctx, r, cfg.detectors)
-}
-
-// NewWithAttributes creates a resource from attrs. If attrs contains duplicate
+// newWithAttributes creates a resource from attrs. If attrs contains duplicate
 // top-level attribute keys or duplicate keys inside map values, the last
 // value will be used. If attrs contains any invalid items those items will be
 // dropped.
-func NewWithAttributes(attrs ...attribute.KeyValue) *Resource {
+func newWithAttributes(attrs ...attribute.KeyValue) *Resource {
 	if len(attrs) == 0 {
 		return &Resource{}
 	}
@@ -107,7 +84,7 @@ func (r *Resource) MarshalLog() any {
 // To avoid allocating a new slice, use an iterator.
 func (r *Resource) Attributes() []attribute.KeyValue {
 	if r == nil {
-		r = Empty()
+		r = empty()
 	}
 	return r.attrs.ToSlice()
 }
@@ -116,7 +93,7 @@ func (r *Resource) Attributes() []attribute.KeyValue {
 // This is ideal to use if you do not want a copy of the attributes.
 func (r *Resource) Iter() attribute.Iterator {
 	if r == nil {
-		r = Empty()
+		r = empty()
 	}
 	return r.attrs.Iter()
 }
@@ -128,10 +105,10 @@ func (r *Resource) Iter() attribute.Iterator {
 // with Resource values; most code should use Equal instead.
 func (r *Resource) Equal(o *Resource) bool {
 	if r == nil {
-		r = Empty()
+		r = empty()
 	}
 	if o == nil {
-		o = Empty()
+		o = empty()
 	}
 	return r.Equivalent() == o.Equivalent()
 }
@@ -142,7 +119,7 @@ func (r *Resource) Equal(o *Resource) bool {
 // overwrite the value from a, even if b's value is empty.
 func Merge(a, b *Resource) *Resource {
 	if a == nil && b == nil {
-		return Empty()
+		return empty()
 	}
 	if a == nil {
 		return b
@@ -159,52 +136,38 @@ func Merge(a, b *Resource) *Resource {
 		combine = append(combine, mi.Attribute())
 	}
 
-	return NewWithAttributes(combine...)
+	return newWithAttributes(combine...)
 }
 
 // Empty returns an instance of Resource with no attributes. It is
 // equivalent to a `nil` Resource.
-func Empty() *Resource {
+func empty() *Resource {
 	return &Resource{}
 }
 
-// Default returns an instance of Resource with a default
-// "service.name" and OpenTelemetrySDK attributes.
-func Default(errorHandler otel.ErrorHandler, name string) *Resource {
-	return DefaultWithContext(context.Background(), errorHandler, name)
-}
+func Default(ctx context.Context, errorHandler otel.ErrorHandler, name string, attrs ...attribute.KeyValue) *Resource {
+	var err error
+	defaultDetectors := []Detector{
+		defaultServiceNameDetector{},
+		telemetrySDK{},
+		defaultServiceInstanceIDDetector{},
+		detectAttributes{attrs},
+	}
+	if name != "" {
+		defaultDetectors[0] = fixedServiceNameDetector{s: name}
+	}
 
-// DefaultWithContext returns an instance of Resource with a default
-// "service.name" and OpenTelemetrySDK attributes.
-//
-// If the default resource has already been initialized, the provided ctx
-// is ignored and the cached resource is returned.
-func DefaultWithContext(ctx context.Context, errorHandler otel.ErrorHandler, name string) *Resource {
-	defaultResourceOnce.Do(func() {
-		var err error
-		defaultDetectors := []Detector{
-			defaultServiceNameDetector{},
-			telemetrySDK{},
-		}
-		if name != "" {
-			defaultDetectors = []Detector{
-				fixedServiceNameDetector{s: name},
-				telemetrySDK{},
-			}
-		}
-
-		defaultResource, err = Detect(
-			ctx,
-			defaultDetectors...,
-		)
-		if err != nil {
-			otel.Handle(errorHandler, err)
-		}
-		// If Detect did not return a valid resource, fall back to emptyResource.
-		if defaultResource == nil {
-			defaultResource = &Resource{}
-		}
-	})
+	defaultResource, err := Detect(
+		ctx,
+		defaultDetectors...,
+	)
+	if err != nil {
+		otel.Handle(errorHandler, err)
+	}
+	// If Detect did not return a valid resource, fall back to emptyResource.
+	if defaultResource == nil {
+		defaultResource = &Resource{}
+	}
 	return defaultResource
 }
 
@@ -218,7 +181,7 @@ func (r *Resource) Equivalent() attribute.Distinct {
 // Set returns the equivalent *attribute.Set of this resource's attributes.
 func (r *Resource) Set() *attribute.Set {
 	if r == nil {
-		r = Empty()
+		r = empty()
 	}
 	return &r.attrs
 }
@@ -227,7 +190,7 @@ func (r *Resource) Set() *attribute.Set {
 // "...", "Value": ... } pairs in order sorted by key.
 func (r *Resource) MarshalJSON() ([]byte, error) {
 	if r == nil {
-		r = Empty()
+		r = empty()
 	}
 	return r.attrs.MarshalJSON()
 }

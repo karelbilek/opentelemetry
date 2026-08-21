@@ -32,7 +32,7 @@ func main() {
 	}
 	oh := otel.BasicErrorHandler{}
 
-	res := resource.Default(oh, "my_service")
+	res := resource.Default(context.Background(), oh, "my_service")
 
 	processor := log.NewBatchProcessor(logExporter, oh, 2048, time.Second, 30*time.Second, 512)
 	provider := log.NewLoggerProvider(

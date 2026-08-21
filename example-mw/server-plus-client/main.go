@@ -86,7 +86,7 @@ func startOtlp(oh otel.ErrorHandler) (*slog.Logger, *log.LoggerProvider, *trace.
 
 	// from now on nothing can return error
 
-	res := resource.Default(oh, resource_name)
+	res := resource.Default(context.Background(), oh, resource_name)
 
 	logProcessor := log.NewBatchProcessor(logExporter, oh, 2048, time.Second, 30*time.Second, 512)
 	logProvider := log.NewLoggerProvider(
