@@ -13,7 +13,7 @@ import (
 	"github.com/karelbilek/opentelemetry/metric"
 	"github.com/karelbilek/opentelemetry/sdk/instrumentation"
 	"github.com/karelbilek/opentelemetry/sdk/metric/internal/aggregate"
-	"github.com/karelbilek/opentelemetry/sdk/metric/internal/attrnorm"
+	"github.com/karelbilek/opentelemetry/internal/attrnorm"
 )
 
 var zeroScope instrumentation.Scope

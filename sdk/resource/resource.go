@@ -8,7 +8,7 @@ import (
 
 	otel "github.com/karelbilek/opentelemetry"
 	"github.com/karelbilek/opentelemetry/attribute"
-	"github.com/karelbilek/opentelemetry/sdk/internal/attrnorm"
+	"github.com/karelbilek/opentelemetry/internal/attrnorm"
 )
 
 // Resource describes an entity about which identifying information

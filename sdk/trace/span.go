@@ -15,8 +15,8 @@ import (
 
 	"github.com/karelbilek/opentelemetry/attribute"
 	"github.com/karelbilek/opentelemetry/codes"
+	"github.com/karelbilek/opentelemetry/internal/attrnorm"
 	"github.com/karelbilek/opentelemetry/internal/global"
-	"github.com/karelbilek/opentelemetry/sdk/internal/attrnorm"
 	"github.com/karelbilek/opentelemetry/sdk/trace/tracedata"
 	semconv "github.com/karelbilek/opentelemetry/semconv"
 	"github.com/karelbilek/opentelemetry/trace"
