@@ -7,7 +7,6 @@ import (
 	"context"
 	"time"
 
-	otel "github.com/karelbilek/opentelemetry"
 	"github.com/karelbilek/opentelemetry/attribute"
 	"github.com/karelbilek/opentelemetry/sdk/metric/metricdata"
 )
@@ -35,39 +34,31 @@ type Builder[N int64 | float64] struct {
 	AggregationLimit int
 }
 
-type fltrMeasure[N int64 | float64] func(ctx context.Context, value N, at attribute.Set, eh otel.ErrorHandler)
-
-func (b Builder[N]) filter(f fltrMeasure[N], eh otel.ErrorHandler) Measure[N] {
-	return func(ctx context.Context, n N, a attribute.Set) {
-		f(ctx, n, a, eh)
-	}
-}
-
 // LastValue returns a last-value aggregate function input and output.
-func (b Builder[N]) LastValue(eh otel.ErrorHandler) (Measure[N], ComputeAggregation) {
+func (b Builder[N]) LastValue() (Measure[N], ComputeAggregation) {
 	lv := newCumulativeLastValue[N](b.AggregationLimit)
-	return b.filter(lv.measure, eh), lv.collect
+	return lv.measure, lv.collect
 }
 
 // PrecomputedLastValue returns a last-value aggregate function input and
 // output. The aggregation returned from the returned ComputeAggregation
 // function will always only return values from the previous collection cycle.
-func (b Builder[N]) PrecomputedLastValue(eh otel.ErrorHandler) (Measure[N], ComputeAggregation) {
+func (b Builder[N]) PrecomputedLastValue() (Measure[N], ComputeAggregation) {
 	lv := newPrecomputedLastValue[N](b.AggregationLimit)
-	return b.filter(lv.measure, eh), lv.cumulative
+	return lv.measure, lv.cumulative
 }
 
 // PrecomputedSum returns a sum aggregate function input and output. The
 // arguments passed to the input are expected to be the precomputed sum values.
-func (b Builder[N]) PrecomputedSum(monotonic bool, eh otel.ErrorHandler) (Measure[N], ComputeAggregation) {
+func (b Builder[N]) PrecomputedSum(monotonic bool) (Measure[N], ComputeAggregation) {
 	s := newPrecomputedSum[N](monotonic, b.AggregationLimit)
-	return b.filter(s.measure, eh), s.cumulative
+	return s.measure, s.cumulative
 }
 
 // Sum returns a sum aggregate function input and output.
-func (b Builder[N]) Sum(monotonic bool, eh otel.ErrorHandler) (Measure[N], ComputeAggregation) {
+func (b Builder[N]) Sum(monotonic bool) (Measure[N], ComputeAggregation) {
 	s := newCumulativeSum[N](monotonic, b.AggregationLimit)
-	return b.filter(s.measure, eh), s.collect
+	return s.measure, s.collect
 }
 
 // ExplicitBucketHistogram returns a histogram aggregate function input and
@@ -75,10 +66,9 @@ func (b Builder[N]) Sum(monotonic bool, eh otel.ErrorHandler) (Measure[N], Compu
 func (b Builder[N]) ExplicitBucketHistogram(
 	boundaries []float64,
 	noMinMax, noSum bool,
-	eh otel.ErrorHandler,
 ) (Measure[N], ComputeAggregation) {
 	h := newCumulativeHistogram[N](boundaries, noMinMax, noSum, b.AggregationLimit)
-	return b.filter(h.measure, eh), h.collect
+	return h.measure, h.collect
 }
 
 // reset ensures s has capacity and sets it length. If the capacity of s too

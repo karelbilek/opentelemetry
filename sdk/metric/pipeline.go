@@ -11,7 +11,6 @@ import (
 	"sync"
 	"sync/atomic"
 
-	otel "github.com/karelbilek/opentelemetry"
 	"github.com/karelbilek/opentelemetry/internal/global"
 	"github.com/karelbilek/opentelemetry/sdk/instrumentation"
 	"github.com/karelbilek/opentelemetry/sdk/metric/internal"
@@ -232,7 +231,6 @@ func newInserter[N int64 | float64](p *pipeline, vc *cache[string, instID]) *ins
 func (i *inserter[N]) Instrument(
 	inst Instrument,
 	readerAggregation aggregation,
-	h otel.ErrorHandler,
 ) ([]aggregate.Measure[N], error) {
 	var (
 		measures []aggregate.Measure[N]
@@ -247,7 +245,7 @@ func (i *inserter[N]) Instrument(
 		Unit:        inst.Unit,
 	}
 
-	in, _, e := i.cachedAggregator(inst.Scope, inst.Kind, stream, readerAggregation, h)
+	in, _, e := i.cachedAggregator(inst.Scope, inst.Kind, stream, readerAggregation)
 	if e != nil {
 		err = errCreatingAggregators
 		err = errors.Join(err, e)
@@ -295,7 +293,6 @@ func (i *inserter[N]) cachedAggregator(
 	kind InstrumentKind,
 	stream Stream,
 	readerAggregation aggregation,
-	h otel.ErrorHandler,
 ) (meas aggregate.Measure[N], aggID uint64, err error) {
 	switch stream.Aggregation.(type) {
 	case nil:
@@ -324,7 +321,7 @@ func (i *inserter[N]) cachedAggregator(
 		// A value less than or equal to zero will disable the aggregation
 		// limits for the builder (an all the created aggregates).
 		b.AggregationLimit = i.pipeline.cardinalityLimit
-		in, out, err := i.aggregateFunc(b, stream.Aggregation, kind, h)
+		in, out, err := i.aggregateFunc(b, stream.Aggregation, kind)
 		if err != nil {
 			return aggVal[N]{0, nil, err}
 		}
@@ -410,28 +407,27 @@ func (i *inserter[N]) aggregateFunc(
 	b aggregate.Builder[N],
 	agg aggregation,
 	kind InstrumentKind,
-	h otel.ErrorHandler,
 ) (meas aggregate.Measure[N], comp aggregate.ComputeAggregation, err error) {
 	switch a := agg.(type) {
 	case aggregationLastValue:
 		switch kind {
 		case InstrumentKindGauge:
-			meas, comp = b.LastValue(h)
+			meas, comp = b.LastValue()
 		case InstrumentKindObservableGauge:
-			meas, comp = b.PrecomputedLastValue(h)
+			meas, comp = b.PrecomputedLastValue()
 		}
 	case aggregationSum:
 		switch kind {
 		case InstrumentKindObservableCounter:
-			meas, comp = b.PrecomputedSum(true, h)
+			meas, comp = b.PrecomputedSum(true)
 		case InstrumentKindObservableUpDownCounter:
-			meas, comp = b.PrecomputedSum(false, h)
+			meas, comp = b.PrecomputedSum(false)
 		case InstrumentKindCounter, InstrumentKindHistogram:
-			meas, comp = b.Sum(true, h)
+			meas, comp = b.Sum(true)
 		default:
 			// InstrumentKindUpDownCounter, InstrumentKindObservableGauge, and
 			// instrumentKindUndefined or other invalid instrument kinds.
-			meas, comp = b.Sum(false, h)
+			meas, comp = b.Sum(false)
 		}
 	case aggregationExplicitBucketHistogram:
 		var noSum bool
@@ -445,7 +441,7 @@ func (i *inserter[N]) aggregateFunc(
 			// https://github.com/open-telemetry/opentelemetry-specification/blob/v1.21.0/specification/metrics/sdk.md#histogram-aggregations
 			noSum = true
 		}
-		meas, comp = b.ExplicitBucketHistogram(a.Boundaries, a.NoMinMax, noSum, h)
+		meas, comp = b.ExplicitBucketHistogram(a.Boundaries, a.NoMinMax, noSum)
 
 	default:
 		err = errUnknownAggregation
@@ -534,8 +530,8 @@ func newResolver[N int64 | float64](p *pipeline, vc *cache[string, instID]) reso
 
 // Aggregators returns the Aggregators that must be updated by the instrument
 // defined by key.
-func (r resolver[N]) Aggregators(id Instrument, h otel.ErrorHandler) ([]aggregate.Measure[N], error) {
-	in, e := r.inserter.Instrument(id, selectAggregation(id.Kind), h)
+func (r resolver[N]) Aggregators(id Instrument) ([]aggregate.Measure[N], error) {
+	in, e := r.inserter.Instrument(id, selectAggregation(id.Kind))
 	if e != nil {
 		return nil, e
 	}
@@ -548,7 +544,6 @@ func (r resolver[N]) Aggregators(id Instrument, h otel.ErrorHandler) ([]aggregat
 func (r resolver[N]) HistogramAggregators(
 	id Instrument,
 	boundaries []float64,
-	h otel.ErrorHandler,
 ) ([]aggregate.Measure[N], error) {
 	var err error
 	i := r.inserter
@@ -558,7 +553,7 @@ func (r resolver[N]) HistogramAggregators(
 		histAgg.Boundaries = boundaries
 		agg = histAgg
 	}
-	in, e := i.Instrument(id, agg, h)
+	in, e := i.Instrument(id, agg)
 	if e != nil {
 		err = errors.Join(err, e)
 	}

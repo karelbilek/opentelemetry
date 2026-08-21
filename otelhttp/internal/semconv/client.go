@@ -32,12 +32,11 @@ func NewHTTPClient(meter *sdkmetric.Meter, h otel.ErrorHandler) HTTPClient {
 	client := HTTPClient{}
 
 	var err error
-	client.requestBodySize, err = httpconv.NewClientRequestBodySize(meter, h)
+	client.requestBodySize, err = httpconv.NewClientRequestBodySize(meter)
 	handleErr(h, err)
 
 	client.requestDuration, err = httpconv.NewClientRequestDuration(
 		meter,
-		h,
 		metric.WithExplicitBucketBoundaries(0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10),
 	)
 	handleErr(h, err)

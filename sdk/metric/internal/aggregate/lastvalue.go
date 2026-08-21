@@ -7,7 +7,6 @@ import (
 	"context"
 	"time"
 
-	otel "github.com/karelbilek/opentelemetry"
 	"github.com/karelbilek/opentelemetry/attribute"
 	"github.com/karelbilek/opentelemetry/sdk/metric/metricdata"
 )
@@ -29,16 +28,11 @@ func (s *lastValueMap[N]) measure(
 	ctx context.Context,
 	value N,
 	a attribute.Set,
-	eh otel.ErrorHandler,
 ) {
 	lv := s.values.LoadOrStoreAttr(a, func(attr attribute.Set) *lastValuePoint[N] {
-		// r := s.newRes(attr)
-		// _, isDrop := r.(*dropRes[N])
 		p := &lastValuePoint[N]{
-			// res:           r,
 			attrs:     attr,
 			startTime: now(),
-			// dropExemplars: isDrop,
 		}
 		p.value.Store(value)
 		return p
@@ -80,11 +74,10 @@ func (s *deltaLastValue[N]) measure(
 	ctx context.Context,
 	value N,
 	a attribute.Set,
-	eh otel.ErrorHandler,
 ) {
 	hotIdx := s.hcwg.start()
 	defer s.hcwg.done(hotIdx)
-	s.hotColdValMap[hotIdx].measure(ctx, value, a, eh)
+	s.hotColdValMap[hotIdx].measure(ctx, value, a)
 }
 
 // copyAndClearDpts copies the lastValuePoints held by s into dest. The number of lastValuePoints

@@ -122,12 +122,12 @@ func main() {
 	}()
 
 	meter := meterProvider.Meter("metroo")
-	count, err := meter.Int64Counter("count", oh, ametric.WithDescription("counter"))
+	count, err := meter.Int64Counter("count", ametric.WithDescription("counter"))
 	if err != nil {
 		panic(err)
 	}
 
-	gaug, err := meter.Int64Gauge("gauge", oh, ametric.WithDescription("popokatepetl"))
+	gaug, err := meter.Int64Gauge("gauge", ametric.WithDescription("popokatepetl"))
 
 	if err != nil {
 		panic(err)
@@ -136,7 +136,7 @@ func main() {
 	// Observable gauge: no Record calls anywhere. The callback is invoked by
 	// the SDK itself once per PeriodicReader collection cycle, right before
 	// each export; it reports the current value at that moment.
-	_, err = meter.Int64ObservableGauge("goroutines", oh,
+	_, err = meter.Int64ObservableGauge("goroutines",
 		[]metric.Int64Callback{
 			func(ctx context.Context, o metric.Int64Observer) error {
 				o.Observe(int64(runtime.NumGoroutine()))
@@ -152,12 +152,12 @@ func main() {
 	// RegisterCallback: the other observable style. Instruments are created
 	// WITHOUT callbacks; one batch callback observes several of them at once.
 	// Useful when one expensive read (here ReadMemStats) feeds many instruments.
-	heapAlloc, err := meter.Int64ObservableGauge("heap_alloc", oh, nil,
+	heapAlloc, err := meter.Int64ObservableGauge("heap_alloc", nil,
 		ametric.WithDescription("bytes of allocated heap objects"))
 	if err != nil {
 		panic(err)
 	}
-	heapObjects, err := meter.Int64ObservableGauge("heap_objects", oh, nil,
+	heapObjects, err := meter.Int64ObservableGauge("heap_objects", nil,
 		ametric.WithDescription("number of allocated heap objects"))
 	if err != nil {
 		panic(err)

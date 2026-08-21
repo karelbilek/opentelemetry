@@ -200,36 +200,10 @@ func (l *Set) Encoded() string {
 	return EncodeAttributes(l.Iter())
 }
 
-// NewSet returns a new Set. See the documentation for
-// NewSetWithSortableFiltered for more details.
-//
-// Except for empty sets, this method adds an additional allocation compared
-// with calls that include a Sortable.
 func NewSet(kvs ...KeyValue) Set {
-	s, _ := NewSetWithFiltered(kvs)
-	return s
-}
-
-// NewSetWithSortable returns a new Set. See the documentation for
-// NewSetWithSortableFiltered for more details.
-//
-// This call includes a Sortable option as a memory optimization.
-//
-// Deprecated: Use [NewSet] instead.
-func NewSetWithSortable(kvs []KeyValue, _ *Sortable) Set {
-	s, _ := NewSetWithFiltered(kvs)
-	return s
-}
-
-// NewSetWithFiltered returns a new Set. See the documentation for
-// NewSetWithSortableFiltered for more details.
-//
-// This call includes a Filter to include/exclude attribute keys from the
-// return value. Excluded keys are returned as a slice of attribute values.
-func NewSetWithFiltered(kvs []KeyValue) (Set, []KeyValue) {
 	// Check for empty set.
 	if len(kvs) == 0 {
-		return emptySet, nil
+		return emptySet
 	}
 
 	// Stable sort so the following de-duplication can implement
@@ -256,7 +230,7 @@ func NewSetWithFiltered(kvs []KeyValue) (Set, []KeyValue) {
 	}
 	kvs = kvs[position:]
 
-	return newSet(kvs), nil
+	return newSet(kvs)
 }
 
 // Filter returns a filtered copy of this Set. See the documentation for

@@ -6,7 +6,6 @@
 package httpconv
 
 import (
-	otel "github.com/karelbilek/opentelemetry"
 	"github.com/karelbilek/opentelemetry/metric"
 	sdkmetric "github.com/karelbilek/opentelemetry/sdk/metric"
 )
@@ -26,7 +25,6 @@ var newClientRequestBodySizeOpts = []metric.Int64HistogramOption{
 // NewClientRequestBodySize returns a new ClientRequestBodySize instrument.
 func NewClientRequestBodySize(
 	m *sdkmetric.Meter,
-	h otel.ErrorHandler,
 	opt ...metric.Int64HistogramOption,
 ) (ClientRequestBodySize, error) {
 	// Check if the meter is nil.
@@ -42,7 +40,6 @@ func NewClientRequestBodySize(
 
 	i, err := m.Int64Histogram(
 		"http.client.request.body.size",
-		h,
 		opt...,
 	)
 	if err != nil {
@@ -72,7 +69,6 @@ var newClientRequestDurationOpts = []metric.Float64HistogramOption{
 // NewClientRequestDuration returns a new ClientRequestDuration instrument.
 func NewClientRequestDuration(
 	m *sdkmetric.Meter,
-	h otel.ErrorHandler,
 	opt ...metric.Float64HistogramOption,
 ) (ClientRequestDuration, error) {
 	// Check if the meter is nil.
@@ -88,7 +84,6 @@ func NewClientRequestDuration(
 
 	i, err := m.Float64Histogram(
 		"http.client.request.duration",
-		h,
 		opt...,
 	)
 	if err != nil {
@@ -117,8 +112,6 @@ var newServerRequestBodySizeOpts = []metric.Int64HistogramOption{
 // NewServerRequestBodySize returns a new ServerRequestBodySize instrument.
 func NewServerRequestBodySize(
 	m *sdkmetric.Meter,
-	h otel.ErrorHandler,
-
 	opt ...metric.Int64HistogramOption,
 ) (ServerRequestBodySize, error) {
 	// Check if the meter is nil.
@@ -134,7 +127,6 @@ func NewServerRequestBodySize(
 
 	i, err := m.Int64Histogram(
 		"http.server.request.body.size",
-		h,
 		opt...,
 	)
 	if err != nil {
@@ -164,7 +156,6 @@ var newServerRequestDurationOpts = []metric.Float64HistogramOption{
 // NewServerRequestDuration returns a new ServerRequestDuration instrument.
 func NewServerRequestDuration(
 	m *sdkmetric.Meter,
-	h otel.ErrorHandler,
 	opt ...metric.Float64HistogramOption,
 ) (ServerRequestDuration, error) {
 	// Check if the meter is nil.
@@ -180,7 +171,6 @@ func NewServerRequestDuration(
 
 	i, err := m.Float64Histogram(
 		"http.server.request.duration",
-		h,
 		opt...,
 	)
 	if err != nil {
@@ -209,7 +199,6 @@ var newServerResponseBodySizeOpts = []metric.Int64HistogramOption{
 // NewServerResponseBodySize returns a new ServerResponseBodySize instrument.
 func NewServerResponseBodySize(
 	m *sdkmetric.Meter,
-	h otel.ErrorHandler,
 	opt ...metric.Int64HistogramOption,
 ) (ServerResponseBodySize, error) {
 	// Check if the meter is nil.
@@ -225,7 +214,6 @@ func NewServerResponseBodySize(
 
 	i, err := m.Int64Histogram(
 		"http.server.response.body.size",
-		h,
 		opt...,
 	)
 	if err != nil {

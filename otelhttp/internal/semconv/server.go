@@ -38,15 +38,14 @@ func NewHTTPServer(meter *sdkmetric.Meter, h otel.ErrorHandler) HTTPServer {
 	server := HTTPServer{}
 
 	var err error
-	server.requestBodySizeHistogram, err = httpconv.NewServerRequestBodySize(meter, h)
+	server.requestBodySizeHistogram, err = httpconv.NewServerRequestBodySize(meter)
 	handleErr(h, err)
 
-	server.responseBodySizeHistogram, err = httpconv.NewServerResponseBodySize(meter, h)
+	server.responseBodySizeHistogram, err = httpconv.NewServerResponseBodySize(meter)
 	handleErr(h, err)
 
 	server.requestDurationHistogram, err = httpconv.NewServerRequestDuration(
 		meter,
-		h,
 		metric.WithExplicitBucketBoundaries(
 			0.005, 0.01, 0.025, 0.05, 0.075, 0.1,
 			0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10,

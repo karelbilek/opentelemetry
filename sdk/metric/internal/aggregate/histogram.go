@@ -10,7 +10,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	otel "github.com/karelbilek/opentelemetry"
 	"github.com/karelbilek/opentelemetry/attribute"
 	"github.com/karelbilek/opentelemetry/sdk/metric/metricdata"
 )
@@ -122,11 +121,8 @@ func (s *cumulativeHistogram[N]) measure(
 	ctx context.Context,
 	value N,
 	a attribute.Set,
-	eh otel.ErrorHandler,
 ) {
 	h := s.values.LoadOrStoreAttr(a, func(attr attribute.Set) *hotColdHistogramPoint[N] {
-		// r := s.newRes(attr)
-		// _, isDrop := r.(*dropRes[N])
 		hPt := &hotColdHistogramPoint[N]{
 			// res:           r,
 			attrs:     attr,

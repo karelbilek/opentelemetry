@@ -7,7 +7,6 @@ import (
 	"context"
 	"time"
 
-	otel "github.com/karelbilek/opentelemetry"
 	"github.com/karelbilek/opentelemetry/attribute"
 	"github.com/karelbilek/opentelemetry/sdk/metric/metricdata"
 )
@@ -26,7 +25,6 @@ func (s *sumValueMap[N]) measure(
 	ctx context.Context,
 	value N,
 	a attribute.Set,
-	eh otel.ErrorHandler,
 ) {
 	sv := s.values.LoadOrStoreAttr(a, func(attr attribute.Set) *sumValue[N] {
 		return &sumValue[N]{
@@ -73,10 +71,10 @@ type deltaSum[N int64 | float64] struct {
 	hotColdValMap [2]sumValueMap[N]
 }
 
-func (s *deltaSum[N]) measure(ctx context.Context, value N, a attribute.Set, eh otel.ErrorHandler) {
+func (s *deltaSum[N]) measure(ctx context.Context, value N, a attribute.Set) {
 	hotIdx := s.hcwg.start()
 	defer s.hcwg.done(hotIdx)
-	s.hotColdValMap[hotIdx].measure(ctx, value, a, eh)
+	s.hotColdValMap[hotIdx].measure(ctx, value, a)
 }
 
 // newCumulativeSum returns an aggregator that summarizes a set of measurements
@@ -85,7 +83,6 @@ func (s *deltaSum[N]) measure(ctx context.Context, value N, a attribute.Set, eh 
 func newCumulativeSum[N int64 | float64](
 	monotonic bool,
 	limit int,
-	// r func(attribute.Set) FilteredExemplarReservoir[N],
 ) *cumulativeSum[N] {
 	return &cumulativeSum[N]{
 		monotonic: monotonic,
@@ -152,7 +149,6 @@ func (s *cumulativeSum[N]) collect(
 func newPrecomputedSum[N int64 | float64](
 	monotonic bool,
 	limit int,
-	// r func(attribute.Set) FilteredExemplarReservoir[N],
 ) *precomputedSum[N] {
 	return &precomputedSum[N]{
 		deltaSum: newDeltaSum[N](monotonic, limit),
