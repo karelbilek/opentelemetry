@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"sync/atomic"
 	"time"
 
 	otel "github.com/karelbilek/opentelemetry"
@@ -136,8 +135,7 @@ func (t *Transport) RoundTrip(r *http.Request) (*http.Response, error) {
 		return res, err
 	}
 
-	readRecordFunc := func(int64) {}
-	res.Body = newWrappedBody(span, readRecordFunc, res.Body)
+	res.Body = newWrappedBody(span, res.Body)
 	// traces
 	span.SetAttributes(t.semconv.ResponseTraceAttrs(res)...)
 	span.SetStatus(t.semconv.Status(res.StatusCode))
@@ -162,17 +160,17 @@ func ensureResponseBody(rt http.RoundTripper, r *http.Request, res *http.Respons
 // newWrappedBody returns a new and appropriately scoped *wrappedBody as an
 // io.ReadCloser. If the passed body implements io.Writer, the returned value
 // will implement io.ReadWriteCloser.
-func newWrappedBody(span *sdktrace.Span, record func(n int64), body io.ReadCloser) io.ReadCloser {
+func newWrappedBody(span *sdktrace.Span, body io.ReadCloser) io.ReadCloser {
 	// The successful protocol switch responses will have a body that
 	// implement an io.ReadWriteCloser. Ensure this interface type continues
 	// to be satisfied if that is the case.
 	if _, ok := body.(io.ReadWriteCloser); ok {
-		return &wrappedBody{span: span, record: record, body: body}
+		return &wrappedBody{span: span, body: body}
 	}
 
 	// Remove the implementation of the io.ReadWriteCloser and only implement
 	// the io.ReadCloser.
-	return struct{ io.ReadCloser }{&wrappedBody{span: span, record: record, body: body}}
+	return struct{ io.ReadCloser }{&wrappedBody{span: span, body: body}}
 }
 
 // wrappedBody is the response body type returned by the transport
@@ -184,11 +182,8 @@ func newWrappedBody(span *sdktrace.Span, record func(n int64), body io.ReadClose
 // If the response body implements the io.Writer interface (i.e. for
 // successful protocol switches), the wrapped body also will.
 type wrappedBody struct {
-	span     *sdktrace.Span
-	recorded atomic.Bool
-	record   func(n int64)
-	body     io.ReadCloser
-	read     atomic.Int64
+	span *sdktrace.Span
+	body io.ReadCloser
 }
 
 var _ io.ReadWriteCloser = &wrappedBody{}
@@ -205,14 +200,11 @@ func (wb *wrappedBody) Write(p []byte) (int, error) {
 
 func (wb *wrappedBody) Read(b []byte) (int, error) {
 	n, err := wb.body.Read(b)
-	// Record the number of bytes read
-	wb.read.Add(int64(n))
 
 	switch err {
 	case nil:
 		// nothing to do here but fall through to the return
 	case io.EOF:
-		wb.recordBytesRead()
 		wb.span.End()
 	default:
 		wb.span.SetAttributes(otelsemconv.ErrorType(err))
@@ -221,20 +213,7 @@ func (wb *wrappedBody) Read(b []byte) (int, error) {
 	return n, err
 }
 
-// recordBytesRead is a function that ensures the number of bytes read is recorded once and only once.
-func (wb *wrappedBody) recordBytesRead() {
-	// note: it is more performant (and equally correct) to use atomic.Bool over sync.Once here. In the event that
-	// two goroutines are racing to call this method, the number of bytes read will no longer increase. Using
-	// CompareAndSwap allows later goroutines to return quickly and not block waiting for the race winner to finish
-	// calling wb.record(wb.read.Load()).
-	if wb.recorded.CompareAndSwap(false, true) {
-		// Record the total number of bytes read
-		wb.record(wb.read.Load())
-	}
-}
-
 func (wb *wrappedBody) Close() error {
-	wb.recordBytesRead()
 	wb.span.End()
 	if wb.body != nil {
 		return wb.body.Close()
