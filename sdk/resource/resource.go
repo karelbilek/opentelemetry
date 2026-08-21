@@ -149,6 +149,7 @@ func Default(ctx context.Context, errorHandler otel.ErrorHandler, name string, a
 	var err error
 	defaultDetectors := []Detector{
 		defaultServiceNameDetector{},
+		host{},
 		telemetrySDK{},
 		defaultServiceInstanceIDDetector{},
 		detectAttributes{attrs},
