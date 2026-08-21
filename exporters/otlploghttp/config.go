@@ -10,24 +10,20 @@ import (
 )
 
 type config struct {
-	endpoint string
-	path     string
-	insecure bool
-	// tlsCfg         *tls.Config
-	// headers        map[string]string
-	// compression    Compression
+	endpoint       string
+	path           string
+	insecure       bool
 	maxRequestSize int
 	timeout        time.Duration
 	retryCfg       retry.Config
-	// httpClient     *http.Client
+	headers        map[string]string
 }
 
 func newConfig(
 	endpoint string,
 	path string,
 	insecure bool,
-	// headers map[string]string,
-	// compression Compression,
+	headers map[string]string,
 	maxRequestSize int,
 	timeout time.Duration,
 	retryCfg retry.Config,
@@ -39,5 +35,6 @@ func newConfig(
 		maxRequestSize: maxRequestSize,
 		timeout:        timeout,
 		retryCfg:       retryCfg,
+		headers:        headers,
 	}
 }

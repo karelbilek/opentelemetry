@@ -39,6 +39,11 @@ type LoggerProvider struct {
 	noCmp [0]func() //nolint: unused  // This is indeed used.
 }
 
+const (
+	DefaultAttributeCountLimit       = 128
+	DefaultAttributeValueLengthLimit = -1
+)
+
 // NewLoggerProvider returns a new and configured LoggerProvider.
 //
 // By default, the returned LoggerProvider is configured with the default

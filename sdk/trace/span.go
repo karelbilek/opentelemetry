@@ -293,7 +293,7 @@ func (s *Span) End(options ...trace.SpanEndOption) {
 	}
 
 	config := trace.NewSpanEndConfig(options...)
-	if !s.tracer.provider.panicRecordingDisabled {
+	{
 		if recovered := recover(); recovered != nil {
 			// Record but don't stop the panic.
 			defer panic(recovered)

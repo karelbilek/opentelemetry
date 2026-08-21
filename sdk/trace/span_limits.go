@@ -3,6 +3,32 @@
 
 package trace
 
+const (
+	// DefaultAttributeValueLengthLimit is the default maximum allowed
+	// attribute value length, unlimited.
+	DefaultAttributeValueLengthLimit = -1
+
+	// DefaultAttributeCountLimit is the default maximum number of attributes
+	// a span can have.
+	DefaultAttributeCountLimit = 128
+
+	// DefaultEventCountLimit is the default maximum number of events a span
+	// can have.
+	DefaultEventCountLimit = 128
+
+	// DefaultLinkCountLimit is the default maximum number of links a span can
+	// have.
+	DefaultLinkCountLimit = 128
+
+	// DefaultAttributePerEventCountLimit is the default maximum number of
+	// attributes a span event can have.
+	DefaultAttributePerEventCountLimit = 128
+
+	// DefaultAttributePerLinkCountLimit is the default maximum number of
+	// attributes a span link can have.
+	DefaultAttributePerLinkCountLimit = 128
+)
+
 // SpanLimits represents the limits of a span.
 type SpanLimits struct {
 	// AttributeValueLengthLimit is the maximum allowed attribute value length.

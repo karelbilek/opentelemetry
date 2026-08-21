@@ -10,6 +10,12 @@ import (
 	"github.com/karelbilek/opentelemetry/sdk/log/logdata"
 )
 
+const (
+	DefaultLogsPath       string        = "/v1/logs"
+	DefaultMaxRequestSize int           = 64 * 1024 * 1024
+	DefaultTimeout        time.Duration = 10 * time.Second
+)
+
 // Exporter is a OpenTelemetry log Exporter. It transports log data encoded as
 // OTLP protobufs using HTTP.
 // Exporter must be created with [New].
@@ -25,11 +31,12 @@ type Exporter struct {
 func New(ctx context.Context, endpoint string,
 	path string,
 	insecure bool,
+	headers map[string]string,
 	maxRequestSize int,
 	timeout time.Duration,
 	retryCfg retry.Config,
 ) (*Exporter, error) {
-	cfg := newConfig(endpoint, path, insecure, maxRequestSize, timeout, retryCfg)
+	cfg := newConfig(endpoint, path, insecure, headers, maxRequestSize, timeout, retryCfg)
 	c, err := newHTTPClient(ctx, cfg)
 	if err != nil {
 		return nil, err

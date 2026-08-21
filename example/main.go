@@ -22,10 +22,11 @@ import (
 func main() {
 	logExporter, err := otlploghttp.New(context.Background(),
 		"127.0.0.1:4318",
-		"/v1/logs",
+		otlploghttp.DefaultLogsPath,
 		true,
-		64*1024*1024,
-		10*time.Second,
+		nil,
+		otlploghttp.DefaultMaxRequestSize,
+		otlploghttp.DefaultTimeout,
 		retry.DefaultConfig)
 	if err != nil {
 		panic(err)
@@ -34,13 +35,19 @@ func main() {
 
 	res := resource.Default(context.Background(), oh, "my_service")
 
-	processor := log.NewBatchProcessor(logExporter, oh, 2048, time.Second, 30*time.Second, 512)
+	processor := log.NewBatchProcessor(
+		logExporter,
+		oh,
+		log.DefaultMaxQueueSize,
+		log.DefaultExpInterval,
+		log.DefaultExpTimeout,
+		log.DefaultExpMaxBatchSize)
 	provider := log.NewLoggerProvider(
 		oh,
 		res,
 		processor,
-		128,
-		-1,
+		log.DefaultAttributeCountLimit,
+		log.DefaultAttributeValueLengthLimit,
 	)
 	slogger := otelslog.NewLogger("mylogger", provider, true)
 	defer func() {
@@ -52,32 +59,30 @@ func main() {
 
 	traceExporter := otlptracehttp.New(
 		"127.0.0.1:4318",
-		"/v1/traces",
+		otlptracehttp.DefaultTracesPath,
 		true,
 		nil,
-		64*1024*1024,
-		10*time.Second,
+		otlptracehttp.DefaultMaxRequestSize,
+		otlptracehttp.DefaultTimeout,
 		retry.DefaultConfig,
 	)
 	tracerProvider := trace.NewTracerProvider(
 		oh,
-		-1,
-		128,
-		128,
-		128,
-		128,
-		128,
+		trace.DefaultAttributeValueLengthLimit,
+		trace.DefaultAttributeCountLimit,
+		trace.DefaultEventCountLimit,
+		trace.DefaultLinkCountLimit,
+		trace.DefaultAttributePerEventCountLimit,
+		trace.DefaultAttributePerLinkCountLimit,
 		trace.NewBatchSpanProcessor(
 			traceExporter,
 			oh,
-			2048,
-			5000*time.Millisecond,
-			30000*time.Millisecond,
-			512,
-			false,
+			trace.DefaultMaxQueueSize,
+			trace.DefaultBatchTimeout,
+			trace.DefaultExportTimeout,
+			trace.DefaultMaxExportBatchSize,
 		),
 		res,
-		false,
 	)
 	defer func() {
 		if err := tracerProvider.Shutdown(context.Background()); err != nil {
@@ -88,11 +93,11 @@ func main() {
 	metricExporter, err := otlpmetrichttp.New(
 		context.Background(),
 		"127.0.0.1:4318",
-		"/v1/metrics",
+		otlpmetrichttp.DefaultMetricsPath,
 		true,
 		nil,
-		64*1024*1024,
-		10*time.Second,
+		otlpmetrichttp.DefaultMaxRequestSize,
+		otlpmetrichttp.DefaultTimeout,
 		retry.DefaultConfig,
 	)
 	if err != nil {
@@ -101,14 +106,14 @@ func main() {
 
 	perReader := metric.NewPeriodicReader(
 		metricExporter,
-		time.Millisecond*60000,
-		time.Millisecond*30000,
+		metric.DefaultPeriodicInterval,
+		metric.DefaultPeriodicTimeout,
 		oh,
 	)
 	meterProvider := metric.NewMeterProvider(
 		res,
 		perReader,
-		2000,
+		metric.DefaultCardinalityLimit,
 	)
 	defer func() {
 		if err := meterProvider.Shutdown(context.Background()); err != nil {

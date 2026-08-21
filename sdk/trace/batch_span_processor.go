@@ -19,11 +19,9 @@ import (
 
 // Defaults for BatchSpanProcessorOptions.
 const (
-	DefaultMaxQueueSize = 2048
-	// DefaultScheduleDelay is the delay interval between two consecutive exports, in milliseconds.
-	DefaultScheduleDelay = 5000
-	// DefaultExportTimeout is the duration after which an export is cancelled, in milliseconds.
-	DefaultExportTimeout      = 30000
+	DefaultMaxQueueSize       = 2048
+	DefaultBatchTimeout       = 5000 * time.Millisecond
+	DefaultExportTimeout      = 30000 * time.Millisecond
 	DefaultMaxExportBatchSize = 512
 )
 
@@ -50,12 +48,6 @@ type BatchSpanProcessorOptions struct {
 	// of spans one batch after the other without any delay.
 	// The default value of MaxExportBatchSize is 512.
 	MaxExportBatchSize int
-
-	// BlockOnQueueFull blocks onEnd() and onStart() method if the queue is full
-	// AND if BlockOnQueueFull is set to true.
-	// Blocking option should be used carefully as it can severely affect the performance of an
-	// application.
-	BlockOnQueueFull bool
 }
 
 type SnapshotOrFlush struct {
@@ -87,13 +79,12 @@ type BatchSpanProcessor struct {
 // span batches to the exporter with the supplied options.
 //
 // If the exporter is nil, the span processor will perform no action.
-func NewBatchSpanProcessor(exporter *otlptracehttp.Exporter, h otel.ErrorHandler, maxQueueSize int, batchTimeout time.Duration, exportTimeout time.Duration, maxExportBatchSize int, blockOnQueueFull bool) *BatchSpanProcessor {
+func NewBatchSpanProcessor(exporter *otlptracehttp.Exporter, h otel.ErrorHandler, maxQueueSize int, batchTimeout time.Duration, exportTimeout time.Duration, maxExportBatchSize int) *BatchSpanProcessor {
 	o := BatchSpanProcessorOptions{
 		BatchTimeout:       batchTimeout,
 		ExportTimeout:      exportTimeout,
 		MaxQueueSize:       maxQueueSize,
 		MaxExportBatchSize: maxExportBatchSize,
-		BlockOnQueueFull:   blockOnQueueFull,
 	}
 
 	bsp := &BatchSpanProcessor{
@@ -305,12 +296,7 @@ func (bsp *BatchSpanProcessor) drainQueue() {
 }
 
 func (bsp *BatchSpanProcessor) enqueue(sd *SnapshotOrFlush) {
-	ctx := context.TODO()
-	if bsp.o.BlockOnQueueFull {
-		bsp.enqueueBlockOnQueueFull(ctx, sd)
-	} else {
-		bsp.enqueueDrop(sd)
-	}
+	bsp.enqueueDrop(sd)
 }
 
 func (bsp *BatchSpanProcessor) enqueueBlockOnQueueFull(ctx context.Context, sd *SnapshotOrFlush) bool {

@@ -19,8 +19,8 @@ import (
 
 // Default periodic reader timing.
 const (
-	defaultTimeout  = time.Millisecond * 30000
-	defaultInterval = time.Millisecond * 60000
+	DefaultPeriodicTimeout  = time.Millisecond * 30000
+	DefaultPeriodicInterval = time.Millisecond * 60000
 )
 
 // periodicReaderConfig contains configuration options for a PeriodicReader.

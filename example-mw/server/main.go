@@ -9,7 +9,6 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
-	"time"
 
 	otel "github.com/karelbilek/opentelemetry"
 	"github.com/karelbilek/opentelemetry/exporters/otlploghttp"
@@ -60,10 +59,11 @@ func stopOtlp(ctx context.Context, logProvider *log.LoggerProvider, tracerProvid
 func startOtlp(oh otel.ErrorHandler) (*slog.Logger, *log.LoggerProvider, *trace.TracerProvider, *metric.MeterProvider, error) {
 	logExporter, err := otlploghttp.New(context.Background(),
 		"127.0.0.1:4318",
-		"/v1/logs",
+		otlploghttp.DefaultLogsPath,
 		true,
-		64*1024*1024,
-		10*time.Second,
+		nil,
+		otlploghttp.DefaultMaxRequestSize,
+		otlploghttp.DefaultTimeout,
 		retry.DefaultConfig)
 
 	if err != nil {
@@ -72,11 +72,11 @@ func startOtlp(oh otel.ErrorHandler) (*slog.Logger, *log.LoggerProvider, *trace.
 	metricExporter, err := otlpmetrichttp.New(
 		context.Background(),
 		"127.0.0.1:4318",
-		"/v1/metrics",
+		otlpmetrichttp.DefaultMetricsPath,
 		true,
 		nil,
-		64*1024*1024,
-		10*time.Second,
+		otlpmetrichttp.DefaultMaxRequestSize,
+		otlpmetrichttp.DefaultTimeout,
 		retry.DefaultConfig,
 	)
 	if err != nil {
@@ -87,56 +87,60 @@ func startOtlp(oh otel.ErrorHandler) (*slog.Logger, *log.LoggerProvider, *trace.
 
 	res := resource.Default(context.Background(), oh, resource_name)
 
-	logProcessor := log.NewBatchProcessor(logExporter, oh, 2048, time.Second, 30*time.Second, 512)
+	logProcessor := log.NewBatchProcessor(
+		logExporter,
+		oh,
+		log.DefaultMaxQueueSize,
+		log.DefaultExpInterval,
+		log.DefaultExpTimeout,
+		log.DefaultExpMaxBatchSize)
 	logProvider := log.NewLoggerProvider(
 		oh,
 		res,
 		logProcessor,
-		128,
-		-1,
+		log.DefaultAttributeCountLimit,
+		log.DefaultAttributeValueLengthLimit,
 	)
 	slogger := otelslog.NewLogger("mylogger", logProvider, true)
 
 	traceExporter := otlptracehttp.New(
 		"127.0.0.1:4318",
-		"/v1/traces",
+		otlptracehttp.DefaultTracesPath,
 		true,
 		nil,
-		64*1024*1024,
-		10*time.Second,
+		otlptracehttp.DefaultMaxRequestSize,
+		otlptracehttp.DefaultTimeout,
 		retry.DefaultConfig,
 	)
 	tracerProvider := trace.NewTracerProvider(
 		oh,
-		-1,
-		128,
-		128,
-		128,
-		128,
-		128,
+		trace.DefaultAttributeValueLengthLimit,
+		trace.DefaultAttributeCountLimit,
+		trace.DefaultEventCountLimit,
+		trace.DefaultLinkCountLimit,
+		trace.DefaultAttributePerEventCountLimit,
+		trace.DefaultAttributePerLinkCountLimit,
 		trace.NewBatchSpanProcessor(
 			traceExporter,
 			oh,
-			2048,
-			5000*time.Millisecond,
-			30000*time.Millisecond,
-			512,
-			false,
+			trace.DefaultMaxQueueSize,
+			trace.DefaultBatchTimeout,
+			trace.DefaultExportTimeout,
+			trace.DefaultMaxExportBatchSize,
 		),
 		res,
-		false,
 	)
 
 	perReader := metric.NewPeriodicReader(
 		metricExporter,
-		time.Millisecond*60000,
-		time.Millisecond*30000,
+		metric.DefaultPeriodicInterval,
+		metric.DefaultPeriodicTimeout,
 		oh,
 	)
 	meterProvider := metric.NewMeterProvider(
 		res,
 		perReader,
-		2000,
+		metric.DefaultCardinalityLimit,
 	)
 
 	return slogger, logProvider, tracerProvider, meterProvider, nil

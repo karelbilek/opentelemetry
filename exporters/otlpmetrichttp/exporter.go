@@ -113,6 +113,18 @@ func (*Exporter) MarshalLog() any {
 	return struct{ Type string }{Type: "OTLP/HTTP"}
 }
 
+const (
+	// DefaultMetricsPath is a default URL path for endpoint that
+	// receives metrics.
+	DefaultMetricsPath string = "/v1/metrics"
+	// DefaultMaxRequestSize is the default maximum size of a serialized export
+	// request, before compression.
+	DefaultMaxRequestSize int = 64 * 1024 * 1024
+	// DefaultTimeout is a default max waiting time for the backend to process
+	// each span or metrics batch.
+	DefaultTimeout time.Duration = 10 * time.Second
+)
+
 // New returns an OpenTelemetry metric Exporter. The Exporter can be used with
 // a PeriodicReader to export OpenTelemetry metric data to an OTLP receiving
 // endpoint using protobufs over HTTP.

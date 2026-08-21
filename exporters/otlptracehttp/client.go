@@ -60,6 +60,18 @@ type Client struct {
 	stopOnce    sync.Once
 }
 
+const (
+	// DefaultTracesPath is a default URL path for endpoint that
+	// receives spans.
+	DefaultTracesPath string = "/v1/traces"
+	// DefaultMaxRequestSize is the default maximum size of a serialized export
+	// request, before compression.
+	DefaultMaxRequestSize int = 64 * 1024 * 1024
+	// DefaultTimeout is a default max waiting time for the backend to process
+	// each span batch.
+	DefaultTimeout time.Duration = 10 * time.Second
+)
+
 // NewClient creates a new HTTP trace client.
 func NewClient(endpoint string, urlPath string, insecure bool, headers map[string]string, maxRequestSize int, timeout time.Duration, retry retry.Config) *Client {
 	cfg := otlpconfig.NewHTTPConfig(endpoint, urlPath, insecure, headers, maxRequestSize, timeout, retry)

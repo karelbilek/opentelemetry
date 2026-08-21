@@ -14,7 +14,7 @@ type config struct {
 	cardinalityLimit int
 }
 
-const defaultCardinalityLimit = 2000
+const DefaultCardinalityLimit = 2000
 
 // newConfig returns a config configured with options.
 func newConfig(

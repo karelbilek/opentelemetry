@@ -59,6 +59,13 @@ func (r batchProcessorRequest) respond(err error) {
 	r.resp <- err
 }
 
+const (
+	DefaultMaxQueueSize    = 2048
+	DefaultExpInterval     = time.Second
+	DefaultExpTimeout      = 30 * time.Second
+	DefaultExpMaxBatchSize = 512
+)
+
 // NewBatchProcessor decorates the provided exporter
 // so that the log records are batched before exporting.
 //

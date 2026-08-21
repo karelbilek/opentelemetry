@@ -71,6 +71,12 @@ func newHTTPClient(ctx context.Context, cfg config) (*client, error) {
 	userAgent := "karelbilek/opentelemetry exporter"
 	req.Header.Set("User-Agent", userAgent)
 
+	if n := len(cfg.headers); n > 0 {
+		for k, v := range cfg.headers {
+			req.Header.Set(k, v)
+		}
+	}
+
 	req.Header.Set("Content-Type", "application/x-protobuf")
 
 	c := &httpClient{

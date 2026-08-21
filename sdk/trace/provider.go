@@ -30,24 +30,19 @@ type tracerProviderConfig struct {
 
 	// resource contains attributes representing an entity that produces telemetry.
 	resource *resource.Resource
-
-	// panicRecordingDisabled disables recording exception events from panics.
-	panicRecordingDisabled bool
 }
 
 // MarshalLog is the marshaling function used by the logging system to represent this Provider.
 func (cfg tracerProviderConfig) MarshalLog() any {
 	return struct {
-		SpanProcessors         *BatchSpanProcessor
-		IDGeneratorType        string
-		SpanLimits             SpanLimits
-		Resource               *resource.Resource
-		PanicRecordingDisabled bool
+		SpanProcessors  *BatchSpanProcessor
+		IDGeneratorType string
+		SpanLimits      SpanLimits
+		Resource        *resource.Resource
 	}{
-		SpanProcessors:         cfg.processor,
-		SpanLimits:             cfg.spanLimits,
-		Resource:               cfg.resource,
-		PanicRecordingDisabled: cfg.panicRecordingDisabled,
+		SpanProcessors: cfg.processor,
+		SpanLimits:     cfg.spanLimits,
+		Resource:       cfg.resource,
 	}
 }
 
@@ -63,10 +58,9 @@ type TracerProvider struct {
 
 	// These fields are not protected by the lock mu. They are assumed to be
 	// immutable after creation of the TracerProvider.
-	processor              *BatchSpanProcessor
-	spanLimits             SpanLimits
-	resource               *resource.Resource
-	panicRecordingDisabled bool
+	processor  *BatchSpanProcessor
+	spanLimits SpanLimits
+	resource   *resource.Resource
 
 	h otel.ErrorHandler
 }
@@ -90,8 +84,7 @@ func NewTracerProvider(
 	attributePerEventCountLimit int,
 	attributePerLinkCountLimit int,
 	processor *BatchSpanProcessor,
-	resource *resource.Resource,
-	panicRecordingDisabled bool) *TracerProvider {
+	resource *resource.Resource) *TracerProvider {
 	o := tracerProviderConfig{
 		spanLimits: NewSpanLimits(
 			attributeValueLengthLimit,
@@ -100,20 +93,18 @@ func NewTracerProvider(
 			linkCountLimit, attributePerEventCountLimit,
 			attributePerLinkCountLimit,
 		),
-		processor:              processor,
-		resource:               resource,
-		panicRecordingDisabled: panicRecordingDisabled,
+		processor: processor,
+		resource:  resource,
 	}
 
 	o = ensureValidTracerProviderConfig(o, h)
 
 	tp := &TracerProvider{
-		namedTracer:            make(map[instrumentation.Scope]*Tracer),
-		processor:              o.processor,
-		spanLimits:             o.spanLimits,
-		resource:               o.resource,
-		panicRecordingDisabled: o.panicRecordingDisabled,
-		h:                      h,
+		namedTracer: make(map[instrumentation.Scope]*Tracer),
+		processor:   o.processor,
+		spanLimits:  o.spanLimits,
+		resource:    o.resource,
+		h:           h,
 	}
 	global.Info("TracerProvider created", "config", o)
 
