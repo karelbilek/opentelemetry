@@ -1,8 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate stringer -type=Severity -linecomment
-
 package log
 
 // Severity represents a log record severity (also known as log level). Smaller

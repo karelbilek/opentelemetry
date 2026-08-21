@@ -18,8 +18,6 @@ import (
 	attribute "github.com/karelbilek/opentelemetry/attribute/internal"
 )
 
-//go:generate stringer -type=Type
-
 // Type describes the kind of data a [Value] holds.
 type Type int // nolint: revive  // redefines builtin Type.
 
