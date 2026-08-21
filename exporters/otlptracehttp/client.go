@@ -22,7 +22,6 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/karelbilek/opentelemetry/exporters/otlptracehttp/internal"
-	"github.com/karelbilek/opentelemetry/exporters/otlptracehttp/internal/counter"
 	"github.com/karelbilek/opentelemetry/exporters/otlptracehttp/internal/otlpconfig"
 	"github.com/karelbilek/opentelemetry/retry"
 )
@@ -61,8 +60,6 @@ type Client struct {
 	client      *http.Client
 	stopCh      chan struct{}
 	stopOnce    sync.Once
-
-	instID int64
 }
 
 // NewClient creates a new HTTP trace client.
@@ -82,7 +79,6 @@ func NewClient(endpoint string, urlPath string, insecure bool, headers map[strin
 		requestFunc: cfg.RetryConfig.RequestFunc(evaluate),
 		stopCh:      stopCh,
 		client:      httpClient,
-		instID:      counter.NextExporterID(),
 	}
 }
 
