@@ -20,7 +20,7 @@ import (
 	tracepb "github.com/karelbilek/opentelemetry/proto/trace/v1"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/karelbilek/opentelemetry/exporters/otlptracehttp/internal"
+	"github.com/karelbilek/opentelemetry/exporters/internal/partialsuccess"
 	"github.com/karelbilek/opentelemetry/exporters/otlptracehttp/internal/otlpconfig"
 	"github.com/karelbilek/opentelemetry/retry"
 )
@@ -180,7 +180,7 @@ func (c *Client) UploadTraces(ctx context.Context, protoSpans []*tracepb.Resourc
 					msg := respProto.PartialSuccess.GetErrorMessage()
 					n := respProto.PartialSuccess.GetRejectedSpans()
 					if n != 0 || msg != "" {
-						err := internal.TracePartialSuccessError(n, msg)
+						err := partialsuccess.Traces(n, msg)
 						uploadErr = errors.Join(uploadErr, err)
 					}
 				}

@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/karelbilek/opentelemetry/exporters/otlploghttp/internal"
+	"github.com/karelbilek/opentelemetry/exporters/internal/partialsuccess"
 	collogpb "github.com/karelbilek/opentelemetry/proto/collector/logs/v1"
 	logpb "github.com/karelbilek/opentelemetry/proto/logs/v1"
 	"google.golang.org/protobuf/proto"
@@ -184,7 +184,7 @@ func (c *httpClient) uploadLogs(ctx context.Context, data []*logpb.ResourceLogs)
 					msg := respProto.PartialSuccess.GetErrorMessage()
 					n := respProto.PartialSuccess.GetRejectedLogRecords()
 					if n != 0 || msg != "" {
-						err := internal.LogPartialSuccessError(n, msg)
+						err := partialsuccess.Logs(n, msg)
 						uploadErr = errors.Join(uploadErr, err)
 					}
 				}

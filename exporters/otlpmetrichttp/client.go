@@ -19,7 +19,7 @@ import (
 	metricpb "github.com/karelbilek/opentelemetry/proto/metrics/v1"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/karelbilek/opentelemetry/exporters/otlpmetrichttp/internal"
+	"github.com/karelbilek/opentelemetry/exporters/internal/partialsuccess"
 	"github.com/karelbilek/opentelemetry/exporters/otlpmetrichttp/internal/oconf"
 	"github.com/karelbilek/opentelemetry/retry"
 )
@@ -189,7 +189,7 @@ func (c *client) UploadMetrics(ctx context.Context, protoMetrics *metricpb.Resou
 					msg := respProto.PartialSuccess.GetErrorMessage()
 					n := respProto.PartialSuccess.GetRejectedDataPoints()
 					if n != 0 || msg != "" {
-						err := internal.MetricPartialSuccessError(n, msg)
+						err := partialsuccess.Metrics(n, msg)
 						uploadErr = errors.Join(uploadErr, err)
 					}
 				}

@@ -1,7 +1,9 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal
+// Package partialsuccess provides the error type used by all OTLP exporters
+// to report partial success responses from the collector.
+package partialsuccess
 
 import "fmt"
 
@@ -43,9 +45,9 @@ func (PartialSuccess) Is(err error) bool {
 	return ok
 }
 
-// TracePartialSuccessError returns an error describing a partial success
-// response for the trace signal.
-func TracePartialSuccessError(itemsRejected int64, errorMessage string) error {
+// Traces returns an error describing a partial success response for the
+// trace signal.
+func Traces(itemsRejected int64, errorMessage string) error {
 	return PartialSuccess{
 		ErrorMessage:  errorMessage,
 		RejectedItems: itemsRejected,
@@ -53,12 +55,22 @@ func TracePartialSuccessError(itemsRejected int64, errorMessage string) error {
 	}
 }
 
-// MetricPartialSuccessError returns an error describing a partial success
-// response for the metric signal.
-func MetricPartialSuccessError(itemsRejected int64, errorMessage string) error {
+// Metrics returns an error describing a partial success response for the
+// metric signal.
+func Metrics(itemsRejected int64, errorMessage string) error {
 	return PartialSuccess{
 		ErrorMessage:  errorMessage,
 		RejectedItems: itemsRejected,
 		RejectedKind:  "metric data points",
+	}
+}
+
+// Logs returns an error describing a partial success response for the log
+// signal.
+func Logs(itemsRejected int64, errorMessage string) error {
+	return PartialSuccess{
+		ErrorMessage:  errorMessage,
+		RejectedItems: itemsRejected,
+		RejectedKind:  "logs",
 	}
 }
