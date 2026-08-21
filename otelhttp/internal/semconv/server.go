@@ -243,7 +243,7 @@ var metricRecordOptionPool = &sync.Pool{
 }
 
 func (n HTTPServer) RecordMetrics(ctx context.Context, md ServerMetricData) {
-	attributes := n.MetricAttributes(md.Req, md.StatusCode, md.Route)
+	attributes := n.MetricAttributes(md.Req, md.StatusCode, httpRoute(md.Route))
 	o := metric.WithAttributeSet(attribute.NewSet(attributes...))
 	recordOpts := metricRecordOptionPool.Get().(*[]metric.RecordOption)
 	*recordOpts = append(*recordOpts, o)
