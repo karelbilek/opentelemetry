@@ -49,9 +49,6 @@ type Span struct {
 	// status is the status of this span.
 	status tracedata.Status
 
-	// childSpanCount holds the number of child spans created for this span.
-	childSpanCount int
-
 	// spanContext holds the SpanContext of this span.
 	spanContext trace.SpanContext
 
@@ -537,7 +534,6 @@ func (s *Span) snapshot() *tracedata.Snapshot {
 	sd.SpanKind = s.spanKind
 	sd.StartTime = s.startTime
 	sd.Status = s.status
-	sd.ChildSpanCount = s.childSpanCount
 
 	if len(s.attributes) > 0 {
 		s.dedupeAttrs()
@@ -553,19 +549,6 @@ func (s *Span) snapshot() *tracedata.Snapshot {
 		sd.DroppedLinkCount = s.links.droppedCount
 	}
 	return &sd
-}
-
-func (s *Span) addChild() {
-	if s == nil || s.noop {
-		return
-	}
-
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if !s.isRecording() {
-		return
-	}
-	s.childSpanCount++
 }
 
 // runtimeTrace starts a "runtime/trace".Task for the span and returns a

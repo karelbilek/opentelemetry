@@ -58,9 +58,6 @@ func (tr *Tracer) Start(
 		ctx = context.Background()
 	}
 
-	// For local spans created by this SDK, track child span count.
-	SpanFromContext(ctx).addChild()
-
 	s := tr.newSpan(ctx, name, &config)
 	newCtx := ContextWithSpan(ctx, s)
 

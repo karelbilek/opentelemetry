@@ -26,7 +26,6 @@ type Snapshot struct {
 	Events                []Event
 	Links                 []Link
 	Status                Status
-	ChildSpanCount        int
 	DroppedAttributeCount int
 	DroppedEventCount     int
 	DroppedLinkCount      int
