@@ -12,25 +12,6 @@ import (
 	"github.com/karelbilek/opentelemetry/retry"
 )
 
-const (
-	// DefaultMaxAttempts describes how many times the driver
-	// should retry the sending of the payload in case of a
-	// retryable error.
-	DefaultMaxAttempts int = 5
-	// DefaultMetricsPath is a default URL path for endpoint that
-	// receives metrics.
-	DefaultMetricsPath string = "/v1/metrics"
-	// DefaultMaxRequestSize is the default maximum size of a serialized export
-	// request, before compression.
-	DefaultMaxRequestSize int = 64 * 1024 * 1024
-	// DefaultBackoff is a default base backoff time used in the
-	// exponential backoff strategy.
-	DefaultBackoff time.Duration = 300 * time.Millisecond
-	// DefaultTimeout is a default max waiting time for the backend to process
-	// each span or metrics batch.
-	DefaultTimeout time.Duration = 10 * time.Second
-)
-
 type (
 	// HTTPTransportProxyFunc is a function that resolves which URL to use as proxy for a given request.
 	// This type is compatible with `http.Transport.Proxy` and can be used to set a custom proxy function to the OTLP HTTP client.
