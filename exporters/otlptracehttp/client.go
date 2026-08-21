@@ -54,7 +54,6 @@ var ourTransport = &http.Transport{
 
 type Client struct {
 	cfg         otlpconfig.SignalConfig
-	generalCfg  otlpconfig.Config
 	requestFunc retry.RequestFunc
 	client      *http.Client
 	stopCh      chan struct{}
@@ -73,7 +72,6 @@ func NewClient(endpoint string, urlPath string, insecure bool, headers map[strin
 	stopCh := make(chan struct{})
 	return &Client{
 		cfg:         cfg.Traces,
-		generalCfg:  cfg,
 		requestFunc: cfg.RetryConfig.RequestFunc(evaluate),
 		stopCh:      stopCh,
 		client:      httpClient,
