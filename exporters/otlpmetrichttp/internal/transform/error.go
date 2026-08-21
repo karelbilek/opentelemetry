@@ -13,7 +13,6 @@ import (
 
 var (
 	errUnknownAggregation = errors.New("unknown aggregation")
-	errUnknownTemporality = errors.New("unknown temporality")
 )
 
 type errMetric struct {

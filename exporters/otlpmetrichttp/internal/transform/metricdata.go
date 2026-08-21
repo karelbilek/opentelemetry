@@ -89,8 +89,6 @@ func metric(m metricdata.Metrics) (*mpb.Metric, error) {
 		out.Data, err = Histogram(a)
 	case metricdata.Histogram[float64]:
 		out.Data, err = Histogram(a)
-	case metricdata.Summary:
-		out.Data = Summary(a)
 	default:
 		return out, fmt.Errorf("%w: %T", errUnknownAggregation, a)
 	}
@@ -125,7 +123,6 @@ func DataPoints[N int64 | float64](dPts []metricdata.DataPoint[N]) []*mpb.Number
 			Attributes:        AttrIter(dPt.Attributes.Iter()),
 			StartTimeUnixNano: timeUnixNano(dPt.StartTime),
 			TimeUnixNano:      timeUnixNano(dPt.Time),
-			Exemplars:         Exemplars(dPt.Exemplars),
 		}
 		switch v := any(dPt.Value).(type) {
 		case int64:
@@ -167,7 +164,6 @@ func HistogramDataPoints[N int64 | float64](dPts []metricdata.HistogramDataPoint
 			Sum:               &sum,
 			BucketCounts:      dPt.BucketCounts,
 			ExplicitBounds:    dPt.Bounds,
-			Exemplars:         Exemplars(dPt.Exemplars),
 		}
 		if v, ok := dPt.Min.Value(); ok {
 			vF64 := float64(v)
@@ -191,70 +187,4 @@ func HistogramDataPoints[N int64 | float64](dPts []metricdata.HistogramDataPoint
 // The result does not depend on the location associated with t.
 func timeUnixNano(t time.Time) uint64 {
 	return uint64(max(0, t.UnixNano())) // nolint:gosec // Overflow checked.
-}
-
-// Exemplars returns a slice of OTLP Exemplars generated from exemplars.
-func Exemplars[N int64 | float64](exemplars []metricdata.Exemplar[N]) []*mpb.Exemplar {
-	out := make([]*mpb.Exemplar, 0, len(exemplars))
-	for _, exemplar := range exemplars {
-		e := &mpb.Exemplar{
-			FilteredAttributes: KeyValues(exemplar.FilteredAttributes),
-			TimeUnixNano:       timeUnixNano(exemplar.Time),
-			SpanId:             exemplar.SpanID,
-			TraceId:            exemplar.TraceID,
-		}
-		switch v := any(exemplar.Value).(type) {
-		case int64:
-			e.Value = &mpb.Exemplar_AsInt{
-				AsInt: v,
-			}
-		case float64:
-			e.Value = &mpb.Exemplar_AsDouble{
-				AsDouble: v,
-			}
-		}
-		out = append(out, e)
-	}
-	return out
-}
-
-// Summary returns an OTLP Metric_Summary generated from s.
-func Summary(s metricdata.Summary) *mpb.Metric_Summary {
-	return &mpb.Metric_Summary{
-		Summary: &mpb.Summary{
-			DataPoints: SummaryDataPoints(s.DataPoints),
-		},
-	}
-}
-
-// SummaryDataPoints returns a slice of OTLP SummaryDataPoint generated from
-// dPts.
-func SummaryDataPoints(dPts []metricdata.SummaryDataPoint) []*mpb.SummaryDataPoint {
-	out := make([]*mpb.SummaryDataPoint, 0, len(dPts))
-	for _, dPt := range dPts {
-		sdp := &mpb.SummaryDataPoint{
-			Attributes:        AttrIter(dPt.Attributes.Iter()),
-			StartTimeUnixNano: timeUnixNano(dPt.StartTime),
-			TimeUnixNano:      timeUnixNano(dPt.Time),
-			Count:             dPt.Count,
-			Sum:               dPt.Sum,
-			QuantileValues:    QuantileValues(dPt.QuantileValues),
-		}
-		out = append(out, sdp)
-	}
-	return out
-}
-
-// QuantileValues returns a slice of OTLP SummaryDataPoint_ValueAtQuantile
-// generated from quantiles.
-func QuantileValues(quantiles []metricdata.QuantileValue) []*mpb.SummaryDataPoint_ValueAtQuantile {
-	out := make([]*mpb.SummaryDataPoint_ValueAtQuantile, 0, len(quantiles))
-	for _, q := range quantiles {
-		quantile := &mpb.SummaryDataPoint_ValueAtQuantile{
-			Quantile: q.Quantile,
-			Value:    q.Value,
-		}
-		out = append(out, quantile)
-	}
-	return out
 }
