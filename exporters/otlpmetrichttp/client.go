@@ -12,7 +12,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
@@ -93,7 +92,7 @@ func newClient(cfg oconf.Config) (*client, error) {
 	return &client{
 		maxRequestSize: cfg.Metrics.MaxRequestSize,
 		req:            req,
-		requestFunc:    cfg.RetryConfig.RequestFunc(evaluate),
+		requestFunc:    cfg.RetryConfig.RequestFunc(retry.Evaluate),
 		httpClient:     httpClient,
 	}, err
 }
@@ -148,7 +147,7 @@ func (c *client) UploadMetrics(ctx context.Context, protoMetrics *metricpb.Resou
 		resp, err := c.httpClient.Do(request.Request)
 		var urlErr *url.Error
 		if errors.As(err, &urlErr) && urlErr.Temporary() {
-			return newResponseError(http.Header{}, err)
+			return retry.NewResponseError(http.Header{}, err)
 		}
 		if err != nil {
 			return err
@@ -223,7 +222,7 @@ func (c *client) UploadMetrics(ctx context.Context, protoMetrics *metricpb.Resou
 			http.StatusServiceUnavailable,
 			http.StatusGatewayTimeout:
 			// Retryable failure.
-			return newResponseError(resp.Header, bodyErr)
+			return retry.NewResponseError(resp.Header, bodyErr)
 		default:
 			// Non-retryable failure.
 			return fmt.Errorf("failed to send metrics to %s: %s (%w)", request.URL, resp.Status, bodyErr)
@@ -268,83 +267,4 @@ type request struct {
 func (r *request) reset(ctx context.Context) {
 	r.Body = r.bodyReader()
 	r.Request = r.WithContext(ctx)
-}
-
-// retryableError represents a request failure that can be retried.
-type retryableError struct {
-	throttle time.Duration
-	err      error
-}
-
-// newResponseError returns a retryableError and will extract any explicit
-// throttle delay contained in headers. The returned error wraps wrapped
-// if it is not nil.
-func newResponseError(header http.Header, wrapped error) error {
-	var rErr retryableError
-	if v := header.Get("Retry-After"); v != "" {
-		rErr.throttle = retryAfterDuration(v)
-	}
-
-	rErr.err = wrapped
-	return rErr
-}
-
-func retryAfterDuration(v string) time.Duration {
-	if t, err := strconv.ParseInt(v, 10, 64); err == nil && t >= 0 {
-		const maxRetryAfterSeconds = int64(1<<63-1) / int64(time.Second)
-		if t > maxRetryAfterSeconds {
-			return time.Duration(1<<63 - 1)
-		}
-		return time.Duration(t) * time.Second
-	}
-
-	if date, err := http.ParseTime(v); err == nil {
-		return max(time.Until(date), 0)
-	}
-
-	return 0
-}
-
-func (e retryableError) Error() string {
-	if e.err != nil {
-		return "retry-able request failure: " + e.err.Error()
-	}
-
-	return "retry-able request failure"
-}
-
-func (e retryableError) Unwrap() error {
-	return e.err
-}
-
-func (e retryableError) As(target any) bool {
-	if e.err == nil {
-		return false
-	}
-
-	switch v := target.(type) {
-	case **retryableError:
-		*v = &e
-		return true
-	default:
-		return false
-	}
-}
-
-// evaluate returns if err is retry-able. If it is and it includes an explicit
-// throttling delay, that delay is also returned.
-func evaluate(err error) (bool, time.Duration) {
-	if err == nil {
-		return false, 0
-	}
-
-	// Do not use errors.As here, this should only be flattened one layer. If
-	// there are several chained errors, all the errors above it will be
-	// discarded if errors.As is used instead.
-	rErr, ok := err.(retryableError) //nolint:errorlint
-	if !ok {
-		return false, 0
-	}
-
-	return true, rErr.throttle
 }

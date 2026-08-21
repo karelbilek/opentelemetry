@@ -9,10 +9,10 @@ import (
 	"time"
 
 	"github.com/karelbilek/opentelemetry/attribute"
+	"github.com/karelbilek/opentelemetry/internal/attrnorm"
 	"github.com/karelbilek/opentelemetry/internal/global"
 	"github.com/karelbilek/opentelemetry/log"
 	"github.com/karelbilek/opentelemetry/sdk/instrumentation"
-	"github.com/karelbilek/opentelemetry/internal/attrnorm"
 	"github.com/karelbilek/opentelemetry/sdk/resource"
 	"github.com/karelbilek/opentelemetry/trace"
 )
