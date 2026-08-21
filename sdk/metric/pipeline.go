@@ -12,7 +12,6 @@ import (
 	"sync/atomic"
 
 	otel "github.com/karelbilek/opentelemetry"
-	"github.com/karelbilek/opentelemetry/attribute"
 	"github.com/karelbilek/opentelemetry/internal/global"
 	"github.com/karelbilek/opentelemetry/sdk/instrumentation"
 	"github.com/karelbilek/opentelemetry/sdk/metric/internal"
@@ -232,7 +231,6 @@ func newInserter[N int64 | float64](p *pipeline, vc *cache[string, instID]) *ins
 // not inserted nor returned.
 func (i *inserter[N]) Instrument(
 	inst Instrument,
-	allowedKeys []attribute.Key,
 	readerAggregation aggregation,
 	h otel.ErrorHandler,
 ) ([]aggregate.Measure[N], error) {
@@ -248,12 +246,7 @@ func (i *inserter[N]) Instrument(
 		Description: inst.Description,
 		Unit:        inst.Unit,
 	}
-	// allowedKeys == nil indicates that the WithDefaultAttributes option was not passed,
-	// and all keys are allowed. An empty (non-nil) slice indicates that the option was passed
-	// with an empty set of keys, and no keys are allowed.
-	if allowedKeys != nil {
-		stream.AttributeFilter = attribute.NewAllowKeysFilter(allowedKeys...)
-	}
+
 	in, _, e := i.cachedAggregator(inst.Scope, inst.Kind, stream, readerAggregation, h)
 	if e != nil {
 		err = errCreatingAggregators
@@ -328,7 +321,6 @@ func (i *inserter[N]) cachedAggregator(
 	normID := id.normalize()
 	cv := i.aggregators.Lookup(normID, func() aggVal[N] {
 		b := aggregate.Builder[N]{}
-		b.Filter = stream.AttributeFilter
 		// A value less than or equal to zero will disable the aggregation
 		// limits for the builder (an all the created aggregates).
 		b.AggregationLimit = i.pipeline.cardinalityLimit
@@ -542,8 +534,8 @@ func newResolver[N int64 | float64](p *pipeline, vc *cache[string, instID]) reso
 
 // Aggregators returns the Aggregators that must be updated by the instrument
 // defined by key.
-func (r resolver[N]) Aggregators(id Instrument, allowedKeys []attribute.Key, h otel.ErrorHandler) ([]aggregate.Measure[N], error) {
-	in, e := r.inserter.Instrument(id, allowedKeys, selectAggregation(id.Kind), h)
+func (r resolver[N]) Aggregators(id Instrument, h otel.ErrorHandler) ([]aggregate.Measure[N], error) {
+	in, e := r.inserter.Instrument(id, selectAggregation(id.Kind), h)
 	if e != nil {
 		return nil, e
 	}
@@ -555,7 +547,6 @@ func (r resolver[N]) Aggregators(id Instrument, allowedKeys []attribute.Key, h o
 // over boundaries provided by the reader.
 func (r resolver[N]) HistogramAggregators(
 	id Instrument,
-	allowedKeys []attribute.Key,
 	boundaries []float64,
 	h otel.ErrorHandler,
 ) ([]aggregate.Measure[N], error) {
@@ -567,7 +558,7 @@ func (r resolver[N]) HistogramAggregators(
 		histAgg.Boundaries = boundaries
 		agg = histAgg
 	}
-	in, e := i.Instrument(id, allowedKeys, agg, h)
+	in, e := i.Instrument(id, agg, h)
 	if e != nil {
 		err = errors.Join(err, e)
 	}

@@ -56,24 +56,6 @@ type Stream struct {
 	Unit string
 	// Aggregation the stream uses for an instrument.
 	Aggregation aggregation
-	// AttributeFilter is an attribute Filter applied to the attributes
-	// recorded for an instrument's measurement. If the filter returns false
-	// the attribute will not be recorded, otherwise, if it returns true, it
-	// will record the attribute.
-	//
-	// Note that attributes filtered out by a View may still appear on Exemplars,
-	// because Exemplars are recorded with the dropped measurement attributes
-	// when View attribute filtering is applied.
-	//
-	// Use NewAllowKeysFilter from "github.com/karelbilek/opentelemetry/attribute" to
-	// provide an allow-list of attribute keys here.
-	AttributeFilter attribute.Filter
-	// ExemplarReservoirProvider selects the
-	// [github.com/karelbilek/opentelemetry/sdk/metric/exemplar.ReservoirProvider] based
-	// on the [Aggregation].
-	//
-	// If unspecified, [DefaultExemplarReservoirProviderSelector] is used.
-	// ExemplarReservoirProviderSelector ExemplarReservoirProviderSelector
 }
 
 // instID are the identifying properties of a instrument.

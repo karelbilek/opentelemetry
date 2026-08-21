@@ -25,9 +25,6 @@ type ComputeAggregation func(dest *metricdata.Aggregation) int
 
 // Builder builds an aggregate function.
 type Builder[N int64 | float64] struct {
-	// Filter is the attribute filter the aggregate function will use on the
-	// input of measurements.
-	Filter attribute.Filter
 	// AggregationLimit is the cardinality limit of measurement attributes. Any
 	// measurement for new attributes once the limit has been reached will be
 	// aggregated into a single aggregate for the "otel.metric.overflow"
@@ -41,14 +38,8 @@ type Builder[N int64 | float64] struct {
 type fltrMeasure[N int64 | float64] func(ctx context.Context, value N, lazy lazyFilteredAttributes, eh otel.ErrorHandler)
 
 func (b Builder[N]) filter(f fltrMeasure[N], eh otel.ErrorHandler) Measure[N] {
-	if b.Filter != nil {
-		fltr := b.Filter // Copy to make it immutable after assignment.
-		return func(ctx context.Context, n N, a attribute.Set) {
-			f(ctx, n, newLazyFilteredAttributes(a, fltr), eh)
-		}
-	}
 	return func(ctx context.Context, n N, a attribute.Set) {
-		f(ctx, n, newLazyFilteredAttributes(a, nil), eh)
+		f(ctx, n, newLazyFilteredAttributes(a), eh)
 	}
 }
 

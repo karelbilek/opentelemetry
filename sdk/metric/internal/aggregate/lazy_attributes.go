@@ -21,39 +21,11 @@ type lazyFilteredAttributes struct {
 // hash of the resulting attributes. The filter function is evaluated once per
 // attribute during initialization, and kept attribute indices are recorded in a
 // bitmask so subsequent Set and Dropped calls do not re-evaluate filter.
-func newLazyFilteredAttributes(orig attribute.Set, filter attribute.Filter) lazyFilteredAttributes {
-	if filter == nil {
-		return lazyFilteredAttributes{
-			orig:     orig,
-			distinct: orig.Equivalent(),
-		}
+func newLazyFilteredAttributes(orig attribute.Set) lazyFilteredAttributes {
+	return lazyFilteredAttributes{
+		orig:     orig,
+		distinct: orig.Equivalent(),
 	}
-	l := lazyFilteredAttributes{orig: orig, hasDropped: true}
-
-	n := orig.Len()
-	hasher := attribute.NewHasher()
-	keptCount := 0
-	for i := range n {
-		kv, _ := orig.Get(i)
-		if filter(kv) {
-			hasher.Write(kv)
-			l.recordKept(i, keptCount, n)
-			keptCount++
-		}
-	}
-	if keptCount == n {
-		l.hasDropped = false
-		l.mask = 0
-		l.bigMask = nil
-		l.distinct = orig.Equivalent()
-		return l
-	}
-	keptBefore64 := bits.OnesCount64(l.mask)
-	if keptCount-keptBefore64 > 0 {
-		l.ensureBigMask(n, keptCount)
-	}
-	l.distinct = hasher.Distinct()
-	return l
 }
 
 // recordKept marks index i as kept in the bitmask or fallback slice.

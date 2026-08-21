@@ -44,14 +44,16 @@ func newWithAttributes(attrs ...attribute.KeyValue) *Resource {
 
 	attrs, _ = attrnorm.KeyValues(attrs)
 
-	// Ensure attributes comply with the specification:
-	// https://github.com/open-telemetry/opentelemetry-specification/blob/v1.20.0/specification/common/README.md#attribute
-	s, _ := attribute.NewSetWithFiltered(attrs, func(kv attribute.KeyValue) bool {
-		return kv.Valid()
-	})
+	valids := false
+	for _, kv := range attrs {
+		if kv.Valid() {
+			valids = true
+		}
+	}
+	s, _ := attribute.NewSetWithFiltered(attrs)
 
 	// If attrs only contains invalid entries do not allocate a new resource.
-	if s.Len() == 0 {
+	if !valids {
 		return &Resource{}
 	}
 
