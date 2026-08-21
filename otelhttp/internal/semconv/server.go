@@ -22,11 +22,6 @@ import (
 	"github.com/karelbilek/opentelemetry/semconv/httpconv"
 )
 
-type RequestTraceAttrsOpts struct {
-	// If set, this is used as value for the "http.client_ip" attribute.
-	HTTPClientIP string
-}
-
 type ResponseTelemetry struct {
 	StatusCode int
 	ReadBytes  int64
@@ -90,7 +85,7 @@ func (HTTPServer) Status(code int) (codes.Code, string) {
 //
 // If the primary server name is not known, server should be an empty string.
 // The req Host will be used to determine the server instead.
-func (n HTTPServer) RequestTraceAttrs(req *http.Request, opts RequestTraceAttrsOpts) []attribute.KeyValue {
+func (n HTTPServer) RequestTraceAttrs(req *http.Request) []attribute.KeyValue {
 	count := 3 // ServerAddress, Method, Scheme
 
 	var host string
@@ -128,13 +123,11 @@ func (n HTTPServer) RequestTraceAttrs(req *http.Request, opts RequestTraceAttrsO
 	// 1. The value passed in the options
 	// 2. The value in the X-Forwarded-For header
 	// 3. The peer address
-	clientIP := opts.HTTPClientIP
+	clientIP := serverClientIP(req.Header.Get("X-Forwarded-For"))
 	if clientIP == "" {
-		clientIP = serverClientIP(req.Header.Get("X-Forwarded-For"))
-		if clientIP == "" {
-			clientIP = peer
-		}
+		clientIP = peer
 	}
+
 	if clientIP != "" {
 		count++
 	}

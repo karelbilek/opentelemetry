@@ -78,10 +78,10 @@ func (h *middleware) serveHTTP(w http.ResponseWriter, r *http.Request, next http
 
 	ctx := propagation.Extract(r.Context(), r.Header)
 	opts := []trace.SpanStartOption{
-		trace.WithAttributes(h.semconv.RequestTraceAttrs(r, semconv.RequestTraceAttrsOpts{})...),
+		trace.WithAttributes(h.semconv.RequestTraceAttrs(r)...),
+		trace.WithSpanKind(trace.SpanKindServer),
 	}
 
-	opts = append(opts, trace.WithSpanKind(trace.SpanKindServer))
 	if h.publicEndpointFn != nil && h.publicEndpointFn(r.WithContext(ctx)) {
 		opts = append(opts, trace.WithNewRoot())
 		// Linking incoming span context if any for public endpoint.
