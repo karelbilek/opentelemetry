@@ -41,7 +41,6 @@ func main() {
 		processor,
 		128,
 		-1,
-		false,
 	)
 	slogger := otelslog.NewLogger("mylogger", provider, true)
 	defer func() {

@@ -118,9 +118,6 @@ type Record struct {
 	attributeValueLengthLimit int
 	attributeCountLimit       int
 
-	// specifies whether we should deduplicate any key value collections or not
-	allowDupKeys bool
-
 	noCmp [0]func() //nolint: unused  // This is indeed used.
 }
 
@@ -192,11 +189,7 @@ func (r *Record) Body() attribute.Value {
 
 // SetBody sets the body of the log record.
 func (r *Record) SetBody(v attribute.Value) {
-	if !r.allowDupKeys {
-		r.body, _ = attrnorm.Value(v)
-	} else {
-		r.body = v
-	}
+	r.body, _ = attrnorm.Value(v)
 }
 
 // WalkAttributes walks all attributes the log record holds by calling f for
@@ -221,11 +214,9 @@ func (r *Record) AddAttributes(attrs ...attribute.KeyValue) {
 	if n == 0 {
 		// Avoid the more complex duplicate map lookups below.
 		var drop int
-		if !r.allowDupKeys {
-			attrs, drop = dedup(attrs)
-			if drop > 0 {
-				logKeyValuePairDropped()
-			}
+		attrs, drop = dedup(attrs)
+		if drop > 0 {
+			logKeyValuePairDropped()
 		}
 
 		attrs, drop := r.head(attrs)
@@ -235,55 +226,53 @@ func (r *Record) AddAttributes(attrs ...attribute.KeyValue) {
 		return
 	}
 
-	if !r.allowDupKeys {
-		// Use a slice from the pool to avoid modifying the original.
-		// Note, do not iterate attrs twice by just calling dedup(attrs) here.
-		unique := getUnique()
-		defer putUnique(unique)
+	// Use a slice from the pool to avoid modifying the original.
+	// Note, do not iterate attrs twice by just calling dedup(attrs) here.
+	unique := getUnique()
+	defer putUnique(unique)
 
-		// Used to find duplicates between attrs and existing attributes in r.
-		rIndex := r.attrIndex()
-		defer putIndex(rIndex)
+	// Used to find duplicates between attrs and existing attributes in r.
+	rIndex := r.attrIndex()
+	defer putIndex(rIndex)
 
-		// Used to find duplicates within attrs itself.
-		// The index value is the index of the element in unique.
-		uIndex := getIndex()
-		defer putIndex(uIndex)
+	// Used to find duplicates within attrs itself.
+	// The index value is the index of the element in unique.
+	uIndex := getIndex()
+	defer putIndex(uIndex)
 
-		dropped := 0
+	dropped := 0
 
-		// Deduplicate attrs within the scope of all existing attributes.
-		for _, a := range attrs {
-			// Last-value-wins for any duplicates in attrs.
-			idx, found := uIndex[a.Key]
-			if found {
-				dropped++
-				logKeyValuePairDropped()
-				(*unique)[idx] = a
-				continue
-			}
+	// Deduplicate attrs within the scope of all existing attributes.
+	for _, a := range attrs {
+		// Last-value-wins for any duplicates in attrs.
+		idx, found := uIndex[a.Key]
+		if found {
+			dropped++
+			logKeyValuePairDropped()
+			(*unique)[idx] = a
+			continue
+		}
 
-			idx, found = rIndex[a.Key]
-			if found {
-				// New attrs overwrite any existing with the same key.
-				dropped++
-				logKeyValuePairDropped()
-				if idx < 0 {
-					r.front[-(idx + 1)] = a
-				} else {
-					r.back[idx] = a
-				}
+		idx, found = rIndex[a.Key]
+		if found {
+			// New attrs overwrite any existing with the same key.
+			dropped++
+			logKeyValuePairDropped()
+			if idx < 0 {
+				r.front[-(idx + 1)] = a
 			} else {
-				// Unique attribute.
-				(*unique) = append(*unique, a)
-				uIndex[a.Key] = len(*unique) - 1
+				r.back[idx] = a
 			}
+		} else {
+			// Unique attribute.
+			(*unique) = append(*unique, a)
+			uIndex[a.Key] = len(*unique) - 1
 		}
+	}
 
-		if dropped > 0 {
-			attrs = make([]attribute.KeyValue, len(*unique))
-			copy(attrs, *unique)
-		}
+	if dropped > 0 {
+		attrs = make([]attribute.KeyValue, len(*unique))
+		copy(attrs, *unique)
 	}
 
 	if r.HasAttributeCountLimit() && n+len(attrs) > r.attributeCountLimit {
@@ -343,11 +332,9 @@ func (r *Record) AddAttrs(attrs []attribute.KeyValue) {
 func (r *Record) SetAttributes(attrs ...attribute.KeyValue) {
 	var drop int
 	r.dropped = 0
-	if !r.allowDupKeys {
-		attrs, drop = dedup(attrs)
-		if drop > 0 {
-			logKeyValuePairDropped()
-		}
+	attrs, drop = dedup(attrs)
+	if drop > 0 {
+		logKeyValuePairDropped()
 	}
 
 	attrs, drop = r.head(attrs)
@@ -479,13 +466,12 @@ func (r *Record) Clone() Record {
 }
 
 func (r *Record) applyAttrLimitsAndDedup(attr attribute.KeyValue) attribute.KeyValue {
-	if !r.allowDupKeys {
-		var changed bool
-		attr, changed = attrnorm.KeyValue(attr)
-		if changed {
-			logKeyValuePairDropped()
-		}
+	var changed bool
+	attr, changed = attrnorm.KeyValue(attr)
+	if changed {
+		logKeyValuePairDropped()
 	}
+
 	attr.Value = attrnorm.TruncateValue(r.attributeValueLengthLimit, attr.Value)
 	return attr
 }

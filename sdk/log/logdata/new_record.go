@@ -22,7 +22,6 @@ func NewRecord(
 	scope *instrumentation.Scope,
 	attributeValueLengthLimit int,
 	attributeCountLimit int,
-	allowDupKeys bool,
 ) Record {
 	return Record{
 		eventName:         eventName,
@@ -39,6 +38,5 @@ func NewRecord(
 		scope:                     scope,
 		attributeValueLengthLimit: attributeValueLengthLimit,
 		attributeCountLimit:       attributeCountLimit,
-		allowDupKeys:              allowDupKeys,
 	}
 }

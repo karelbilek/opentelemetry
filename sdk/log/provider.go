@@ -27,7 +27,6 @@ type LoggerProvider struct {
 	processor                 *BatchProcessor
 	attributeCountLimit       int
 	attributeValueLengthLimit int
-	allowDupKeys              bool
 
 	loggersMu sync.Mutex
 	loggers   map[instrumentation.Scope]*Logger
@@ -46,7 +45,7 @@ type LoggerProvider struct {
 // Resource and no Processors. Processors cannot be added after a LoggerProvider is
 // created. This means the returned LoggerProvider, one created with no
 // Processors, will perform no operations.
-func NewLoggerProvider(eh otel.ErrorHandler, resource *resource.Resource, processor *BatchProcessor, attrCntLim int, attrValLenLim int, allowDupKeys bool) *LoggerProvider {
+func NewLoggerProvider(eh otel.ErrorHandler, resource *resource.Resource, processor *BatchProcessor, attrCntLim int, attrValLenLim int) *LoggerProvider {
 	if resource == nil {
 		panic("nil resource")
 	}
@@ -56,7 +55,6 @@ func NewLoggerProvider(eh otel.ErrorHandler, resource *resource.Resource, proces
 		processor:                 processor,
 		attributeCountLimit:       attrCntLim,
 		attributeValueLengthLimit: attrValLenLim,
-		allowDupKeys:              allowDupKeys,
 	}
 }
 

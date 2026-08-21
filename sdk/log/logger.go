@@ -113,7 +113,6 @@ func (l *Logger) newRecord(ctx context.Context, r log.Record) logdata.Record {
 		&l.instrumentationScope,
 		l.provider.attributeValueLengthLimit,
 		l.provider.attributeCountLimit,
-		l.provider.allowDupKeys,
 	)
 
 	// This ensures we deduplicate key-value collections in the log body

@@ -93,7 +93,6 @@ func startOtlp(oh otel.ErrorHandler) (*slog.Logger, *log.LoggerProvider, *trace.
 		logProcessor,
 		128,
 		-1,
-		false,
 	)
 	slogger := otelslog.NewLogger("mylogger", logProvider, true)
 
