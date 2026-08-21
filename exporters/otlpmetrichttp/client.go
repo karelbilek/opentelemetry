@@ -5,7 +5,6 @@ package otlpmetrichttp
 
 import (
 	"bytes"
-	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
@@ -15,7 +14,6 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	colmetricpb "github.com/karelbilek/opentelemetry/proto/collector/metrics/v1"
@@ -51,8 +49,6 @@ var ourTransport = &http.Transport{
 	TLSHandshakeTimeout:   10 * time.Second,
 	ExpectContinueTimeout: 1 * time.Second,
 }
-
-var errInsecureEndpointWithTLS = errors.New("insecure HTTP endpoint cannot use TLS client configuration")
 
 // maxResponseBodySize is the maximum number of bytes to read from a response
 // body. It is set to 4 MiB per the OTLP specification recommendation to
@@ -233,13 +229,6 @@ func (c *client) UploadMetrics(ctx context.Context, protoMetrics *metricpb.Resou
 			return fmt.Errorf("failed to send metrics to %s: %s (%w)", request.URL, resp.Status, bodyErr)
 		}
 	}))
-}
-
-var gzPool = sync.Pool{
-	New: func() any {
-		w := gzip.NewWriter(io.Discard)
-		return w
-	},
 }
 
 func (c *client) newRequest(ctx context.Context, body []byte) (request, error) {
