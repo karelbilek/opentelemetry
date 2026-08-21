@@ -5,18 +5,12 @@
 package oconf
 
 import (
-	"net/http"
-	"net/url"
 	"time"
 
 	"github.com/karelbilek/opentelemetry/retry"
 )
 
 type (
-	// HTTPTransportProxyFunc is a function that resolves which URL to use as proxy for a given request.
-	// This type is compatible with `http.Transport.Proxy` and can be used to set a custom proxy function to the OTLP HTTP client.
-	HTTPTransportProxyFunc func(*http.Request) (*url.URL, error)
-
 	SignalConfig struct {
 		Endpoint       string
 		Insecure       bool
@@ -31,10 +25,6 @@ type (
 		Metrics SignalConfig
 
 		RetryConfig retry.Config
-
-		// gRPC configurations
-		ReconnectionPeriod time.Duration
-		ServiceConfig      string
 	}
 )
 
